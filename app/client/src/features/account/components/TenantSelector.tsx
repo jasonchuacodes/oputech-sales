@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { Building2, Check, ChevronRight, Plus } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { Building2, Check, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { Button, Input, Label } from '@/components'
+import { Button, ConfirmationDialog, Input, Label } from '@/components'
 import {
   Sheet,
   SheetBody,
@@ -17,13 +17,15 @@ import {
 import { useTenantContext } from '@/context/tenant/useTenantContext'
 import { useSyncContext } from '@/context/sync/useSyncContext'
 import { getApiErrorMessage } from '@/lib/api-error'
+import { Tenant } from '@/services/tenant/tenant.types'
 
-export const TenantSelector = () => {
+export const TenantSelector = ({ trigger }: { trigger?: ReactNode }) => {
   const tenant = useTenantContext()
   const sync = useSyncContext()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [error, setError] = useState<string>()
+  const [tenantToDelete, setTenantToDelete] = useState<Tenant>()
 
   const switchTo = async (tenantId: string) => {
     if (tenant.currentTenant?.id === tenantId) return
@@ -53,9 +55,24 @@ export const TenantSelector = () => {
     }
   }
 
+  const removeTenant = async () => {
+    if (!tenantToDelete) return
+    setError(undefined)
+    try {
+      await tenant.remove(tenantToDelete.id)
+      setTenantToDelete(undefined)
+      toast.success('Tenant deleted')
+    } catch (cause) {
+      setError(getApiErrorMessage(cause, 'Unable to delete the tenant.'))
+      setTenantToDelete(undefined)
+    }
+  }
+
   if (!tenant.canSwitch) {
+    if (trigger) return trigger
+
     return (
-      <div className="rounded-card bg-card flex items-center gap-4 p-4 shadow-card">
+      <div className="rounded-card bg-card shadow-card flex items-center gap-4 p-4">
         <span className="bg-primary/10 text-primary flex size-11 items-center justify-center rounded-full">
           <Building2 className="size-5" />
         </span>
@@ -63,7 +80,9 @@ export const TenantSelector = () => {
           <span className="block font-semibold">
             {tenant.currentTenant?.name ?? 'No tenant'}
           </span>
-          <span className="text-text-secondary block text-sm">Your assigned tenant</span>
+          <span className="text-text-secondary block text-sm">
+            Your assigned tenant
+          </span>
         </span>
       </div>
     )
@@ -72,37 +91,83 @@ export const TenantSelector = () => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <button className="rounded-card bg-card flex min-h-18 w-full items-center gap-4 p-4 text-left shadow-card">
-          <span className="bg-primary/10 text-primary flex size-11 items-center justify-center rounded-full">
-            <Building2 className="size-5" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate font-semibold">
-              {tenant.currentTenant?.name ?? 'Select tenant'}
+        {trigger ?? (
+          <button className="rounded-card bg-card shadow-card flex min-h-18 w-full items-center gap-4 p-4 text-left">
+            <span className="bg-primary/10 text-primary flex size-11 items-center justify-center rounded-full">
+              <Building2 className="size-5" />
             </span>
-            <span className="text-text-secondary block text-sm">Switch your active workspace</span>
-          </span>
-          <ChevronRight className="text-text-tertiary size-5" />
-        </button>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-semibold">
+                {tenant.currentTenant?.name ?? 'Select tenant'}
+              </span>
+              <span className="text-text-secondary block text-sm">
+                Switch your active workspace
+              </span>
+            </span>
+            <ChevronRight className="text-text-tertiary size-5" />
+          </button>
+        )}
       </SheetTrigger>
       <SheetContent showClose>
-        <SheetHeader>
-          <SheetTitle>Select tenant</SheetTitle>
-          <SheetDescription>Sales and reports will use the selected tenant.</SheetDescription>
+        <SheetHeader className="pr-12">
+          <div className="flex items-start gap-3">
+            <span className="bg-primary/10 text-primary flex size-11 shrink-0 items-center justify-center rounded-md">
+              <Building2 className="size-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <SheetTitle>Select tenant</SheetTitle>
+              <SheetDescription>
+                Sales and reports will use the selected tenant.
+              </SheetDescription>
+            </div>
+          </div>
         </SheetHeader>
         <SheetBody className="flex flex-col gap-3">
-          {tenant.tenants.map((item) => (
-            <button
-              key={item.id}
-              className="border-border flex min-h-12 items-center gap-3 rounded-md border px-4 text-left"
-              disabled={tenant.switching}
-              onClick={() => void switchTo(item.id)}
-            >
-              <Building2 className="text-primary size-5" />
-              <span className="min-w-0 flex-1 truncate font-medium">{item.name}</span>
-              {item.id === tenant.currentTenant?.id && <Check className="text-primary size-5" />}
-            </button>
-          ))}
+          <div className="border-border rounded-card overflow-hidden border">
+            {tenant.tenants.map((item) => (
+              <div
+                key={item.id}
+                className="border-border/70 flex min-h-14 items-center border-b last:border-b-0"
+              >
+                <button
+                  type="button"
+                  className="hover:bg-surface-hover focus-visible:bg-surface-hover flex min-h-14 min-w-0 flex-1 items-center gap-3 px-4 text-left outline-none"
+                  disabled={tenant.switching || tenant.deleting}
+                  onClick={() => void switchTo(item.id)}
+                >
+                  <Building2
+                    className="text-primary size-5 shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {item.name}
+                  </span>
+                  {item.id === tenant.currentTenant?.id && (
+                    <Check
+                      className="text-primary size-5 shrink-0"
+                      aria-label="Active tenant"
+                    />
+                  )}
+                </button>
+                {tenant.canDelete && (
+                  <button
+                    type="button"
+                    className="text-text-tertiary hover:bg-destructive/10 hover:text-destructive focus-visible:ring-ring/30 mr-2 flex size-10 shrink-0 items-center justify-center rounded-md outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={tenant.tenants.length <= 1 || tenant.deleting}
+                    aria-label={`Delete ${item.name}`}
+                    title={
+                      tenant.tenants.length <= 1
+                        ? 'You must keep at least one tenant'
+                        : `Delete ${item.name}`
+                    }
+                    onClick={() => setTenantToDelete(item)}
+                  >
+                    <Trash2 className="size-4" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
 
           {tenant.canCreate && (
             <div className="border-border mt-3 flex flex-col gap-3 border-t pt-4">
@@ -114,7 +179,10 @@ export const TenantSelector = () => {
                 placeholder="Tenant name"
                 onChange={(event) => setName(event.target.value)}
               />
-              <Button disabled={!name.trim() || tenant.creating} onClick={() => void addTenant()}>
+              <Button
+                disabled={!name.trim() || tenant.creating}
+                onClick={() => void addTenant()}
+              >
                 <Plus className="size-4" />
                 Create tenant
               </Button>
@@ -124,6 +192,22 @@ export const TenantSelector = () => {
         </SheetBody>
         <SheetFooter />
       </SheetContent>
+      <ConfirmationDialog
+        open={!!tenantToDelete}
+        title="Delete tenant?"
+        description={
+          <>
+            <strong>{tenantToDelete?.name}</strong> and all of its products,
+            transactions, and reports will be permanently deleted.
+          </>
+        }
+        icon={Trash2}
+        variant="danger"
+        confirmText="Delete tenant"
+        loading={tenant.deleting}
+        onClose={() => setTenantToDelete(undefined)}
+        onConfirm={() => void removeTenant()}
+      />
     </Sheet>
   )
 }

@@ -14,7 +14,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   BarChart3,
   Bell,
-  Building2,
   House,
   Package,
   PanelLeftClose,
@@ -33,6 +32,7 @@ import { Button, Spinner } from '@/components'
 import { AccountAvatar } from '@/features/account/components/AccountAvatar'
 import { SyncStatus } from './components/SyncStatus'
 import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
+import { SidebarTenantSwitcher } from './components/SidebarTenantSwitcher'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
 import { useTenantContext } from '@/context/tenant/useTenantContext'
 
@@ -244,9 +244,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     }
     if (
       !isAdmin &&
-       ['/dashboard', '/catalog'].some((path) =>
-        pathname.startsWith(path)
-      )
+      ['/dashboard', '/catalog'].some((path) => pathname.startsWith(path))
     ) {
       router.replace('/sell')
     }
@@ -344,20 +342,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             )}
           </Button>
         </div>
-        <div
-          className={cn(
-            'bg-primary/5 text-primary flex min-h-12 items-center gap-3 rounded-md px-2',
-            isSidebarCollapsed && 'justify-center px-0',
-          )}
-          title={isSidebarCollapsed ? tenant.currentTenant?.name : undefined}
-        >
-          <span className="flex size-8 shrink-0 items-center justify-center">
-            <Building2 className="size-5" aria-hidden="true" />
-          </span>
-          <span className={cn('min-w-0 truncate text-sm font-semibold', isSidebarCollapsed && 'sr-only')}>
-            {tenant.currentTenant?.name ?? 'No tenant selected'}
-          </span>
-        </div>
+        <SidebarTenantSwitcher collapsed={isSidebarCollapsed} />
         <nav
           id="desktop-sidebar-navigation"
           className="flex min-h-0 flex-1 flex-col gap-4"
@@ -384,11 +369,11 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                 {adminNavigation
                   .filter((item) => item.href !== '/users' || isSuperAdmin)
                   .map((item) => (
-                  <NavigationLink
-                    key={item.href}
-                    item={item}
-                    collapsed={isSidebarCollapsed}
-                  />
+                    <NavigationLink
+                      key={item.href}
+                      item={item}
+                      collapsed={isSidebarCollapsed}
+                    />
                   ))}
               </div>
             )}

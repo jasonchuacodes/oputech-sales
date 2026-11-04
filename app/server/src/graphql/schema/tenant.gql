@@ -13,5 +13,6 @@ extend type Query {
 
 extend type Mutation {
   createTenant(input: CreateTenantInput!): Tenant!
+  deleteTenant(tenantId: ID!): Boolean!
   selectTenant(tenantId: ID!, expectedVersion: Int!): User!
 }

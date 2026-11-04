@@ -8,6 +8,11 @@ const CREATE_TENANT = `
     createTenant(input: $input) { id name }
   }
 `
+const DELETE_TENANT = `
+  mutation DeleteTenant($tenantId: ID!) {
+    deleteTenant(tenantId: $tenantId)
+  }
+`
 const SELECT_TENANT = `
   mutation SelectTenant($tenantId: ID!, $expectedVersion: Int!) {
     selectTenant(tenantId: $tenantId, expectedVersion: $expectedVersion) {
@@ -28,9 +33,16 @@ export const createTenant = async (name: string): Promise<Tenant> => {
   return data.createTenant
 }
 
+export const deleteTenant = async (tenantId: string): Promise<boolean> => {
+  const data = await requestGraphQL<{ deleteTenant: boolean }>(DELETE_TENANT, {
+    tenantId,
+  })
+  return data.deleteTenant
+}
+
 export const selectTenant = async (
   tenantId: string,
-  expectedVersion: number,
+  expectedVersion: number
 ): Promise<AuthUser> => {
   const data = await requestGraphQL<{ selectTenant: AuthUser }>(SELECT_TENANT, {
     tenantId,

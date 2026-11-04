@@ -17,20 +17,29 @@ export class TenantResolver {
 
   @Mutation()
   @UseGuards(SuperAdminGuard)
-  createTenant(@Args('input') input: CreateTenantInput, @Context() context: any) {
+  createTenant(
+    @Args('input') input: CreateTenantInput,
+    @Context() context: any
+  ) {
     return this.tenantService.create(context.req.user.userId, input)
+  }
+
+  @Mutation()
+  @UseGuards(SuperAdminGuard)
+  deleteTenant(@Args('tenantId') tenantId: string, @Context() context: any) {
+    return this.tenantService.remove(context.req.user.userId, tenantId)
   }
 
   @Mutation()
   selectTenant(
     @Args('tenantId') tenantId: string,
     @Args('expectedVersion') expectedVersion: number,
-    @Context() context: any,
+    @Context() context: any
   ) {
     return this.tenantService.select(
       context.req.user as AuthenticatedUser,
       tenantId,
-      expectedVersion,
+      expectedVersion
     )
   }
 }
