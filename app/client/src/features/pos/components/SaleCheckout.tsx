@@ -122,7 +122,6 @@ export const SaleCheckout = ({
       onPaymentTypeChange={handlePaymentTypeChange}
       onExactAmount={(amount) => setCashPaymentValue('cashAmount', amount)}
       onSubmit={handleSubmit}
-      onClear={handleClear}
       onCancel={handleCancel}
       onRemoveItem={onRemoveItem}
       onIncrementItem={onIncrementItem}

@@ -4,60 +4,75 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '../../components'
 import { PageHeader } from '../../components/ui/page-header'
-import { DataTable, DataTableColumn } from '../../components/ui/data-table'
-import { cn } from '../../utils/cn'
+import { DatePicker } from '../../components/ui/date-picker'
+import { SheetSelect } from '../../components/ui/sheet-select'
 import {
   useCreateReport,
-  useReports,
+  useRemit,
+  useReportsPage,
 } from '../../services/report/report.queries'
 import { useTransactions } from '../../services/transaction/transaction.queries'
 import {
   PaymentType,
   TransactionType,
 } from '../../services/transaction/transaction.types'
-import { ReportDisplay } from './components/ReportDisplay'
-import { DeleteConfirmModal } from './components/DeleteConfirmModal'
-import { dayjsLocal } from '../../utils/date'
-import { formatCurrency } from '../../utils/number'
-import { Report } from '../../services/report/report.types'
+import type {
+  Report,
+  ReportDeleteTarget,
+  ReportListItem,
+  ReportSortOrder,
+} from '../../services/report/report.types'
 import { reportDetailPath } from '../../routes/paths'
 import { useAuthContext } from '../../context/auth/useAuthContext'
 import { UserRole } from '../../types'
-import { DatePicker } from '../../components/ui/date-picker'
 import { useSyncContext } from '../../context/sync/useSyncContext'
+import { dayjsLocal } from '../../utils/date'
+import { ReportDisplay } from './components/ReportDisplay'
+import { DeleteConfirmModal } from './components/DeleteConfirmModal'
+import { ReportFilters } from './components/ReportFilters'
+import { ReportList } from './components/ReportList'
+import { ReportSummary } from './components/ReportSummary'
+import {
+  type ReportCalendarRange,
+  type ReportFilterPreset,
+  getReportPresetRange,
+  toReportDateRangeInput,
+} from './report-list-state'
+
+const PAGE_SIZE = 10
 
 const ReportPage = () => {
   const router = useRouter()
   const { auth } = useAuthContext()
   const isAdmin = auth?.role === UserRole.ADMIN
   const { canUseOnlineFeatures } = useSyncContext()
-  const [reportDate, setReportDate] = useState(
-    dayjsLocal().format('YYYY-MM-DD')
+  const [reportDate, setReportDate] = useState(dayjsLocal().format('YYYY-MM-DD'))
+  const [preset, setPreset] = useState<ReportFilterPreset>('this_month')
+  const [range, setRange] = useState<ReportCalendarRange>(() =>
+    getReportPresetRange('this_month')
   )
-  const { data: allReports, isLoading: reportsLoading } = useReports()
+  const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<ReportSortOrder>('DATE_DESC')
+  const [selectedReport, setSelectedReport] = useState<ReportDeleteTarget | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+
+  const queryParams = useMemo(
+    () => ({
+      filter: { dateRange: toReportDateRangeInput(range) },
+      pagination: { page, pageSize: PAGE_SIZE },
+      sort,
+    }),
+    [page, range, sort]
+  )
+  const reportsQuery = useReportsPage(queryParams)
+
   const { data: transactions, isLoading: txLoading } = useTransactions({
     from: dayjsLocal(reportDate).startOf('day').toISOString(),
     to: dayjsLocal(reportDate).endOf('day').toISOString(),
     processed: false,
   })
-  const { mutate: generate, isPending } = useCreateReport()
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-
-  const selectedDateReports = useMemo(
-    () =>
-      (allReports ?? []).filter((r) =>
-        dayjsLocal(r.toDate).isSame(dayjsLocal(reportDate), 'day')
-      ),
-    [allReports, reportDate]
-  )
-
-  const openDelete = (id: string) => {
-    const report = selectedDateReports.find((r) => r.id === id)
-    if (!report) return
-    setSelectedReport(report)
-    setDeleteOpen(true)
-  }
+  const createReport = useCreateReport()
+  const remitReport = useRemit()
 
   const previewReport = useMemo(() => {
     if (!transactions?.length) return null
@@ -76,19 +91,14 @@ const ReportPage = () => {
     let totalExpenses = 0
 
     for (const tx of transactions) {
-      if (tx.type === TransactionType.Expense) {
-        totalExpenses += tx.total
-      } else if (tx.paymentType === PaymentType.Cash) {
-        totalCash += tx.total
-      } else {
-        totalOnline += tx.total
-      }
+      if (tx.type === TransactionType.Expense) totalExpenses += tx.total
+      else if (tx.paymentType === PaymentType.Cash) totalCash += tx.total
+      else totalOnline += tx.total
 
       for (const item of tx.items) {
         const existing = productMap.get(item.productId)
-        if (existing) {
-          existing.quantitySold += item.quantity
-        } else {
+        if (existing) existing.quantitySold += item.quantity
+        else {
           productMap.set(item.productId, {
             name: item.name,
             pricePerUnit: item.price,
@@ -100,128 +110,109 @@ const ReportPage = () => {
     }
 
     return {
-      products: Array.from(productMap.entries()).map(([productId, v]) => ({
+      products: Array.from(productMap.entries()).map(([productId, value]) => ({
         productId,
-        ...v,
+        total: value.pricePerUnit * value.quantitySold,
+        ...value,
       })),
       totalCash,
       totalOnline,
       totalIncome: totalCash + totalOnline,
       totalExpenses,
       totalPrintCount: Array.from(productMap.values()).reduce(
-        (sum, p) => sum + p.printCount * p.quantitySold,
+        (sum, product) => sum + product.printCount * product.quantitySold,
         0
       ),
     }
   }, [transactions])
 
-  const isLoading = isAdmin ? reportsLoading : reportsLoading || txLoading
-  const hasTransactions = (transactions?.length ?? 0) > 0
-  const hasReports = selectedDateReports.length > 0
-
-  const handleGenerate = () => {
-    generate({
-      fromDate: dayjsLocal(reportDate).startOf('day').toISOString(),
-      toDate: dayjsLocal(reportDate).isSame(dayjsLocal(), 'day')
-        ? dayjsLocal().toISOString()
-        : dayjsLocal(reportDate).endOf('day').toISOString(),
-    })
+  const applyFilter = (
+    nextPreset: ReportFilterPreset,
+    customRange?: ReportCalendarRange
+  ) => {
+    setPreset(nextPreset)
+    setRange(
+      nextPreset === 'custom'
+        ? customRange ?? range
+        : getReportPresetRange(nextPreset)
+    )
+    setPage(1)
   }
 
-  const reportColumns: DataTableColumn<Report>[] = [
-    {
-      id: 'date',
-      heading: 'Date',
-      orderable: true,
-      cell: (r) => dayjsLocal(r.toDate).format('MMM D, YYYY'),
-    },
-    {
-      id: 'totalCash',
-      heading: 'Cash',
-      cell: (r) => formatCurrency(r.totalCash),
-    },
-    {
-      id: 'totalGCash',
-      heading: 'Online Payments',
-      cell: (r) => formatCurrency(r.totalOnline),
-    },
-    {
-      id: 'totalIncome',
-      heading: 'Total Income',
-      cell: (r) => formatCurrency(r.totalIncome),
-    },
-    {
-      id: 'totalExpenses',
-      heading: 'Expenses',
-      cell: (r) => formatCurrency(r.totalExpenses),
-    },
-    {
-      id: 'status',
-      heading: 'Status',
-      cell: (r) => (
-        <span
-          className={cn(
-            'inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium',
-            r.isRemitted
-              ? 'bg-success/10 text-green-800'
-              : 'bg-warning/10 text-yellow-800'
-          )}
-        >
-          <span
-            className={cn(
-              'h-2 w-2 shrink-0 rounded-full',
-              r.isRemitted ? 'bg-green-500' : 'bg-yellow-500'
-            )}
-          />
-          {r.isRemitted ? 'Remitted' : 'Pending'}
-        </span>
-      ),
-    },
-  ]
+  const handleGenerate = () => {
+    createReport.mutate(
+      {
+        fromDate: dayjsLocal(reportDate).startOf('day').toISOString(),
+        toDate: dayjsLocal(reportDate).isSame(dayjsLocal(), 'day')
+          ? dayjsLocal().toISOString()
+          : dayjsLocal(reportDate).endOf('day').toISOString(),
+      },
+      { onSuccess: () => setPage(1) }
+    )
+  }
 
-  const reportsCollection = DataTable.collection({
-    items: allReports ?? [],
-    itemToValue: (r) => r.id,
-    itemToString: (r) => dayjsLocal(r.toDate).format('MMM D, YYYY'),
-  })
+  const handleRemit = (item: ReportListItem) => {
+    remitReport.mutate({ id: item.id, isRemitted: !item.isRemitted })
+  }
+
+  const handleDelete = (item: ReportDeleteTarget) => {
+    setSelectedReport(item)
+    setDeleteOpen(true)
+  }
+
+  const hasTransactions = (transactions?.length ?? 0) > 0
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-5 md:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <PageHeader
-          title="Reports"
-          description={
-            isAdmin ? 'All generated reports' : 'Sales report by transaction date'
-          }
-        />
-        {!isAdmin && (
-          <Button
-            className="w-full sm:w-auto"
-            onClick={handleGenerate}
-            disabled={
-              isPending || !hasTransactions || !canUseOnlineFeatures
-            }
-            title={
-              canUseOnlineFeatures
-                ? undefined
-                : 'Connect and sync pending transactions first'
-            }
-          >
-            {isPending ? 'Generating…' : 'Generate Report'}
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Reports"
+        description="Review generated reports, totals, and remittance status."
+      />
 
       {!isAdmin && (
-        <DatePicker
-          label="Report Date"
-          value={dayjsLocal(reportDate).toDate()}
-          onChange={(next) =>
-            next && setReportDate(dayjsLocal(next).format('YYYY-MM-DD'))
-          }
-          disableFuture
-          className="w-full md:w-56"
-        />
+        <section className="flex flex-col gap-3" aria-labelledby="generate-report">
+          <h2
+            id="generate-report"
+            className="text-text-secondary text-xs font-semibold tracking-[0.16em] uppercase"
+          >
+            Generate daily report
+          </h2>
+          <div className="rounded-card bg-card flex flex-col gap-3 p-4 shadow-card sm:flex-row sm:items-end">
+            <DatePicker
+              label="Report date"
+              value={dayjsLocal(reportDate).toDate()}
+              onChange={(next) =>
+                next && setReportDate(dayjsLocal(next).format('YYYY-MM-DD'))
+              }
+              disableFuture
+              className="w-full sm:w-64"
+            />
+            <Button
+              className="w-full sm:w-auto"
+              onClick={handleGenerate}
+              disabled={
+                createReport.isPending || !hasTransactions || !canUseOnlineFeatures
+              }
+              title={
+                canUseOnlineFeatures
+                  ? undefined
+                  : 'Connect and sync pending transactions first'
+              }
+            >
+              {createReport.isPending ? 'Generating…' : 'Generate report'}
+            </Button>
+          </div>
+
+          {txLoading ? (
+            <div className="rounded-card bg-card h-32 animate-pulse shadow-card" />
+          ) : previewReport ? (
+            <ReportDisplay report={previewReport as Report} isPreview />
+          ) : (
+            <p className="text-text-secondary rounded-card bg-card p-4 text-sm shadow-card">
+              No unprocessed activity is available for this date.
+            </p>
+          )}
+        </section>
       )}
 
       {!canUseOnlineFeatures && (
@@ -230,46 +221,54 @@ const ReportPage = () => {
         </p>
       )}
 
-      {isAdmin ? (
-        <DataTable
-          collection={reportsCollection}
-          columns={reportColumns}
-          loading={reportsLoading}
-          emptyMessage="No reports generated yet."
-          onRowClick={(r) => router.push(reportDetailPath(r.id))}
-        />
-      ) : isLoading ? (
-        <div className="flex flex-col gap-4">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-48 animate-pulse rounded-lg border bg-slate-100"
-            />
-          ))}
-        </div>
-      ) : !hasTransactions && !hasReports ? (
-        <div className="flex flex-col items-center gap-2 py-20 text-center">
-          <p className="text-lg font-medium text-slate-700">
-            No activity today
-          </p>
-          <p className="text-sm text-slate-400">
-            Transactions will appear here once sales are recorded.
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {previewReport && (
-            <ReportDisplay report={previewReport as Report} isPreview />
-          )}
-          {selectedDateReports.map((report, i) => (
-            <ReportDisplay key={i} report={report} onDelete={openDelete} />
-          ))}
-        </div>
+      {reportsQuery.data && reportsQuery.data.totalCount > 0 && (
+        <ReportSummary totals={reportsQuery.data.totals} />
       )}
+
+      <div className="flex items-center gap-3">
+        <ReportFilters
+          preset={preset}
+          range={range}
+          onApply={applyFilter}
+        />
+        <SheetSelect
+          value={sort}
+          onValueChange={(value) => {
+            setSort(value as ReportSortOrder)
+            setPage(1)
+          }}
+          options={[
+            { value: 'DATE_DESC', label: 'Newest first' },
+            { value: 'DATE_ASC', label: 'Oldest first' },
+          ]}
+          title="Sort reports"
+          className="min-w-0 flex-1 sm:w-48 sm:flex-none"
+        />
+      </div>
+
+      <ReportList
+        data={reportsQuery.data}
+        loading={reportsQuery.isLoading}
+        fetching={reportsQuery.isFetching}
+        error={reportsQuery.isError}
+        unavailable={!canUseOnlineFeatures && !reportsQuery.data}
+        isAdmin={isAdmin}
+        actionsDisabled={!canUseOnlineFeatures || remitReport.isPending}
+        onPageChange={setPage}
+        onRetry={() => void reportsQuery.refetch()}
+        onView={(item) => router.push(reportDetailPath(item.id))}
+        onRemit={handleRemit}
+        onDelete={handleDelete}
+      />
 
       <DeleteConfirmModal
         item={selectedReport}
         open={deleteOpen}
+        onDeleted={() => {
+          if ((reportsQuery.data?.items.length ?? 0) === 1 && page > 1) {
+            setPage(page - 1)
+          }
+        }}
         onClose={() => {
           setDeleteOpen(false)
           setSelectedReport(null)

@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useState } from 'react'
-import { Plus, Pencil, ImageOff } from 'lucide-react'
+import { Plus, ImageOff } from 'lucide-react'
 import { Button, Input, PageHeader } from '../../components'
 import { DataTable, DataTableColumn } from '../../components/ui/data-table'
 import { useProducts } from '../../services/product/product.queries'
@@ -76,17 +76,6 @@ const ProductPage = () => {
       align: 'right',
       cell: (item) => (
         <div className="flex items-center justify-end gap-1">
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() => openEdit(item)}
-              disabled={!canUseOnlineFeatures}
-              className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-11 items-center justify-center rounded-md transition-colors"
-              aria-label="Edit item"
-            >
-              <Pencil size={16} />
-            </button>
-          )}
           {isAdmin && canUseOnlineFeatures && (
             <ActionsDropdown
               onEdit={() => openEdit(item)}
@@ -114,6 +103,63 @@ const ProductPage = () => {
     itemToValue: (item) => item.id,
     itemToString: (item) => item.name,
   })
+
+  const renderMobileProducts = (items: Product[]) => {
+    if (isLoading) {
+      return <div className="rounded-card bg-card h-28 animate-pulse shadow-card" />
+    }
+
+    if (items.length === 0) {
+      return (
+        <div className="rounded-card bg-card p-6 text-center text-sm text-text-secondary shadow-card">
+          No items found
+        </div>
+      )
+    }
+
+    return (
+      <ul className="rounded-card bg-card overflow-hidden shadow-card">
+        {items.map((item) => (
+          <li
+            key={item.id}
+            className="border-border/60 flex min-h-24 items-center gap-3 border-b p-4 last:border-b-0"
+          >
+            {item.imageUrl ? (
+              <img
+                src={item.imageUrl}
+                alt=""
+                className="size-12 shrink-0 rounded-md object-cover"
+              />
+            ) : (
+              <span className="bg-muted text-text-secondary flex size-12 shrink-0 items-center justify-center rounded-md">
+                <ImageOff className="size-5" aria-hidden="true" />
+              </span>
+            )}
+            <span className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className="truncate font-semibold">{item.name}</span>
+              <span className="text-text-secondary text-sm">
+                {(item.printCount ?? 0).toLocaleString()}{' '}
+                {item.printCount === 1 ? 'print' : 'prints'}
+              </span>
+            </span>
+            <span className="flex shrink-0 items-center gap-1">
+              <span className="flex flex-col items-end gap-1">
+                <span className="font-semibold whitespace-nowrap">
+                  {formatCurrency(item.price)}
+                </span>
+              </span>
+              {isAdmin && canUseOnlineFeatures && (
+                <ActionsDropdown
+                  onEdit={() => openEdit(item)}
+                  onDelete={() => openDelete(item)}
+                />
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+    )
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-5 md:p-6">
@@ -153,23 +199,43 @@ const ProductPage = () => {
       />
 
       <div className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-slate-700">Main</h2>
-        <DataTable
-          collection={mainCollection}
-          columns={columns}
-          loading={isLoading}
-          emptyMessage="No items found"
-        />
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-lg font-semibold">Main</h2>
+          {!isLoading && (
+            <span className="text-text-tertiary text-sm">
+              {mainProducts.length} {mainProducts.length === 1 ? 'item' : 'items'}
+            </span>
+          )}
+        </div>
+        <div className="md:hidden">{renderMobileProducts(mainProducts)}</div>
+        <div className="hidden md:block">
+          <DataTable
+            collection={mainCollection}
+            columns={columns}
+            loading={isLoading}
+            emptyMessage="No items found"
+          />
+        </div>
       </div>
 
       <div className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-slate-700">Add-ons</h2>
-        <DataTable
-          collection={addOnCollection}
-          columns={columns}
-          loading={isLoading}
-          emptyMessage="No items found"
-        />
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-lg font-semibold">Add-ons</h2>
+          {!isLoading && (
+            <span className="text-text-tertiary text-sm">
+              {addOnProducts.length} {addOnProducts.length === 1 ? 'item' : 'items'}
+            </span>
+          )}
+        </div>
+        <div className="md:hidden">{renderMobileProducts(addOnProducts)}</div>
+        <div className="hidden md:block">
+          <DataTable
+            collection={addOnCollection}
+            columns={columns}
+            loading={isLoading}
+            emptyMessage="No items found"
+          />
+        </div>
       </div>
 
       <AddItemModal

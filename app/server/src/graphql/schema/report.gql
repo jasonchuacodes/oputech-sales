@@ -29,6 +29,52 @@ input CreateReportInput {
   toDate: String!
 }
 
+input ReportDateRangeInput {
+  from: String!
+  to: String!
+}
+
+input ReportFilterInput {
+  dateRange: ReportDateRangeInput
+}
+
+input ReportPaginationInput {
+  page: Int = 1
+  pageSize: Int = 10
+}
+
+enum ReportSortOrder {
+  DATE_DESC
+  DATE_ASC
+}
+
+type ReportListItem {
+  id: ID!
+  fromDate: String!
+  toDate: String!
+  createdAt: String!
+  isRemitted: Boolean!
+  totalCash: Float!
+  totalOnline: Float!
+  totalExpenses: Float!
+  netIncome: Float!
+}
+
+type ReportTotals {
+  totalCash: Float!
+  totalOnline: Float!
+  totalExpenses: Float!
+  netIncome: Float!
+}
+
+type ReportPage {
+  items: [ReportListItem!]!
+  totalCount: Int!
+  page: Int!
+  pageSize: Int!
+  totals: ReportTotals!
+}
+
 enum AnalyticsRange {
   TODAY
   LAST_7_DAYS
@@ -58,6 +104,11 @@ type Analytics {
 
 extend type Query {
   reports: [Report!]!
+  reportsPage(
+    filter: ReportFilterInput
+    pagination: ReportPaginationInput
+    sort: ReportSortOrder = DATE_DESC
+  ): ReportPage!
   report(id: ID!): Report
   analytics(range: AnalyticsRange!): Analytics!
 }

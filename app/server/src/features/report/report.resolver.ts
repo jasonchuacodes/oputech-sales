@@ -6,6 +6,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { ReportDocument } from './schemas/report.schema'
 import { PaymentType, TransactionDocument } from '../transaction/schemas/transaction.schema'
 import { CreateReportDto } from './dto/create-report.dto'
+import { ReportFilterDto, ReportPaginationDto } from './dto/reports-page.dto'
+import { ReportSortOrder } from './report.types'
+import { AdminGuard } from '../auth/guards/admin.guard'
 
 @UseGuards(JwtAuthGuard)
 @Resolver('Report')
@@ -18,6 +21,15 @@ export class ReportResolver {
   @Query()
   reports() {
     return this.reportService.findAll()
+  }
+
+  @Query()
+  reportsPage(
+    @Args('filter', { nullable: true }) filter?: ReportFilterDto,
+    @Args('pagination', { nullable: true }) pagination?: ReportPaginationDto,
+    @Args('sort', { nullable: true }) sort?: ReportSortOrder,
+  ) {
+    return this.reportService.findPage({ filter, pagination, sort })
   }
 
   @Query()
@@ -37,11 +49,13 @@ export class ReportResolver {
   }
 
   @Mutation()
+  @UseGuards(AdminGuard)
   deleteReport(@Args('id') id: string): Promise<boolean> {
     return this.reportService.delete(id)
   }
 
   @Mutation()
+  @UseGuards(AdminGuard)
   remit(
     @Args('id') id: string,
     @Args('isRemitted') isRemitted: boolean,

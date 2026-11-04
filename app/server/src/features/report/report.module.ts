@@ -7,6 +7,7 @@ import { Product, ProductSchema } from '../product/schemas/product.schema'
 import { UsersModule } from '../users/users.module'
 import { ReportService } from './report.service'
 import { ReportResolver, ProductSaleResolver } from './report.resolver'
+import { AdminGuard } from '../auth/guards/admin.guard'
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { ReportResolver, ProductSaleResolver } from './report.resolver'
     ]),
     UsersModule,
   ],
-  providers: [ReportService, ReportResolver, ProductSaleResolver],
+  providers: [ReportService, ReportResolver, ProductSaleResolver, AdminGuard],
   exports: [ReportService],
 })
 export class ReportModule {}

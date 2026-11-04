@@ -1,7 +1,7 @@
 import { DataTable, DataTableColumn } from '../../../components/ui/data-table';
-import { Button } from '../../../components';
 import { cn } from '../../../utils/cn';
 import { formatCurrency } from '../../../utils/number';
+import { dayjsLocal, formatDate, formatTime } from '../../../utils/date';
 import {
   ProductSale,
   Report,
@@ -9,10 +9,9 @@ import {
   ReportUser,
 } from '../../../services/report/report.types';
 import { PaymentType } from '../../../services/transaction/transaction.types';
-import { useRemit } from '../../../services/report/report.queries';
-import { Trash } from 'lucide-react';
 import { UserRole } from '../../../types';
 import { useAuthContext } from '../../../context/auth/useAuthContext';
+import { ReportDetailActions } from './ReportDetailActions';
 
 type PreviewReport = Pick<
   Report,
@@ -37,12 +36,6 @@ interface Props {
   isPreview?: boolean;
   onDelete?: (id: string) => void;
 }
-
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleString('en-PH', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
 
 const productColumns: DataTableColumn<ProductSale>[] = [
   {
@@ -87,13 +80,13 @@ const expenseColumns: DataTableColumn<ReportExpense>[] = [
 ];
 
 export const ReportDisplay = ({ report, isPreview, onDelete }: Props) => {
-  const remit = useRemit();
   const { auth } = useAuthContext();
+  const isAdmin = auth?.role === UserRole.ADMIN;
 
   return (
     <div className="flex flex-col gap-4">
       <div
-        className={`flex flex-col gap-6 rounded-card bg-card p-4 shadow-xs md:p-6 ${isPreview ? 'ring-1 ring-dashed ring-border opacity-80' : ''}`}
+        className={`flex flex-col gap-6 rounded-card bg-card p-4 shadow-card md:p-6 ${isPreview ? 'ring-1 ring-dashed ring-border opacity-80' : ''}`}
       >
         {isPreview && (
           <div className="rounded-md bg-background px-3 py-2 text-center text-xs font-medium text-text-secondary">
@@ -102,7 +95,7 @@ export const ReportDisplay = ({ report, isPreview, onDelete }: Props) => {
         )}
 
         {!isPreview && (report.createdBy || report.createdAt) && (
-          <div className="flex flex-row items-start justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex flex-col gap-1">
               {report.createdBy && report.createdAt && (
                 <p className="text-sm text-slate-500">
@@ -110,79 +103,64 @@ export const ReportDisplay = ({ report, isPreview, onDelete }: Props) => {
                   <span className="font-medium text-slate-800">
                     {report.createdBy.username}
                   </span>{' '}
-                  on {formatDate(report.createdAt)}
+                  · {formatDate(report.createdAt)} at {formatTime(report.createdAt)}
                 </p>
               )}
-              {report.fromDate && report.toDate && (
+              {report.fromDate &&
+                report.toDate &&
+                !dayjsLocal(report.fromDate).isSame(
+                  dayjsLocal(report.toDate),
+                  'day',
+                ) && (
                 <p className="text-sm text-slate-500">
                   Period: {formatDate(report.fromDate)} —{' '}
                   {formatDate(report.toDate)}
                 </p>
-              )}
+                )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2 sm:justify-end">
               {report.id && (
-                <>
-                  <span className="flex items-center gap-1.5 rounded-sm border px-2 py-1 text-xs font-medium">
-                    <span
-                      className={cn(
-                        'h-2 w-2 shrink-0 rounded-full',
-                        report.isRemitted ? 'bg-green-500' : 'bg-gray-400',
-                      )}
-                    />
-                    {report.isRemitted ? 'Remitted' : 'Not Remitted'}
-                  </span>
-                  <Button
-                    hidden={auth?.role !== UserRole.ADMIN}
-                    type="button"
-                    variant="outline"
-                    size="xs"
-                    disabled={remit.isPending}
-                    onClick={() =>
-                      remit.mutate({
-                        id: report.id!,
-                        isRemitted: !report.isRemitted,
-                      })
-                    }
-                  >
-                    {report.isRemitted ? 'Undo Remit' : 'Mark as Remitted'}
-                  </Button>
-                </>
+                <span className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium">
+                  <span
+                    className={cn(
+                      'h-2 w-2 shrink-0 rounded-full',
+                      report.isRemitted ? 'bg-green-500' : 'bg-gray-400',
+                    )}
+                  />
+                  {report.isRemitted ? 'Remitted' : 'Not remitted'}
+                </span>
               )}
-              {onDelete && report.id && (
-                <button
-                  type="button"
-                  onClick={() => onDelete(report.id!)}
-                  className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-11 items-center justify-center rounded-md transition-colors"
-                  aria-label="Delete report"
-                >
-                  <Trash size={16} />
-                </button>
+              {isAdmin && report.id && (
+                <ReportDetailActions
+                  reportId={report.id}
+                  isRemitted={!!report.isRemitted}
+                  onDelete={onDelete ? () => onDelete(report.id!) : undefined}
+                />
               )}
             </div>
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <div className="flex flex-col gap-1 rounded-md bg-background p-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
+          <div className="flex flex-col gap-1 rounded-md bg-background p-3 sm:p-4">
             <span className="text-xs font-medium text-slate-500">Cash</span>
             <span className="text-foreground text-xl font-bold">
               {formatCurrency(report.totalCash)}
             </span>
           </div>
-          <div className="flex flex-col gap-1 rounded-md bg-background p-4">
+          <div className="flex flex-col gap-1 rounded-md bg-background p-3 sm:p-4">
             <span className="text-xs font-medium text-slate-500">Online</span>
             <span className="text-foreground text-xl font-bold">
               {formatCurrency(report.totalOnline)}
             </span>
           </div>
-          <div className="flex flex-col gap-1 rounded-md bg-background p-4">
+          <div className="flex flex-col gap-1 rounded-md bg-background p-3 sm:p-4">
             <span className="text-xs font-medium text-slate-500">Expenses</span>
             <span className="text-foreground text-xl font-bold">
               {formatCurrency(report.totalExpenses)}
             </span>
           </div>
-          <div className="flex flex-col gap-1 rounded-md bg-primary p-4 text-primary-foreground">
+          <div className="order-first col-span-2 flex flex-col gap-1 rounded-md bg-primary p-4 text-primary-foreground sm:order-none sm:col-span-1">
             <span className="text-xs font-medium text-primary-foreground/70">
               Total Income
             </span>
@@ -190,7 +168,7 @@ export const ReportDisplay = ({ report, isPreview, onDelete }: Props) => {
               {formatCurrency(report.totalIncome)}
             </span>
           </div>
-          <div className="flex flex-col gap-1 rounded-md bg-background p-4">
+          <div className="flex flex-col gap-1 rounded-md bg-background p-3 sm:p-4">
             <span className="text-xs font-medium text-slate-500">
               Total Prints
             </span>

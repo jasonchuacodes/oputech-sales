@@ -156,6 +156,8 @@
   --radius-sheet: 20px;
   --radius-pill: 9999px;
   --shadow-xs: 0 1px 3px rgba(16, 16, 16, 0.07);
+  --shadow-card: 0 0 4px rgba(16, 16, 16, 0.09);
+  --shadow-card-hover: 0 0 12px rgba(16, 16, 16, 0.14);
 }
 
 .dark {

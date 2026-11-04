@@ -62,7 +62,7 @@ export default function LoginPage() {
       <main className="flex h-full min-h-full flex-col px-5 py-6">
         <div className="flex flex-1 flex-col items-center justify-center">
           <div className="w-full max-w-sm">
-            <div className="rounded-card bg-card p-6 shadow-xs sm:p-8">
+            <div className="rounded-card bg-card p-6 shadow-card sm:p-8">
               <div className="mb-6 flex justify-center">
                 <div
                   className="flex size-14 items-center justify-center rounded-card bg-primary text-lg font-bold text-primary-foreground"

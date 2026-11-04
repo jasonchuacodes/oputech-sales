@@ -43,11 +43,11 @@ const DashboardPage = () => {
             {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
-                className="h-24 animate-pulse rounded-card bg-card shadow-xs"
+                className="h-24 animate-pulse rounded-card bg-card shadow-card"
               />
             ))}
           </div>
-          <div className="h-80 animate-pulse rounded-card bg-card shadow-xs" />
+          <div className="h-80 animate-pulse rounded-card bg-card shadow-card" />
         </div>
       ) : (
         <>

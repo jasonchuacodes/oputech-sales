@@ -85,7 +85,7 @@ export const AccountPage = () => {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-5 md:p-6">
-      <section className="rounded-card bg-card flex items-center gap-4 p-4 shadow-xs">
+      <section className="rounded-card bg-card flex items-center gap-4 p-4 shadow-card">
         <AccountAvatar
           username={auth?.username}
           className="size-14 text-xl"
@@ -105,7 +105,7 @@ export const AccountPage = () => {
         <h2 className="text-xs font-semibold tracking-[0.16em] uppercase">
           Work status
         </h2>
-        <div className="rounded-card bg-card flex flex-col gap-4 p-4 shadow-xs">
+        <div className="rounded-card bg-card flex flex-col gap-4 p-4 shadow-card">
           <div className="flex items-center gap-3">
             <CheckCircle2
               className={
@@ -147,7 +147,7 @@ export const AccountPage = () => {
           <h2 className="text-xs font-semibold tracking-[0.16em] uppercase">
             Manage
           </h2>
-          <div className="rounded-card bg-card overflow-hidden shadow-xs">
+          <div className="rounded-card bg-card overflow-hidden shadow-card">
             <ManagementLink
               href="/catalog"
               icon={Package}
@@ -174,7 +174,7 @@ export const AccountPage = () => {
         <h2 className="text-xs font-semibold tracking-[0.16em] uppercase">
           Device
         </h2>
-        <div className="rounded-card bg-card flex flex-col gap-4 p-4 shadow-xs">
+        <div className="rounded-card bg-card flex flex-col gap-4 p-4 shadow-card">
           <div className="flex items-center gap-3">
             <SyncIcon
               className={
@@ -211,10 +211,6 @@ export const AccountPage = () => {
         <LogOut className="size-5" />
         Sign out
       </Button>
-
-      <div className="text-text-tertiary flex items-center justify-center gap-2 pb-4 text-xs">
-        <UserRound className="size-4" /> Oputech Sales
-      </div>
     </div>
   )
 }

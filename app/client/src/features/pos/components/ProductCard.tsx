@@ -15,9 +15,9 @@ export const ProductCard = ({ product, quantity = 0, onClick }: ProductCardProps
     <button
       onClick={() => onClick(product)}
       className={cn(
-        'relative flex min-h-44 min-w-[120px] flex-col gap-3 rounded-card bg-card p-3 text-left shadow-xs transition-all',
-        'cursor-pointer hover:shadow-md active:scale-[0.98]',
-        quantity > 0 && 'ring-2 ring-primary/30'
+        'relative flex min-h-44 min-w-[120px] flex-col gap-3 rounded-card border-2 border-transparent bg-card p-3 text-left shadow-card transition-all',
+        'cursor-pointer hover:shadow-card-hover active:scale-[0.98]',
+        quantity > 0 && 'border-primary/50'
       )}
     >
       {quantity > 0 && (

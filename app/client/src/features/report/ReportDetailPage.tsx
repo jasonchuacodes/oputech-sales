@@ -9,12 +9,16 @@ import { useReport } from '../../services/report/report.queries'
 import { ReportDisplay } from './components/ReportDisplay'
 import { DeleteConfirmModal } from './components/DeleteConfirmModal'
 import { UserRoutes } from '../../routes/paths'
+import { useAuthContext } from '../../context/auth/useAuthContext'
+import { UserRole } from '../../types'
 
 const ReportDetailPage = () => {
   const { reportId } = useParams<{ reportId: string }>()
   const router = useRouter()
   const { data: report, isLoading } = useReport(reportId)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const { auth } = useAuthContext()
+  const isAdmin = auth?.role === UserRole.ADMIN
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-5 md:p-6">
@@ -46,7 +50,10 @@ const ReportDetailPage = () => {
           </p>
         </div>
       ) : (
-        <ReportDisplay report={report} onDelete={() => setDeleteOpen(true)} />
+        <ReportDisplay
+          report={report}
+          onDelete={isAdmin ? () => setDeleteOpen(true) : undefined}
+        />
       )}
 
       <DeleteConfirmModal

@@ -1,10 +1,23 @@
+'use client'
+
 import { MoreVertical, Pencil, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { Button } from '../../../components'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from '../../../components/ui/dropdown-menu'
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '../../../components/ui/sheet'
+import { useIsDesktop } from '../../../hooks/useIsDesktop'
 
 interface Props {
   onEdit: () => void
@@ -12,24 +25,65 @@ interface Props {
 }
 
 export const ActionsDropdown = ({ onEdit, onDelete }: Props) => {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-11 items-center justify-center rounded-md transition-colors"
-        aria-label="More actions"
-      >
-        <MoreVertical size={16} />
-      </DropdownMenuTrigger>
+  const isDesktop = useIsDesktop()
+  const [open, setOpen] = useState(false)
+
+  const runAction = (action: () => void) => {
+    setOpen(false)
+    action()
+  }
+
+  const trigger = (
+    <button
+      type="button"
+      className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-11 items-center justify-center rounded-md transition-colors"
+      aria-label="Product actions"
+    >
+      <MoreVertical size={16} />
+    </button>
+  )
+
+  if (isDesktop) {
+    return (
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-32">
-        <DropdownMenuItem onSelect={onEdit}>
+        <DropdownMenuItem onSelect={() => runAction(onEdit)}>
           <Pencil size={14} />
           Edit
         </DropdownMenuItem>
-        <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+        <DropdownMenuItem variant="destructive" onSelect={() => runAction(onDelete)}>
           <Trash2 size={14} />
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
-    </DropdownMenu>
+      </DropdownMenu>
+    )
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>{trigger}</SheetTrigger>
+      <SheetContent showClose aria-describedby={undefined}>
+        <SheetHeader>
+          <SheetTitle>Product actions</SheetTitle>
+        </SheetHeader>
+        <SheetBody className="flex flex-col gap-2">
+          <Button type="button" variant="outline" className="w-full" onClick={() => runAction(onEdit)}>
+            <Pencil />
+            Edit
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            className="w-full"
+            onClick={() => runAction(onDelete)}
+          >
+            <Trash2 />
+            Delete
+          </Button>
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   )
 }

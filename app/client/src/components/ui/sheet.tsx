@@ -19,12 +19,15 @@ const SheetContent = ({
     <Dialog.Overlay className="fixed inset-0 z-50 bg-foreground/50 backdrop-blur-sm data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=open]:animate-in data-[state=open]:fade-in" />
     <Dialog.Content
       className={cn(
-        'fixed inset-x-0 bottom-0 z-60 mx-auto flex max-h-[90dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-sheet bg-card px-5 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-lg outline-none data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom',
+        'fixed inset-x-0 bottom-0 z-60 mx-auto flex max-h-[90dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-sheet bg-card px-5 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-lg outline-none data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom md:inset-x-auto md:top-1/2 md:bottom-auto md:left-1/2 md:w-[calc(100%-3rem)] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-lg md:p-6 md:data-[state=closed]:fade-out-0 md:data-[state=closed]:zoom-out-95 md:data-[state=closed]:slide-out-to-bottom-0 md:data-[state=open]:fade-in-0 md:data-[state=open]:zoom-in-95 md:data-[state=open]:slide-in-from-bottom-0',
         className
       )}
       {...props}
     >
-      <div aria-hidden="true" className="mx-auto h-1.5 w-14 shrink-0 rounded-pill bg-foreground/45" />
+      <div
+        aria-hidden="true"
+        className="mx-auto h-1.5 w-14 shrink-0 rounded-pill bg-foreground/45 md:hidden"
+      />
       {showClose && (
         <Dialog.Close
           aria-label="Close"
@@ -39,7 +42,10 @@ const SheetContent = ({
 )
 
 const SheetHeader = ({ className, ...props }: ComponentProps<'div'>) => (
-  <div className={cn('flex shrink-0 flex-col gap-1 pt-6 pb-4', className)} {...props} />
+  <div
+    className={cn('flex shrink-0 flex-col gap-1 pt-6 pb-4 md:pt-0', className)}
+    {...props}
+  />
 )
 
 const SheetTitle = ({ className, ...props }: ComponentProps<typeof Dialog.Title>) => (

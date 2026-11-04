@@ -10,7 +10,9 @@ dayjs.extend(timezone)
 dayjs.extend(isBetween)
 dayjs.extend(weekday)
 
-const APP_TZ = process.env.NEXT_PUBLIC_TIME_ZONE || 'Asia/Manila'
+export const APP_TZ = process.env.NEXT_PUBLIC_TIME_ZONE || 'Asia/Manila'
+
+export const appCalendarDate = (date: string): Dayjs => dayjs.tz(date, APP_TZ)
 
 /**
  * format date range. if same day, return single date. else return MM/DD/YY - MM/DD/YY.
@@ -23,7 +25,7 @@ export const formatRange = (start: Dayjs | null, end: Dayjs | null) => {
     return start.format('MMMM D, YYYY')
   }
 
-  return `${start ? start.format('MMM DD, YYYY') : 'MMM DD, YYYY'} - ${end ? end.format('MMM DD, YYYY') : 'MMM DD, YYYY'}`
+  return `${start ? start.format('MMMM D, YYYY') : 'MMMM D, YYYY'} – ${end ? end.format('MMMM D, YYYY') : 'MMMM D, YYYY'}`
 }
 
 /**

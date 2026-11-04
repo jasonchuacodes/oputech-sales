@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, UserRound } from 'lucide-react'
 import { Button, PageHeader } from '../../components'
 import { DataTable, DataTableColumn } from '../../components/ui/data-table'
 import { useUsers } from '../../services/users/users.queries'
@@ -128,12 +128,68 @@ const UsersPage = () => {
         </p>
       )}
 
-      <DataTable
-        collection={collection}
-        columns={columns}
-        loading={isLoading}
-        emptyMessage="No users found"
-      />
+      <div className="md:hidden">
+        {isLoading ? (
+          <div className="rounded-card bg-card h-28 animate-pulse shadow-card" />
+        ) : (data?.length ?? 0) === 0 ? (
+          <div className="rounded-card bg-card p-6 text-center text-sm text-text-secondary shadow-card">
+            No users found
+          </div>
+        ) : (
+          <ul className="rounded-card bg-card overflow-hidden shadow-card">
+            {data?.map((user) => {
+              const active = user.activityStatus.status === UserStatus.Active
+
+              return (
+                <li
+                  key={user.id}
+                  className="border-border/60 flex min-h-24 items-center gap-3 border-b p-4 last:border-b-0"
+                >
+                  <span className="bg-primary/10 text-primary flex size-11 shrink-0 items-center justify-center rounded-full">
+                    <UserRound className="size-5" aria-hidden="true" />
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="truncate font-semibold">
+                      {user.fullName || user.username}
+                    </span>
+                    <span className="text-text-secondary truncate text-sm">
+                      @{user.username} · {user.role === 'ADMIN' ? 'Administrator' : 'Sales user'}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <span
+                      className={cn(
+                        'rounded-full px-2.5 py-1 text-xs font-medium',
+                        active
+                          ? 'bg-success/10 text-success'
+                          : 'bg-muted text-text-secondary'
+                      )}
+                    >
+                      {active ? 'Active' : 'Inactive'}
+                    </span>
+                    {canUseOnlineFeatures && (
+                      <ActionsDropdown
+                        onEdit={() => openEdit(user)}
+                        onResetPassword={() => openResetPassword(user)}
+                        onDelete={() => openDelete(user)}
+                      />
+                    )}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
+
+      <div className="hidden md:block">
+        <DataTable
+          collection={collection}
+          columns={columns}
+          loading={isLoading}
+          emptyMessage="No users found"
+        />
+      </div>
 
       <AddUserModal open={modalOpen} onClose={() => setModalOpen(false)} />
 

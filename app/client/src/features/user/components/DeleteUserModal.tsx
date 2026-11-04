@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react'
-import { CustomModal } from '../../../components'
+import { ConfirmationDialog } from '../../../components'
 import { useDeleteUser } from '../../../services/users/users.queries'
 import { User } from '../../../services/users/users.types'
 
@@ -18,13 +18,13 @@ export const DeleteUserModal = ({ user, open, onClose }: Props) => {
   }
 
   return (
-    <CustomModal
+    <ConfirmationDialog
       open={open}
       title="Delete User"
       icon={Trash2}
-      type="danger"
-      submitText="Delete"
-      subheader={
+      variant="danger"
+      confirmText="Delete"
+      description={
         <p className="text-sm">
           Are you sure you want to delete{' '}
           <span className="text-destructive font-semibold">{user?.username}</span>?
@@ -33,7 +33,7 @@ export const DeleteUserModal = ({ user, open, onClose }: Props) => {
       }
       loading={deleteUser.isPending}
       onClose={onClose}
-      onSubmit={handleConfirm}
+      onConfirm={handleConfirm}
     />
   )
 }

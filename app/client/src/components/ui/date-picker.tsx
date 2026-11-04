@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { CalendarIcon } from 'lucide-react'
+import { Popover } from 'radix-ui'
 import {
   Controller,
   type Control,
@@ -19,6 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
+import { useIsDesktop } from '@/hooks/useIsDesktop'
 import { cn } from '@/utils/cn'
 import { formatDate } from '@/utils/date'
 
@@ -47,6 +49,7 @@ export const DatePicker = ({
   error = false,
   className,
 }: DatePickerProps) => {
+  const isDesktop = useIsDesktop()
   const [open, setOpen] = React.useState(false)
   const [pending, setPending] = React.useState<Date | undefined>(value ?? undefined)
 
@@ -55,54 +58,99 @@ export const DatePicker = ({
     setOpen(next)
   }
 
+  const applyPending = () => {
+    onChange(pending)
+    setOpen(false)
+  }
+
   const trigger = (
-    <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={disabled}
-          aria-invalid={error}
-          className={cn(
-            'w-full justify-start font-normal',
-            !value && 'text-muted-foreground',
-            className
-          )}
+    <Button
+      type="button"
+      variant="outline"
+      disabled={disabled}
+      aria-invalid={error}
+      className={cn(
+        'w-full justify-start font-normal',
+        !value && 'text-muted-foreground',
+        className
+      )}
+    >
+      <CalendarIcon className="opacity-60" />
+      {value ? formatDate(value, 'MMM D, YYYY') : placeholder}
+    </Button>
+  )
+
+  const calendar = (
+    <Calendar
+      mode="single"
+      selected={pending}
+      onSelect={setPending}
+      disabled={
+        disableFuture
+          ? { after: new Date() }
+          : disablePast
+            ? { before: new Date() }
+            : undefined
+      }
+    />
+  )
+
+  const picker = isDesktop ? (
+    <Popover.Root open={open} onOpenChange={handleOpenChange}>
+      <Popover.Trigger asChild>{trigger}</Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align="start"
+          sideOffset={6}
+          aria-label={label ?? 'Choose a date'}
+          className="z-[9999] overflow-hidden rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-md outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
         >
-          <CalendarIcon className="opacity-60" />
-          {value ? formatDate(value, 'MMM D, YYYY') : placeholder}
-        </Button>
-      </SheetTrigger>
+          {calendar}
+          <div className="mt-3 flex justify-end gap-2 border-t border-border pt-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={!pending}
+              onClick={applyPending}
+            >
+              Apply
+            </Button>
+          </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  ) : (
+    <Sheet open={open} onOpenChange={handleOpenChange}>
+      <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent aria-describedby={undefined}>
         <SheetHeader>
           <SheetTitle>{label ?? 'Choose a date'}</SheetTitle>
         </SheetHeader>
         <SheetBody className="flex justify-center py-2">
-          <Calendar
-            mode="single"
-            selected={pending}
-            onSelect={setPending}
-            disabled={
-              disableFuture
-                ? { after: new Date() }
-                : disablePast
-                  ? { before: new Date() }
-                  : undefined
-            }
-          />
+          {calendar}
         </SheetBody>
         <SheetFooter>
-          <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1"
+            onClick={() => setOpen(false)}
+          >
             Cancel
           </Button>
           <Button
             type="button"
             className="flex-1"
             disabled={!pending}
-            onClick={() => {
-              onChange(pending)
-              setOpen(false)
-            }}
+            onClick={applyPending}
           >
             Apply
           </Button>
@@ -111,7 +159,7 @@ export const DatePicker = ({
     </Sheet>
   )
 
-  if (!label) return trigger
+  if (!label) return picker
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -119,7 +167,7 @@ export const DatePicker = ({
         {label}
         {required && <span className="text-destructive"> *</span>}
       </Label>
-      {trigger}
+      {picker}
     </div>
   )
 }

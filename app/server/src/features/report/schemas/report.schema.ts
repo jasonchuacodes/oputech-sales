@@ -45,3 +45,5 @@ export class Report {
 }
 
 export const ReportSchema = SchemaFactory.createForClass(Report)
+
+ReportSchema.index({ toDate: -1, createdAt: -1, _id: -1 })

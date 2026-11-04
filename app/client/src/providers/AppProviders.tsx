@@ -25,7 +25,7 @@ export const AppProviders = ({ children }: { children: ReactNode }) => {
           {children}
           <PWAReloadPrompt />
           <Toaster position="top-center" />
-          <ReactQueryDevtools initialIsOpen={false} />
+          {/* <ReactQueryDevtools initialIsOpen={false} /> */}
         </SyncProvider>
       </AuthProvider>
     </QueryClientProvider>

@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react'
-import { CustomModal } from '../../../components'
+import { ConfirmationDialog } from '../../../components'
 import { useDeleteTransaction } from '../../../services/transaction/transaction.queries'
 import { Transaction } from '../../../services/transaction/transaction.types'
 import { formatCurrency } from '../../../utils/number'
@@ -19,13 +19,13 @@ export const DeleteConfirmModal = ({ item, open, onClose }: Props) => {
   }
 
   return (
-    <CustomModal
+    <ConfirmationDialog
       open={open}
       title="Delete Transaction"
       icon={Trash2}
-      type="danger"
-      submitText="Delete"
-      subheader={
+      variant="danger"
+      confirmText="Delete"
+      description={
         <p className="text-sm">
           Are you sure you want to delete this transaction totaling{' '}
           <span className="text-destructive font-semibold">
@@ -36,7 +36,7 @@ export const DeleteConfirmModal = ({ item, open, onClose }: Props) => {
       }
       loading={deleteItem.isPending}
       onClose={onClose}
-      onSubmit={handleConfirm}
+      onConfirm={handleConfirm}
     />
   )
 }

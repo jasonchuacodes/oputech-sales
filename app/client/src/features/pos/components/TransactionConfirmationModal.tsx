@@ -1,5 +1,5 @@
 import { ReceiptText } from 'lucide-react'
-import { CustomModal } from '../../../components'
+import { ConfirmationDialog } from '../../../components'
 import {
   PaymentType,
   TransactionItem,
@@ -30,16 +30,16 @@ export const TransactionConfirmationModal = ({
   )
 
   return (
-    <CustomModal
+    <ConfirmationDialog
       open={open}
       title="Confirm Transaction"
-      subheader="Review the transaction details before saving."
+      description="Review the transaction details before saving."
       icon={ReceiptText}
-      submitText="Confirm"
+      confirmText="Confirm"
       cancelText="Cancel"
       loading={loading}
       onClose={onClose}
-      onSubmit={onConfirm}
+      onConfirm={onConfirm}
     >
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
@@ -76,6 +76,6 @@ export const TransactionConfirmationModal = ({
           </div>
         </div>
       </div>
-    </CustomModal>
+    </ConfirmationDialog>
   )
 }

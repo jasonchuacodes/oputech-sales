@@ -1,11 +1,11 @@
 import { Trash2 } from 'lucide-react'
-import { CustomModal } from '../../../components'
+import { ConfirmationDialog } from '../../../components'
 import { useDeleteReport } from '../../../services/report/report.queries'
-import { Report } from '../../../services/report/report.types'
+import { ReportDeleteTarget } from '../../../services/report/report.types'
 import { dayjsLocal, formatRange } from '../../../utils/date'
 
 interface Props {
-  item: Report | null
+  item: ReportDeleteTarget | null
   open: boolean
   onClose: () => void
   onDeleted?: () => void
@@ -25,25 +25,26 @@ export const DeleteConfirmModal = ({ item, open, onClose, onDeleted }: Props) =>
   }
 
   return (
-    <CustomModal
+    <ConfirmationDialog
       open={open}
       title="Delete Report"
       icon={Trash2}
-      type="danger"
-      submitText="Delete"
-      subheader={
+      variant="danger"
+      confirmText="Delete"
+      description={
         <p className="text-sm">
           Are you sure you want to delete the report for{' '}
           <span className="text-destructive font-semibold">
             {item &&
               formatRange(dayjsLocal(item.fromDate), dayjsLocal(item.toDate))}
           </span>
-          ? This action cannot be undone.
+          ? The underlying transactions will return to unprocessed activity.
+          This action cannot be undone.
         </p>
       }
       loading={deleteItem.isPending}
       onClose={onClose}
-      onSubmit={handleConfirm}
+      onConfirm={handleConfirm}
     />
   )
 }

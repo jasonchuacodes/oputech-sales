@@ -13,6 +13,7 @@ export interface DataTableColumn<T> {
   orderable?: boolean
   width?: string | number
   align?: 'left' | 'center' | 'right'
+  footer?: React.ReactNode
 }
 
 export interface DataTableCollection<T> {
@@ -82,21 +83,24 @@ function DataTableComponent<T>({
   const empty = !loading && collection.items.length === 0
 
   return (
-    <div className="xl:rounded-card xl:bg-card overflow-visible xl:overflow-x-auto xl:shadow-xs">
-      <table id={id} className="block w-full text-sm xl:table xl:min-w-162.5">
-        <thead className="hidden xl:table-header-group">
+    <div className="rounded-card bg-card overflow-hidden shadow-card md:overflow-x-auto">
+      <table id={id} className="block w-full text-sm md:table md:min-w-162.5">
+        <thead className="hidden md:table-header-group">
           <tr className="border-b border-gray-200 bg-slate-50">
             {columns.map((column, colIdx) => (
               <th
                 key={column.id}
                 style={{
-                  width: column.width,
+                  width: column.width ?? (column.id === 'actions' ? 64 : undefined),
+                  minWidth: column.id === 'actions' ? 64 : undefined,
                   maxWidth: colIdx === 0 && !column.width ? 360 : undefined,
                 }}
                 className={cn(
                   'bg-surface h-10 px-4 text-sm font-medium whitespace-nowrap text-slate-600',
                   alignClass[column.align ?? 'left'],
-                  column.orderable && 'cursor-pointer select-none'
+                  column.orderable && 'cursor-pointer select-none',
+                  column.id === 'actions' &&
+                    'border-border/60 sticky right-0 z-20 border-l shadow-[-6px_0_10px_-10px_rgba(16,16,16,0.45)]'
                 )}
                 onClick={
                   column.orderable ? () => handleSort(column.id) : undefined
@@ -129,15 +133,14 @@ function DataTableComponent<T>({
                 </span>
               </th>
             ))}
-            <th aria-hidden="true" />
           </tr>
         </thead>
-        <tbody className="flex w-full flex-col gap-3 xl:table-row-group">
+        <tbody className="flex w-full flex-col md:table-row-group">
           {loading ? (
-            <tr className="rounded-card bg-card flex w-full shadow-xs xl:table-row xl:shadow-none">
+            <tr className="flex w-full md:table-row">
               <td
-                colSpan={columns.length + 1}
-                className="flex w-full items-center justify-center py-8 text-center xl:table-cell xl:w-auto"
+                colSpan={columns.length}
+                className="flex w-full items-center justify-center py-8 text-center md:table-cell md:w-auto"
               >
                 <div className="flex justify-center">
                   <Spinner />
@@ -145,10 +148,10 @@ function DataTableComponent<T>({
               </td>
             </tr>
           ) : empty ? (
-            <tr className="rounded-card bg-card flex w-full shadow-xs xl:table-row xl:shadow-none">
+            <tr className="flex w-full md:table-row">
               <td
-                colSpan={columns.length + 1}
-                className="text-muted-foreground flex w-full items-center justify-center py-8 text-center xl:table-cell xl:w-auto"
+                colSpan={columns.length}
+                className="text-muted-foreground flex w-full items-center justify-center py-8 text-center md:table-cell md:w-auto"
               >
                 {emptyMessage}
               </td>
@@ -164,8 +167,8 @@ function DataTableComponent<T>({
                   aria-label={ariaLabel}
                   onClick={onRowClick ? () => onRowClick(item) : undefined}
                   className={cn(
-                    'rounded-card bg-card flex flex-col overflow-hidden shadow-xs xl:table-row xl:rounded-none xl:shadow-none',
-                    !isLast && 'xl:border-b',
+                    'bg-card flex flex-col overflow-hidden md:table-row',
+                    !isLast && 'border-border/60 border-b',
                     'hover:bg-card',
                     onRowClick && 'cursor-pointer'
                   )}
@@ -178,26 +181,52 @@ function DataTableComponent<T>({
                         data-label={column.heading}
                         scope={colIdx === 0 ? 'row' : undefined}
                         style={{
-                          maxWidth:
-                            colIdx === 0 && !column.width ? 360 : undefined,
+                          width:
+                            column.width ??
+                            (column.id === 'actions' ? 64 : undefined),
+                          minWidth: column.id === 'actions' ? 64 : undefined,
                         }}
                         className={cn(
-                          'border-border/50 before:text-text-tertiary flex min-h-11 items-center justify-between gap-4 border-b px-4 py-3 text-right font-normal before:text-left before:text-xs before:font-medium before:tracking-wide before:uppercase before:content-[attr(data-label)] last:border-b-0 xl:table-cell xl:border-b-0 xl:text-left xl:whitespace-nowrap xl:before:hidden',
+                          'border-border/50 before:text-text-tertiary flex min-h-11 items-center justify-between gap-4 border-b px-4 py-3 text-right font-normal before:text-left before:text-xs before:font-medium before:tracking-wide before:uppercase before:content-[attr(data-label)] last:border-b-0 md:table-cell md:border-b-0 md:whitespace-nowrap md:before:hidden',
                           alignClass[column.align ?? 'left'],
-                          colIdx === 0 && !column.width && 'xl:truncate',
-                          !column.heading && 'justify-end before:hidden'
+                          colIdx === 0 && !column.width && 'md:truncate',
+                          !column.heading && 'justify-end before:hidden',
+                          column.id === 'actions' &&
+                            'border-border/60 bg-card md:sticky md:right-0 md:z-10 md:border-l md:shadow-[-6px_0_10px_-10px_rgba(16,16,16,0.45)]'
                         )}
                       >
                         {column.cell(item, idx)}
                       </Tag>
                     )
                   })}
-                  <td aria-hidden="true" />
                 </tr>
               )
             })
           )}
         </tbody>
+        {!loading && !empty && columns.some((column) => column.footer !== undefined) && (
+          <tfoot className="hidden border-t-2 md:table-footer-group">
+            <tr>
+              {columns.map((column) => (
+                <td
+                  key={column.id}
+                  style={{
+                    width: column.width ?? (column.id === 'actions' ? 64 : undefined),
+                    minWidth: column.id === 'actions' ? 64 : undefined,
+                  }}
+                  className={cn(
+                    'bg-surface px-4 py-3 font-semibold whitespace-nowrap',
+                    alignClass[column.align ?? 'left'],
+                    column.id === 'actions' &&
+                      'border-border/60 sticky right-0 z-10 border-l shadow-[-6px_0_10px_-10px_rgba(16,16,16,0.45)]'
+                  )}
+                >
+                  {column.footer}
+                </td>
+              ))}
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   )

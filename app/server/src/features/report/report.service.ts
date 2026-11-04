@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
-import { Model } from 'mongoose'
+import { isValidObjectId, Model, PipelineStage } from 'mongoose'
 import { Report, ReportDocument } from './schemas/report.schema'
 import { Aggregate, AggregateDocument } from './schemas/aggregate.schema'
 import {
@@ -9,7 +9,12 @@ import {
   PaymentType,
   TransactionType,
 } from '../transaction/schemas/transaction.schema'
-import { CreateReportInput } from './report.types'
+import {
+  CreateReportInput,
+  ReportsPageQuery,
+  ReportsPageResult,
+  ReportSortOrder,
+} from './report.types'
 import { dayjsLocal } from '../../common/utils/date'
 
 export enum AnalyticsRange {
@@ -112,6 +117,7 @@ export class ReportService {
   }
 
   async delete(reportId: string): Promise<boolean> {
+    this.assertValidReportId(reportId)
     const report = await this.reportModel.findById(reportId).exec()
     if (!report) throw new NotFoundException('Report not found')
 
@@ -133,6 +139,7 @@ export class ReportService {
   }
 
   async remit(reportId: string, isRemitted: boolean): Promise<ReportDocument> {
+    this.assertValidReportId(reportId)
     const report = await this.reportModel
       .findByIdAndUpdate(reportId, { isRemitted }, { new: true })
       .exec()
@@ -165,7 +172,193 @@ export class ReportService {
     return this.reportModel.find().sort({ createdAt: -1 }).exec()
   }
 
+  async findPage(query: ReportsPageQuery): Promise<ReportsPageResult> {
+    const page = query.pagination?.page ?? 1
+    const pageSize = query.pagination?.pageSize ?? 10
+    const sortOrder = query.sort ?? ReportSortOrder.DATE_DESC
+    const dateRange = query.filter?.dateRange
+    const match: Record<string, unknown> = {}
+
+    if (dateRange) {
+      const from = new Date(dateRange.from)
+      const to = new Date(dateRange.to)
+      if (from >= to) {
+        throw new BadRequestException('Report date range must end after it starts')
+      }
+      match.toDate = { $gte: from, $lt: to }
+    }
+
+    const direction: 1 | -1 = sortOrder === ReportSortOrder.DATE_ASC ? 1 : -1
+    const sort: Record<string, 1 | -1> = {
+      toDate: direction,
+      createdAt: direction,
+      _id: direction,
+    }
+
+    const pipeline: PipelineStage[] = [
+      { $match: match },
+      { $sort: sort },
+      {
+        $project: {
+          fromDate: 1,
+          toDate: 1,
+          createdAt: 1,
+          isRemitted: 1,
+          transactionIds: 1,
+        },
+      },
+      {
+        $set: {
+          transactionObjectIds: {
+            $setUnion: [
+              {
+                $filter: {
+                  input: {
+                    $map: {
+                      input: { $ifNull: ['$transactionIds', []] },
+                      as: 'transactionId',
+                      in: {
+                        $convert: {
+                          input: '$$transactionId',
+                          to: 'objectId',
+                          onError: null,
+                          onNull: null,
+                        },
+                      },
+                    },
+                  },
+                  as: 'transactionId',
+                  cond: { $ne: ['$$transactionId', null] },
+                },
+              },
+              [],
+            ],
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: this.transactionModel.collection.name,
+          let: { transactionIds: '$transactionObjectIds' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $in: ['$_id', '$$transactionIds'] },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                totalCash: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $and: [
+                          { $eq: ['$type', TransactionType.SALE] },
+                          { $eq: ['$paymentType', PaymentType.CASH] },
+                        ],
+                      },
+                      '$total',
+                      0,
+                    ],
+                  },
+                },
+                totalOnline: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $and: [
+                          { $eq: ['$type', TransactionType.SALE] },
+                          { $eq: ['$paymentType', PaymentType.ONLINE] },
+                        ],
+                      },
+                      '$total',
+                      0,
+                    ],
+                  },
+                },
+                totalExpenses: {
+                  $sum: {
+                    $cond: [{ $eq: ['$type', TransactionType.EXPENSE] }, '$total', 0],
+                  },
+                },
+              },
+            },
+          ],
+          as: 'financial',
+        },
+      },
+      {
+        $set: {
+          totalCash: { $ifNull: [{ $arrayElemAt: ['$financial.totalCash', 0] }, 0] },
+          totalOnline: { $ifNull: [{ $arrayElemAt: ['$financial.totalOnline', 0] }, 0] },
+          totalExpenses: {
+            $ifNull: [{ $arrayElemAt: ['$financial.totalExpenses', 0] }, 0],
+          },
+        },
+      },
+      {
+        $set: {
+          netIncome: {
+            $subtract: [{ $add: ['$totalCash', '$totalOnline'] }, '$totalExpenses'],
+          },
+        },
+      },
+      {
+        $facet: {
+          items: [
+            { $skip: (page - 1) * pageSize },
+            { $limit: pageSize },
+            {
+              $project: {
+                _id: 0,
+                id: { $toString: '$_id' },
+                fromDate: { $toString: '$fromDate' },
+                toDate: { $toString: '$toDate' },
+                createdAt: { $toString: '$createdAt' },
+                isRemitted: 1,
+                totalCash: 1,
+                totalOnline: 1,
+                totalExpenses: 1,
+                netIncome: 1,
+              },
+            },
+          ],
+          summary: [
+            {
+              $group: {
+                _id: null,
+                totalCount: { $sum: 1 },
+                totalCash: { $sum: '$totalCash' },
+                totalOnline: { $sum: '$totalOnline' },
+                totalExpenses: { $sum: '$totalExpenses' },
+                netIncome: { $sum: '$netIncome' },
+              },
+            },
+          ],
+        },
+      },
+    ]
+
+    const [result] = await this.reportModel.aggregate(pipeline).exec()
+    const summary = result?.summary?.[0]
+
+    return {
+      items: result?.items ?? [],
+      totalCount: summary?.totalCount ?? 0,
+      page,
+      pageSize,
+      totals: {
+        totalCash: summary?.totalCash ?? 0,
+        totalOnline: summary?.totalOnline ?? 0,
+        totalExpenses: summary?.totalExpenses ?? 0,
+        netIncome: summary?.netIncome ?? 0,
+      },
+    }
+  }
+
   findById(id: string): Promise<ReportDocument | null> {
+    this.assertValidReportId(id)
     return this.reportModel.findById(id).exec()
   }
 
@@ -251,6 +444,10 @@ export class ReportService {
 
   private async deaggregate(date: Date, sales: number, expenses: number): Promise<void> {
     await this.aggregate(date, -sales, -expenses)
+  }
+
+  private assertValidReportId(id: string): void {
+    if (!isValidObjectId(id)) throw new BadRequestException('Invalid report ID')
   }
 
   // Truncate to APP_TZ midnight. Sales are attributed to the report's toDate day.

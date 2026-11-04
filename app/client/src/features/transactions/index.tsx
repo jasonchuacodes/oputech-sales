@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { ChevronRight, Receipt, ShoppingBag } from 'lucide-react'
 import { Button, PageHeader, Spinner } from '../../components'
+import { DataTable, type DataTableColumn } from '../../components/ui/data-table'
 import { DatePicker } from '../../components/ui/date-picker'
 import { useTransactions } from '../../services/transaction/transaction.queries'
 import {
@@ -16,6 +17,7 @@ import { cn } from '../../utils/cn'
 import { DeleteConfirmModal } from './components/DeleteConfirmModal'
 import { LogExpenseModal } from './components/LogExpenseModal'
 import { TransactionActionsSheet } from './components/TransactionActionsSheet'
+import { TransactionActions } from './components/TransactionActions'
 
 const getTransactionTitle = (transaction: Transaction) => {
   if (transaction.type === TransactionType.Expense) {
@@ -83,7 +85,68 @@ const TransactionsPage = () => {
     setDeleteOpen(true)
   }
 
+  const requestDelete = (item: Transaction) => {
+    if (item.processed) return
+    setSelectedItem(item)
+    setActionsOpen(false)
+    setDeleteOpen(true)
+  }
+
   const transactionCountLabel = `${transactions.length} ${transactions.length === 1 ? 'transaction' : 'transactions'}`
+  const columns: DataTableColumn<Transaction>[] = [
+    {
+      id: 'occurredAt',
+      heading: 'Time',
+      cell: (item) => formatTime(item.occurredAt),
+    },
+    {
+      id: 'description',
+      heading: 'Description',
+      cell: (item) => getTransactionTitle(item),
+    },
+    {
+      id: 'type',
+      heading: 'Type',
+      cell: (item) => (item.type === TransactionType.Expense ? 'Expense' : 'Sale'),
+    },
+    {
+      id: 'paymentType',
+      heading: 'Payment',
+      cell: (item) => (item.paymentType === PaymentType.Cash ? 'Cash' : 'Online'),
+    },
+    {
+      id: 'total',
+      heading: 'Total',
+      align: 'right',
+      cell: (item) => (
+        <span className={cn('font-semibold', item.type === TransactionType.Expense && 'text-destructive')}>
+          {item.type === TransactionType.Expense ? '-' : ''}
+          {formatCurrency(item.total)}
+        </span>
+      ),
+    },
+    {
+      id: 'status',
+      heading: 'Status',
+      cell: (item) => {
+        const status = getStatus(item)
+        return (
+          <span className={cn('rounded-full px-2.5 py-1 text-xs font-medium', status.className)}>
+            {status.label}
+          </span>
+        )
+      },
+    },
+    {
+      id: 'actions',
+      heading: '',
+      align: 'right',
+      width: 64,
+      cell: (item) => (
+        <TransactionActions item={item} onView={openActions} onDelete={requestDelete} />
+      ),
+    },
+  ]
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-5 md:p-6">
@@ -112,14 +175,14 @@ const TransactionsPage = () => {
         >
           Filter
         </h2>
-        <div className="rounded-card bg-card p-4 shadow-xs">
+        <div className="rounded-card bg-card p-4 shadow-card">
           <DatePicker
             value={dayjsLocal(date).toDate()}
             onChange={(next) =>
               next && setDate(dayjsLocal(next).format('YYYY-MM-DD'))
             }
             disableFuture
-            className="w-full"
+            className="w-full md:w-64"
           />
         </div>
       </section>
@@ -137,11 +200,11 @@ const TransactionsPage = () => {
         </div>
 
         {isLoading ? (
-          <div className="rounded-card bg-card flex min-h-40 items-center justify-center shadow-xs">
+          <div className="rounded-card bg-card flex min-h-40 items-center justify-center shadow-card">
             <Spinner />
           </div>
         ) : transactions.length === 0 ? (
-          <div className="rounded-card bg-card flex min-h-52 flex-col items-center justify-center gap-3 p-6 text-center shadow-xs">
+          <div className="rounded-card bg-card flex min-h-52 flex-col items-center justify-center gap-3 p-6 text-center shadow-card">
             <span className="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-full">
               <Receipt className="size-6" aria-hidden="true" />
             </span>
@@ -153,7 +216,8 @@ const TransactionsPage = () => {
             </div>
           </div>
         ) : (
-          <ul className="rounded-card bg-card overflow-hidden shadow-xs">
+          <>
+          <ul className="rounded-card bg-card overflow-hidden shadow-card md:hidden">
             {transactions.map((transaction) => {
               const isExpense = transaction.type === TransactionType.Expense
               const Icon = isExpense ? Receipt : ShoppingBag
@@ -225,6 +289,17 @@ const TransactionsPage = () => {
               )
             })}
           </ul>
+          <div className="hidden md:block">
+            <DataTable
+              collection={DataTable.collection({
+                items: transactions,
+                itemToValue: (item) => item.id,
+                itemToString: (item) => getTransactionTitle(item),
+              })}
+              columns={columns}
+            />
+          </div>
+          </>
         )}
       </section>
 

@@ -5,6 +5,13 @@ import { RadioGroup } from 'radix-ui'
 import { useState } from 'react'
 import { Button } from './button'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from './dropdown-menu'
+import {
   Sheet,
   SheetBody,
   SheetContent,
@@ -13,6 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from './sheet'
+import { useIsDesktop } from '@/hooks/useIsDesktop'
 import { cn } from '@/utils/cn'
 
 export type SheetSelectOption = { value: string; label: string }
@@ -36,6 +44,7 @@ export const SheetSelect = ({
   disabled,
   className,
 }: SheetSelectProps) => {
+  const isDesktop = useIsDesktop()
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(value ?? '')
   const selected = options.find((option) => option.value === value)
@@ -51,23 +60,51 @@ export const SheetSelect = ({
     setOpen(false)
   }
 
+  const trigger = (
+    <button
+      type="button"
+      disabled={disabled}
+      className={cn(
+        'flex h-12 w-full items-center justify-between gap-3 rounded-input border border-input bg-card px-4 text-left text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 disabled:opacity-50',
+        className
+      )}
+    >
+      <span className={cn('truncate', !selected && 'text-text-tertiary')}>
+        {selected?.label ?? placeholder}
+      </span>
+      <ChevronDown className="size-5 shrink-0 text-text-secondary" />
+    </button>
+  )
+
+  if (isDesktop) {
+    return (
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          sideOffset={6}
+          aria-label={title}
+          className="p-1.5"
+        >
+          <DropdownMenuRadioGroup value={value} onValueChange={onValueChange}>
+            {options.map((option) => (
+              <DropdownMenuRadioItem
+                key={option.value}
+                value={option.value}
+                className="min-h-10 px-3 py-2 pr-9 text-sm"
+              >
+                {option.label}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
+  }
+
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetTrigger asChild>
-        <button
-          type="button"
-          disabled={disabled}
-          className={cn(
-            'flex h-12 w-full items-center justify-between gap-3 rounded-input border border-input bg-card px-4 text-left text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 disabled:opacity-50',
-            className
-          )}
-        >
-          <span className={cn('truncate', !selected && 'text-text-tertiary')}>
-            {selected?.label ?? placeholder}
-          </span>
-          <ChevronDown className="size-5 shrink-0 text-text-secondary" />
-        </button>
-      </SheetTrigger>
+      <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent aria-describedby={undefined}>
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>

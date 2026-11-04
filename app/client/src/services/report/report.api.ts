@@ -1,5 +1,10 @@
 import { requestGraphQL } from '../../lib/graphql'
-import { Report, CreateReportInput } from './report.types'
+import {
+  Report,
+  CreateReportInput,
+  ReportsPage,
+  ReportsPageParams,
+} from './report.types'
 
 const REPORT_FIELDS = `
   id
@@ -46,6 +51,37 @@ const GET_REPORT = `
   }
 `
 
+const GET_REPORTS_PAGE = `
+  query GetReportsPage(
+    $filter: ReportFilterInput
+    $pagination: ReportPaginationInput
+    $sort: ReportSortOrder
+  ) {
+    reportsPage(filter: $filter, pagination: $pagination, sort: $sort) {
+      items {
+        id
+        fromDate
+        toDate
+        createdAt
+        isRemitted
+        totalCash
+        totalOnline
+        totalExpenses
+        netIncome
+      }
+      totalCount
+      page
+      pageSize
+      totals {
+        totalCash
+        totalOnline
+        totalExpenses
+        netIncome
+      }
+    }
+  }
+`
+
 const CREATE_REPORT = `
   mutation CreateReport($input: CreateReportInput!) {
     createReport(input: $input) {
@@ -62,6 +98,13 @@ export async function getReports(): Promise<Report[]> {
 export async function getReport(id: string): Promise<Report> {
   const data = await requestGraphQL<{ report: Report }>(GET_REPORT, { id })
   return data.report
+}
+
+export async function getReportsPage(params: ReportsPageParams): Promise<ReportsPage> {
+  const data = await requestGraphQL<{ reportsPage: ReportsPage }>(GET_REPORTS_PAGE, {
+    ...params,
+  })
+  return data.reportsPage
 }
 
 export async function createReport(input: CreateReportInput): Promise<Report> {

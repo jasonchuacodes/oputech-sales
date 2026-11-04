@@ -6,8 +6,9 @@ import {
   createReport,
   deleteReport,
   remit,
+  getReportsPage,
 } from './report.api'
-import { CreateReportInput } from './report.types'
+import { CreateReportInput, ReportsPageParams } from './report.types'
 import { useSyncContext } from '../../context/sync/useSyncContext'
 
 export const useReports = () => {
@@ -15,6 +16,15 @@ export const useReports = () => {
   return useQuery({
     queryKey: ['reports'],
     queryFn: getReports,
+    enabled: canUseOnlineFeatures,
+  })
+}
+
+export const useReportsPage = (params: ReportsPageParams) => {
+  const { canUseOnlineFeatures } = useSyncContext()
+  return useQuery({
+    queryKey: ['reports', 'page', params],
+    queryFn: () => getReportsPage(params),
     enabled: canUseOnlineFeatures,
   })
 }
@@ -51,17 +61,19 @@ export const useCreateReport = () => {
 
 export const useDeleteReport = () => {
   const queryClient = useQueryClient()
-  const { canUseOnlineFeatures } = useSyncContext()
+  const { canUseOnlineFeatures, syncNow } = useSyncContext()
   return useMutation({
     mutationFn: (id: string) => {
       if (!canUseOnlineFeatures) throw new Error('Reports can only be changed while online and synced')
       return deleteReport(id)
     },
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       toast.success('Report deleted')
+      queryClient.removeQueries({ queryKey: ['report', id], exact: true })
       queryClient.invalidateQueries({ queryKey: ['reports'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['analytics'] })
+      void syncNow()
     },
     onError: (error: Error) => {
       toast.error(error.message)

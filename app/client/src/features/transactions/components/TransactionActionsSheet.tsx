@@ -1,6 +1,6 @@
 'use client'
 
-import { Trash2 } from 'lucide-react'
+import { Receipt, ShoppingBag, Trash2 } from 'lucide-react'
 import { Button } from '@/components'
 import {
   Sheet,
@@ -33,6 +33,7 @@ export const TransactionActionsSheet = ({
   onDelete,
 }: TransactionActionsSheetProps) => {
   const isExpense = item?.type === TransactionType.Expense
+  const HeaderIcon = isExpense ? Receipt : ShoppingBag
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -41,10 +42,17 @@ export const TransactionActionsSheet = ({
         aria-describedby="transaction-actions-description"
       >
         <SheetHeader>
-          <SheetTitle>Transaction actions</SheetTitle>
-          <SheetDescription id="transaction-actions-description">
-            Review this transaction or choose an available action.
-          </SheetDescription>
+          <div className="flex items-start gap-3 pr-12">
+            <span className="bg-primary text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-md">
+              <HeaderIcon className="size-5" aria-hidden="true" />
+            </span>
+            <div className="flex min-w-0 flex-col gap-1">
+              <SheetTitle>Transaction actions</SheetTitle>
+              <SheetDescription id="transaction-actions-description">
+                Review this transaction or choose an available action.
+              </SheetDescription>
+            </div>
+          </div>
         </SheetHeader>
 
         {item && (

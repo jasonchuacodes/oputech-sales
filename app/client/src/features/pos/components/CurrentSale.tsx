@@ -1,6 +1,6 @@
 import { useId } from 'react'
 import { type Control } from 'react-hook-form'
-import { Minus, Plus, Trash2, X } from 'lucide-react'
+import { Minus, Plus, X } from 'lucide-react'
 import { cn } from '../../../utils/cn'
 import { formatCurrency } from '../../../utils/number'
 import { PaymentType, TransactionItem } from '../../../services/transaction/transaction.types'
@@ -20,7 +20,6 @@ interface CurrentSaleProps {
   onPaymentTypeChange: (type: PaymentType) => void
   onExactAmount: (amount: number) => void
   onSubmit: () => void
-  onClear: () => void
   onCancel: () => void
   onRemoveItem: (productId: string) => void
   onIncrementItem: (productId: string) => void
@@ -35,7 +34,6 @@ export const CurrentSale = ({
   onPaymentTypeChange,
   onExactAmount,
   onSubmit,
-  onClear,
   onCancel,
   onRemoveItem,
   onIncrementItem,
@@ -59,18 +57,9 @@ export const CurrentSale = ({
     : 0
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 rounded-card bg-card p-4 shadow-xs">
-      <div className="flex items-center justify-between">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 rounded-card bg-card p-4 shadow-card">
+      <div className="flex items-center">
         <h2 className="font-semibold text-slate-800">Current Sale</h2>
-        {hasItems && (
-          <button
-            onClick={onClear}
-            className="text-slate-400 transition-colors hover:text-red-500"
-            title="Clear sale"
-          >
-            <Trash2 size={16} />
-          </button>
-        )}
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">

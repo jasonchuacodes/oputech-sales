@@ -5,7 +5,7 @@ interface Props {
 }
 
 export const TopProducts = ({ products }: Props) => (
-  <div className="flex flex-col gap-3 rounded-card bg-card p-5 shadow-xs">
+  <div className="flex flex-col gap-3 rounded-card bg-card p-5 shadow-card">
     <h3 className="text-sm font-semibold text-slate-700">
       Top Selling Products
     </h3>
