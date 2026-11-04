@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { PageHeader } from '../../components/ui/page-header'
 import { Button } from '../../components'
 import { useReport } from '../../services/report/report.queries'
@@ -18,19 +18,20 @@ const ReportDetailPage = () => {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-5 md:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-2">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="mt-0.5"
+          aria-label="Back to Reports"
+          onClick={() => router.push(UserRoutes.Reports)}
+        >
+          <ChevronLeft />
+        </Button>
         <PageHeader
           title="Report Detail"
           description="View a generated report"
         />
-        <Button
-          variant="outline"
-          className="w-full gap-2 sm:w-auto"
-          onClick={() => router.push(UserRoutes.Reports)}
-        >
-          <ArrowLeft size={16} />
-          Back to Reports
-        </Button>
       </div>
 
       {isLoading ? (
