@@ -8,6 +8,7 @@ export const SyncStatus = () => {
   const {
     status,
     pendingCount,
+    blockedCount,
     progress,
     lastSyncAt,
     lastError,
@@ -22,10 +23,7 @@ export const SyncStatus = () => {
   const transientSuccess =
     status === 'online' && pendingCount === 0 && !storagePressure
   const delayedActivity =
-    !blocked &&
-    !offline &&
-    !storagePressure &&
-    (syncing || pendingCount > 0)
+    !blocked && !offline && !storagePressure && (syncing || pendingCount > 0)
 
   return (
     <div
@@ -51,7 +49,7 @@ export const SyncStatus = () => {
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">
           {blocked
-            ? 'Sync needs attention'
+            ? `${blockedCount || pendingCount} changes need attention`
             : status === 'auth-required'
               ? 'Sign in to sync'
               : offline
@@ -61,20 +59,24 @@ export const SyncStatus = () => {
                   : status === 'checking'
                     ? 'Checking connection…'
                     : pendingCount > 0
-                      ? `${pendingCount} pending`
-                      : 'All changes synced'}
+                      ? `${pendingCount} changes pending`
+                      : 'No pending changes'}
         </p>
         <p className="truncate text-xs text-slate-500" title={lastError}>
           {lastError ??
             (lastSyncAt
-              ? `Last synced ${formatTime(lastSyncAt)}`
-              : 'Not synced on this device yet')}
+              ? `Last refreshed ${formatTime(lastSyncAt)}`
+              : 'Not refreshed on this device yet')}
         </p>
         {storagePersistent === false && pendingCount > 0 && (
-          <p className="text-xs text-amber-700">Browser storage is not guaranteed.</p>
+          <p className="text-xs text-amber-700">
+            Browser storage is not guaranteed.
+          </p>
         )}
         {storagePressure && (
-          <p className="text-xs text-red-700">Browser storage is nearly full.</p>
+          <p className="text-xs text-red-700">
+            Browser storage is nearly full.
+          </p>
         )}
       </div>
 
@@ -86,7 +88,7 @@ export const SyncStatus = () => {
           disabled={syncing}
           onClick={() => void syncNow()}
         >
-          {blocked ? 'Retry' : 'Sync Now'}
+          {blocked ? 'Retry' : 'Sync now'}
         </Button>
       )}
     </div>

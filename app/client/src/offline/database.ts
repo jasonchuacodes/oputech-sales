@@ -95,6 +95,7 @@ export const offlineDb = new OfflineDatabase()
 
 const AUTH_KEY = 'cached-auth'
 const LAST_SYNC_KEY = 'last-sync-at'
+const SNAPSHOT_REFRESH_NEEDED_KEY = 'snapshot-refresh-needed'
 const SYNC_LEASE_KEY = 'sync-lease'
 
 export interface CachedAuth {
@@ -123,6 +124,12 @@ export const setCachedAuth = (value: CachedAuth) => setMeta(AUTH_KEY, value)
 export const clearCachedAuth = () => deleteMeta(AUTH_KEY)
 export const getLastSyncAt = () => getMeta<string>(LAST_SYNC_KEY)
 export const setLastSyncAt = (value: string) => setMeta(LAST_SYNC_KEY, value)
+export const getSnapshotRefreshNeeded = () =>
+  getMeta<boolean>(SNAPSHOT_REFRESH_NEEDED_KEY)
+export const setSnapshotRefreshNeeded = (value: boolean) =>
+  value
+    ? setMeta(SNAPSHOT_REFRESH_NEEDED_KEY, true)
+    : deleteMeta(SNAPSHOT_REFRESH_NEEDED_KEY)
 export const getSyncLease = () => getMeta<SyncLease>(SYNC_LEASE_KEY)
 export const setSyncLease = (value: SyncLease) => setMeta(SYNC_LEASE_KEY, value)
 export const clearSyncLease = () => deleteMeta(SYNC_LEASE_KEY)
@@ -131,7 +138,11 @@ export const getDraft = async <T>(key: string): Promise<T | undefined> =>
   (await offlineDb.drafts.get(key))?.value as T | undefined
 
 export const saveDraft = async <T>(key: string, value: T): Promise<void> => {
-  await offlineDb.drafts.put({ key, value, updatedAt: new Date().toISOString() })
+  await offlineDb.drafts.put({
+    key,
+    value,
+    updatedAt: new Date().toISOString(),
+  })
 }
 
 export const clearDraft = async (key: string): Promise<void> => {

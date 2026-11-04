@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import {
+  AlertTriangle,
   BarChart3,
   CheckCircle2,
   ChevronRight,
@@ -61,11 +62,26 @@ export const AccountPage = () => {
   }
 
   const SyncIcon =
-    sync.status === 'online'
-      ? Cloud
-      : sync.status === 'syncing'
-        ? RefreshCw
-        : WifiOff
+    sync.status === 'blocked'
+      ? AlertTriangle
+      : sync.status === 'online'
+        ? Cloud
+        : sync.status === 'syncing' || sync.status === 'checking'
+          ? RefreshCw
+          : WifiOff
+  const syncBusy = sync.status === 'syncing' || sync.status === 'checking'
+  const syncTitle =
+    sync.status === 'blocked'
+      ? `${sync.blockedCount || sync.pendingCount} changes need attention`
+      : sync.status === 'auth-required'
+        ? 'Sign in to sync'
+        : sync.status === 'offline'
+          ? 'Working offline'
+          : syncBusy
+            ? 'Syncing changes'
+            : sync.pendingCount > 0
+              ? `${sync.pendingCount} changes pending`
+              : 'No pending changes'
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-5 md:p-6">
@@ -162,36 +178,32 @@ export const AccountPage = () => {
           <div className="flex items-center gap-3">
             <SyncIcon
               className={
-                sync.status === 'syncing'
+                syncBusy
                   ? 'text-primary animate-spin'
-                  : 'text-primary'
+                  : sync.status === 'blocked'
+                    ? 'text-status-error'
+                    : 'text-primary'
               }
             />
             <div className="min-w-0 flex-1">
-              <p className="font-semibold">
-                {sync.status === 'online'
-                  ? 'All changes synced'
-                  : sync.status === 'syncing'
-                    ? 'Syncing changes'
-                    : 'Working offline'}
-              </p>
+              <p className="font-semibold">{syncTitle}</p>
               <p className="text-text-secondary truncate text-sm">
                 {sync.lastError ??
                   (sync.lastSyncAt
-                    ? `Last synced ${formatTime(sync.lastSyncAt)}`
-                    : 'Not synced on this device yet')}
+                    ? `Last refreshed ${formatTime(sync.lastSyncAt)}`
+                    : 'Not refreshed on this device yet')}
               </p>
             </div>
           </div>
-          {(sync.pendingCount > 0 || sync.status !== 'online') && (
-            <Button
-              className="h-12 w-full"
-              variant="outline"
-              onClick={() => void sync.syncNow()}
-            >
-              Sync now{sync.pendingCount ? ` (${sync.pendingCount})` : ''}
-            </Button>
-          )}
+          <Button
+            className="h-12 w-full"
+            variant="outline"
+            disabled={syncBusy || sync.status === 'auth-required'}
+            onClick={() => void sync.syncNow()}
+          >
+            {sync.status === 'blocked' ? 'Retry blocked changes' : 'Sync now'}
+            {sync.pendingCount ? ` (${sync.pendingCount})` : ''}
+          </Button>
         </div>
       </section>
 
