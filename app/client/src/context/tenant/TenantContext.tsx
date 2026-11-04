@@ -14,6 +14,7 @@ import {
   deleteTenant,
   getTenants,
   selectTenant,
+  updateTenant,
 } from '../../services/tenant/tenant.api'
 import { Tenant } from '../../services/tenant/tenant.types'
 import { setActiveTenantId } from '../../lib/tenant-scope'
@@ -25,12 +26,15 @@ interface TenantContextValue {
   loading: boolean
   canSwitch: boolean
   canCreate: boolean
+  canEdit: boolean
   canDelete: boolean
   switching: boolean
   creating: boolean
+  updating: boolean
   deleting: boolean
   switchTenant: (tenantId: string) => Promise<void>
   create: (name: string) => Promise<Tenant>
+  update: (tenantId: string, name: string) => Promise<Tenant>
   remove: (tenantId: string) => Promise<void>
 }
 
@@ -82,6 +86,12 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
       await refetch()
     },
   })
+  const update = useMutation({
+    mutationFn: updateTenant,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['tenants', auth?.id] })
+    },
+  })
   const deletion = useMutation({
     mutationFn: deleteTenant,
     onSuccess: async (_, tenantId) => {
@@ -106,13 +116,16 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
       canSwitch:
         auth?.role === UserRole.SUPERADMIN || auth?.role === UserRole.ADMIN,
       canCreate: auth?.role === UserRole.SUPERADMIN,
+      canEdit: auth?.role === UserRole.SUPERADMIN,
       canDelete: auth?.role === UserRole.SUPERADMIN,
       switching: selectionMutation.isPending,
       creating: creation.isPending,
+      updating: update.isPending,
       deleting: deletion.isPending,
       switchTenant: async (tenantId) =>
         selectionMutation.mutateAsync(tenantId).then(() => undefined),
       create: creation.mutateAsync,
+      update: (tenantId, name) => update.mutateAsync({ tenantId, name }),
       remove: async (tenantId) =>
         deletion.mutateAsync(tenantId).then(() => undefined),
     }),
@@ -124,6 +137,7 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
       selectionMutation,
       tenantQuery.isLoading,
       tenants,
+      update,
     ]
   )
 

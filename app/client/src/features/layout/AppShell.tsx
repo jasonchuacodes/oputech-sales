@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   BarChart3,
   Bell,
+  Building2,
   House,
   Package,
   PanelLeftClose,
@@ -52,6 +53,7 @@ const primaryNavigation: NavItem[] = [
 
 const adminNavigation: NavItem[] = [
   { label: 'Catalog', href: '/catalog', icon: Package },
+  { label: 'Tenants', href: '/tenants', icon: Building2 },
   { label: 'Users', href: '/users', icon: Users },
 ]
 
@@ -244,7 +246,9 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     }
     if (
       !isAdmin &&
-      ['/dashboard', '/catalog'].some((path) => pathname.startsWith(path))
+      ['/dashboard', '/catalog', '/tenants'].some((path) =>
+        pathname.startsWith(path)
+      )
     ) {
       router.replace('/sell')
     }
@@ -262,7 +266,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
       queryClient.refetchQueries({
         type: 'active',
         predicate: (query) =>
-          ['reports', 'report', 'analytics', 'users'].includes(
+          ['reports', 'report', 'analytics', 'users', 'tenants'].includes(
             String(query.queryKey[0])
           ),
       }),
@@ -388,26 +392,28 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-border/60 bg-background/95 flex h-16 shrink-0 items-center justify-between border-b px-5 backdrop-blur md:hidden">
-          <div className="flex items-center gap-3">
-            <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md text-xs font-bold">
-              OS
-            </span>
-            <h1 className="max-w-[13rem] truncate text-lg font-semibold">
-              {tenant.currentTenant?.name ?? 'Oputech Sales'}
-            </h1>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            disabled
-            aria-label="Notifications coming soon"
-            title="Notifications coming soon"
-          >
-            <Bell className="size-5" aria-hidden="true" />
-          </Button>
-        </header>
+        {!isRouteActive(pathname, accountNavigation.href) && (
+          <header className="border-border/60 bg-background/95 flex h-16 shrink-0 items-center justify-between border-b px-5 backdrop-blur md:hidden">
+            <div className="flex items-center gap-3">
+              <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md text-xs font-bold">
+                OS
+              </span>
+              <h1 className="max-w-[13rem] truncate text-lg font-semibold">
+                {tenant.currentTenant?.name ?? 'Oputech Sales'}
+              </h1>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              disabled
+              aria-label="Notifications coming soon"
+              title="Notifications coming soon"
+            >
+              <Bell className="size-5" aria-hidden="true" />
+            </Button>
+          </header>
+        )}
 
         <div className="relative min-h-0 flex-1 overflow-hidden">
           <PullToRefreshIndicator

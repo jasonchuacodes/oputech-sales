@@ -8,3 +8,7 @@ export interface AuthenticatedUser {
 export interface CreateTenantInput {
   name: string
 }
+
+export interface UpdateTenantInput {
+  name: string
+}

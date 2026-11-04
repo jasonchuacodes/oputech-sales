@@ -19,7 +19,11 @@ import {
   AggregateDocument,
 } from '../report/schemas/aggregate.schema'
 import { Tenant, TenantDocument } from './schemas/tenant.schema'
-import { AuthenticatedUser, CreateTenantInput } from './tenant.types'
+import {
+  AuthenticatedUser,
+  CreateTenantInput,
+  UpdateTenantInput,
+} from './tenant.types'
 
 @Injectable()
 export class TenantService {
@@ -74,6 +78,37 @@ export class TenantService {
         $inc: { tenantSelectionVersion: 1 },
       }
     )
+    return tenant
+  }
+
+  async update(
+    ownerUserId: string,
+    tenantId: string,
+    input: UpdateTenantInput
+  ): Promise<TenantDocument> {
+    if (!tenantId || !isValidObjectId(tenantId)) {
+      throw new InvalidInputException(
+        'A valid tenant is required for this operation.'
+      )
+    }
+
+    const name = input.name?.trim()
+    if (!name || name.length > 80) {
+      throw new InvalidInputException(
+        'Tenant names must contain between 1 and 80 characters.'
+      )
+    }
+
+    const tenant = await this.tenantModel
+      .findOneAndUpdate(
+        { _id: tenantId, ownerUserId },
+        { $set: { name } },
+        { returnDocument: 'after' }
+      )
+      .exec()
+    if (!tenant) {
+      throw new NotFoundException('The requested tenant was not found.')
+    }
     return tenant
   }
 

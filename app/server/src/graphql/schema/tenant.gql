@@ -7,12 +7,17 @@ input CreateTenantInput {
   name: String!
 }
 
+input UpdateTenantInput {
+  name: String!
+}
+
 extend type Query {
   tenants: [Tenant!]!
 }
 
 extend type Mutation {
   createTenant(input: CreateTenantInput!): Tenant!
+  updateTenant(tenantId: ID!, input: UpdateTenantInput!): Tenant!
   deleteTenant(tenantId: ID!): Boolean!
   selectTenant(tenantId: ID!, expectedVersion: Int!): User!
 }

@@ -3,7 +3,11 @@ import { UseGuards } from '@nestjs/common'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { SuperAdminGuard } from '../auth/guards/superadmin.guard'
 import { TenantService } from './tenant.service'
-import { AuthenticatedUser, CreateTenantInput } from './tenant.types'
+import {
+  AuthenticatedUser,
+  CreateTenantInput,
+  UpdateTenantInput,
+} from './tenant.types'
 
 @UseGuards(JwtAuthGuard)
 @Resolver('Tenant')
@@ -22,6 +26,16 @@ export class TenantResolver {
     @Context() context: any
   ) {
     return this.tenantService.create(context.req.user.userId, input)
+  }
+
+  @Mutation()
+  @UseGuards(SuperAdminGuard)
+  updateTenant(
+    @Args('tenantId') tenantId: string,
+    @Args('input') input: UpdateTenantInput,
+    @Context() context: any
+  ) {
+    return this.tenantService.update(context.req.user.userId, tenantId, input)
   }
 
   @Mutation()
