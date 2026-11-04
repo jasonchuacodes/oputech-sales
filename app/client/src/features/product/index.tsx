@@ -15,6 +15,7 @@ import { EditItemModal } from './components/EditItemModal'
 import { DeleteConfirmModal } from './components/DeleteConfirmModal'
 import { ActionsDropdown } from './components/ActionsDropdown'
 import { useSyncContext } from '../../context/sync/useSyncContext'
+import { useDisclosure } from '../../hooks/useDisclosure'
 
 const ProductPage = () => {
   const { auth } = useAuthContext()
@@ -22,21 +23,21 @@ const ProductPage = () => {
   const { canUseOnlineFeatures } = useSyncContext()
 
   const [search, setSearch] = useState('')
-  const [addOpen, setAddOpen] = useState(false)
+  const addItem = useDisclosure()
   const [selectedItem, setSelectedItem] = useState<Product | null>(null)
-  const [editOpen, setEditOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
+  const editItem = useDisclosure()
+  const deleteItem = useDisclosure()
 
   const { data, isLoading } = useProducts(search || undefined)
 
   const openEdit = (item: Product) => {
     setSelectedItem(item)
-    setEditOpen(true)
+    editItem.onOpen()
   }
 
   const openDelete = (item: Product) => {
     setSelectedItem(item)
-    setDeleteOpen(true)
+    deleteItem.onOpen()
   }
 
   const columns: DataTableColumn<Product>[] = [
@@ -176,7 +177,7 @@ const ProductPage = () => {
                   ? undefined
                   : 'Connect and sync pending transactions first'
               }
-              onClick={() => setAddOpen(true)}
+              onClick={addItem.onOpen}
             >
               <Plus size={16} />
               Add Item
@@ -239,26 +240,26 @@ const ProductPage = () => {
       </div>
 
       <AddItemModal
-        key={addOpen ? 'add-open' : 'add-closed'}
-        open={isAdmin && addOpen}
-        onClose={() => setAddOpen(false)}
+        key={addItem.open ? 'add-open' : 'add-closed'}
+        open={isAdmin && addItem.open}
+        onClose={addItem.onClose}
       />
 
       <EditItemModal
         key={selectedItem?.id ?? 'edit-none'}
         item={selectedItem}
-        open={editOpen}
+        open={editItem.open}
         onClose={() => {
-          setEditOpen(false)
+          editItem.onClose()
           setSelectedItem(null)
         }}
       />
 
       <DeleteConfirmModal
         item={selectedItem}
-        open={deleteOpen}
+        open={deleteItem.open}
         onClose={() => {
-          setDeleteOpen(false)
+          deleteItem.onClose()
           setSelectedItem(null)
         }}
       />

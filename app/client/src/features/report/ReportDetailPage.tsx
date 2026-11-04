@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { PageHeader } from '../../components/ui/page-header'
@@ -11,12 +10,13 @@ import { DeleteConfirmModal } from './components/DeleteConfirmModal'
 import { UserRoutes } from '../../routes/paths'
 import { useAuthContext } from '../../context/auth/useAuthContext'
 import { UserRole } from '../../types'
+import { useDisclosure } from '../../hooks/useDisclosure'
 
 const ReportDetailPage = () => {
   const { reportId } = useParams<{ reportId: string }>()
   const router = useRouter()
   const { data: report, isLoading } = useReport(reportId)
-  const [deleteOpen, setDeleteOpen] = useState(false)
+  const deleteReport = useDisclosure()
   const { auth } = useAuthContext()
   const isAdmin = auth?.role === UserRole.ADMIN
 
@@ -52,14 +52,14 @@ const ReportDetailPage = () => {
       ) : (
         <ReportDisplay
           report={report}
-          onDelete={isAdmin ? () => setDeleteOpen(true) : undefined}
+          onDelete={isAdmin ? deleteReport.onOpen : undefined}
         />
       )}
 
       <DeleteConfirmModal
         item={report ?? null}
-        open={deleteOpen}
-        onClose={() => setDeleteOpen(false)}
+        open={deleteReport.open}
+        onClose={deleteReport.onClose}
         onDeleted={() => router.push(UserRoutes.Reports)}
       />
     </div>

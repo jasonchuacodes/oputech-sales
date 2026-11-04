@@ -13,6 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '../../../components/ui/sheet'
+import { useDisclosure } from '../../../hooks/useDisclosure'
 import { APP_TZ } from '../../../utils/date'
 import {
   type ReportCalendarRange,
@@ -35,12 +36,12 @@ interface Props {
 }
 
 export const ReportFilters = ({ preset, range, onApply }: Props) => {
-  const [customOpen, setCustomOpen] = useState(false)
+  const customRange = useDisclosure()
   const [draft, setDraft] = useState<DateRange>()
 
   const openCustom = () => {
     setDraft({ from: toCalendarDate(range.from), to: toCalendarDate(range.to) })
-    setCustomOpen(true)
+    customRange.onOpen()
   }
 
   const handlePreset = (value: string) => {
@@ -58,7 +59,7 @@ export const ReportFilters = ({ preset, range, onApply }: Props) => {
       from: fromCalendarDate(draft.from),
       to: fromCalendarDate(draft.to),
     })
-    setCustomOpen(false)
+    customRange.onClose()
   }
 
   return (
@@ -73,7 +74,7 @@ export const ReportFilters = ({ preset, range, onApply }: Props) => {
         />
       </div>
 
-      <Sheet open={customOpen} onOpenChange={setCustomOpen}>
+      <Sheet open={customRange.open} onOpenChange={customRange.setOpen}>
         <SheetContent aria-describedby={undefined}>
           <SheetHeader>
             <SheetTitle>Custom date range</SheetTitle>
@@ -92,7 +93,7 @@ export const ReportFilters = ({ preset, range, onApply }: Props) => {
               type="button"
               variant="outline"
               className="flex-1"
-              onClick={() => setCustomOpen(false)}
+              onClick={customRange.onClose}
             >
               Cancel
             </Button>

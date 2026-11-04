@@ -1,7 +1,6 @@
 'use client'
 
 import { MoreVertical, RotateCcw, Send, Trash2 } from 'lucide-react'
-import { useState } from 'react'
 import { Button } from '../../../components'
 import {
   DropdownMenu,
@@ -20,6 +19,7 @@ import {
   SheetTrigger,
 } from '../../../components/ui/sheet'
 import { useSyncContext } from '../../../context/sync/useSyncContext'
+import { useDisclosure } from '../../../hooks/useDisclosure'
 import { useIsDesktop } from '../../../hooks/useIsDesktop'
 import { useRemit } from '../../../services/report/report.queries'
 
@@ -31,7 +31,7 @@ interface Props {
 
 export const ReportDetailActions = ({ reportId, isRemitted, onDelete }: Props) => {
   const isDesktop = useIsDesktop()
-  const [open, setOpen] = useState(false)
+  const actions = useDisclosure()
   const { canUseOnlineFeatures } = useSyncContext()
   const remit = useRemit()
   const RemitIcon = isRemitted ? RotateCcw : Send
@@ -39,12 +39,12 @@ export const ReportDetailActions = ({ reportId, isRemitted, onDelete }: Props) =
   const disabled = remit.isPending || !canUseOnlineFeatures
 
   const handleRemit = () => {
-    setOpen(false)
+    actions.onClose()
     remit.mutate({ id: reportId, isRemitted: !isRemitted })
   }
 
   const handleDelete = () => {
-    setOpen(false)
+    actions.onClose()
     onDelete?.()
   }
 
@@ -60,7 +60,7 @@ export const ReportDetailActions = ({ reportId, isRemitted, onDelete }: Props) =
 
   if (isDesktop) {
     return (
-      <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenu open={actions.open} onOpenChange={actions.setOpen}>
         <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem disabled={disabled} onSelect={handleRemit}>
@@ -83,7 +83,7 @@ export const ReportDetailActions = ({ reportId, isRemitted, onDelete }: Props) =
   }
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={actions.open} onOpenChange={actions.setOpen}>
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent showClose aria-describedby="report-detail-actions-description">
         <SheetHeader>

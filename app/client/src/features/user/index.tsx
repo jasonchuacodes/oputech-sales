@@ -13,29 +13,30 @@ import { ResetPasswordModal } from './components/ResetPasswordModal'
 import { ActionsDropdown } from './components/ActionsDropdown'
 import { cn } from '../../utils/cn'
 import { useSyncContext } from '../../context/sync/useSyncContext'
+import { useDisclosure } from '../../hooks/useDisclosure'
 
 const UsersPage = () => {
   const { data, isLoading } = useUsers()
   const { canUseOnlineFeatures } = useSyncContext()
-  const [modalOpen, setModalOpen] = useState(false)
+  const addUser = useDisclosure()
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [editOpen, setEditOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [resetPasswordOpen, setResetPasswordOpen] = useState(false)
+  const editUser = useDisclosure()
+  const deleteUser = useDisclosure()
+  const resetPassword = useDisclosure()
 
   const openEdit = (user: User) => {
     setSelectedUser(user)
-    setEditOpen(true)
+    editUser.onOpen()
   }
 
   const openDelete = (user: User) => {
     setSelectedUser(user)
-    setDeleteOpen(true)
+    deleteUser.onOpen()
   }
 
   const openResetPassword = (user: User) => {
     setSelectedUser(user)
-    setResetPasswordOpen(true)
+    resetPassword.onOpen()
   }
 
   const columns: DataTableColumn<User>[] = [
@@ -114,7 +115,7 @@ const UsersPage = () => {
           <Button
             className="gap-2"
             disabled={!canUseOnlineFeatures}
-            onClick={() => setModalOpen(true)}
+            onClick={addUser.onOpen}
           >
             <Plus size={16} />
             Add User
@@ -191,31 +192,31 @@ const UsersPage = () => {
         />
       </div>
 
-      <AddUserModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <AddUserModal open={addUser.open} onClose={addUser.onClose} />
 
       <EditUserModal
         user={selectedUser}
-        open={editOpen}
+        open={editUser.open}
         onClose={() => {
-          setEditOpen(false)
+          editUser.onClose()
           setSelectedUser(null)
         }}
       />
 
       <DeleteUserModal
         user={selectedUser}
-        open={deleteOpen}
+        open={deleteUser.open}
         onClose={() => {
-          setDeleteOpen(false)
+          deleteUser.onClose()
           setSelectedUser(null)
         }}
       />
 
       <ResetPasswordModal
         user={selectedUser}
-        open={resetPasswordOpen}
+        open={resetPassword.open}
         onClose={() => {
-          setResetPasswordOpen(false)
+          resetPassword.onClose()
           setSelectedUser(null)
         }}
       />

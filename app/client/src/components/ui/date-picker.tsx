@@ -20,6 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
+import { useDisclosure } from '@/hooks/useDisclosure'
 import { useIsDesktop } from '@/hooks/useIsDesktop'
 import { cn } from '@/utils/cn'
 import { formatDate } from '@/utils/date'
@@ -50,17 +51,17 @@ export const DatePicker = ({
   className,
 }: DatePickerProps) => {
   const isDesktop = useIsDesktop()
-  const [open, setOpen] = React.useState(false)
+  const datePicker = useDisclosure()
   const [pending, setPending] = React.useState<Date | undefined>(value ?? undefined)
 
   const handleOpenChange = (next: boolean) => {
     if (next) setPending(value ?? undefined)
-    setOpen(next)
+    datePicker.setOpen(next)
   }
 
   const applyPending = () => {
     onChange(pending)
-    setOpen(false)
+    datePicker.onClose()
   }
 
   const trigger = (
@@ -96,7 +97,7 @@ export const DatePicker = ({
   )
 
   const picker = isDesktop ? (
-    <Popover.Root open={open} onOpenChange={handleOpenChange}>
+    <Popover.Root open={datePicker.open} onOpenChange={handleOpenChange}>
       <Popover.Trigger asChild>{trigger}</Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
@@ -111,7 +112,7 @@ export const DatePicker = ({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setOpen(false)}
+              onClick={datePicker.onClose}
             >
               Cancel
             </Button>
@@ -128,7 +129,7 @@ export const DatePicker = ({
       </Popover.Portal>
     </Popover.Root>
   ) : (
-    <Sheet open={open} onOpenChange={handleOpenChange}>
+    <Sheet open={datePicker.open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent aria-describedby={undefined}>
         <SheetHeader>
@@ -142,7 +143,7 @@ export const DatePicker = ({
             type="button"
             variant="outline"
             className="flex-1"
-            onClick={() => setOpen(false)}
+            onClick={datePicker.onClose}
           >
             Cancel
           </Button>

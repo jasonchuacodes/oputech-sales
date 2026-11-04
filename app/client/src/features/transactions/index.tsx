@@ -18,6 +18,7 @@ import { DeleteConfirmModal } from './components/DeleteConfirmModal'
 import { LogExpenseModal } from './components/LogExpenseModal'
 import { TransactionActionsSheet } from './components/TransactionActionsSheet'
 import { TransactionActions } from './components/TransactionActions'
+import { useDisclosure } from '../../hooks/useDisclosure'
 
 const getTransactionTitle = (transaction: Transaction) => {
   if (transaction.type === TransactionType.Expense) {
@@ -55,9 +56,9 @@ const getStatus = (transaction: Transaction) => {
 const TransactionsPage = () => {
   const [date, setDate] = useState(dayjsLocal().format('YYYY-MM-DD'))
   const [selectedItem, setSelectedItem] = useState<Transaction | null>(null)
-  const [actionsOpen, setActionsOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [expenseOpen, setExpenseOpen] = useState(false)
+  const transactionActions = useDisclosure()
+  const deleteTransaction = useDisclosure()
+  const logExpense = useDisclosure()
 
   const { data, isLoading } = useTransactions({
     from: dayjsLocal(date).startOf('day').toISOString(),
@@ -76,20 +77,20 @@ const TransactionsPage = () => {
 
   const openActions = (item: Transaction) => {
     setSelectedItem(item)
-    setActionsOpen(true)
+    transactionActions.onOpen()
   }
 
   const openDelete = () => {
     if (!selectedItem || selectedItem.processed) return
-    setActionsOpen(false)
-    setDeleteOpen(true)
+    transactionActions.onClose()
+    deleteTransaction.onOpen()
   }
 
   const requestDelete = (item: Transaction) => {
     if (item.processed) return
     setSelectedItem(item)
-    setActionsOpen(false)
-    setDeleteOpen(true)
+    transactionActions.onClose()
+    deleteTransaction.onOpen()
   }
 
   const transactionCountLabel = `${transactions.length} ${transactions.length === 1 ? 'transaction' : 'transactions'}`
@@ -158,7 +159,7 @@ const TransactionsPage = () => {
         <Button
           variant="outline"
           className="w-full gap-2 sm:w-auto"
-          onClick={() => setExpenseOpen(true)}
+          onClick={logExpense.onOpen}
         >
           <Receipt className="size-4" />
           Log Expense
@@ -305,23 +306,23 @@ const TransactionsPage = () => {
 
       <TransactionActionsSheet
         item={selectedItem}
-        open={actionsOpen}
-        onOpenChange={setActionsOpen}
+        open={transactionActions.open}
+        onOpenChange={transactionActions.setOpen}
         onDelete={openDelete}
       />
 
       <DeleteConfirmModal
         item={selectedItem}
-        open={deleteOpen}
+        open={deleteTransaction.open}
         onClose={() => {
-          setDeleteOpen(false)
+          deleteTransaction.onClose()
           setSelectedItem(null)
         }}
       />
 
       <LogExpenseModal
-        open={expenseOpen}
-        onClose={() => setExpenseOpen(false)}
+        open={logExpense.open}
+        onClose={logExpense.onClose}
       />
     </div>
   )

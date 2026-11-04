@@ -27,6 +27,7 @@ import { useAuthContext } from '../../context/auth/useAuthContext'
 import { UserRole } from '../../types'
 import { useSyncContext } from '../../context/sync/useSyncContext'
 import { dayjsLocal } from '../../utils/date'
+import { useDisclosure } from '../../hooks/useDisclosure'
 import { ReportDisplay } from './components/ReportDisplay'
 import { DeleteConfirmModal } from './components/DeleteConfirmModal'
 import { ReportFilters } from './components/ReportFilters'
@@ -54,7 +55,7 @@ const ReportPage = () => {
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<ReportSortOrder>('DATE_DESC')
   const [selectedReport, setSelectedReport] = useState<ReportDeleteTarget | null>(null)
-  const [deleteOpen, setDeleteOpen] = useState(false)
+  const deleteReport = useDisclosure()
 
   const queryParams = useMemo(
     () => ({
@@ -157,7 +158,7 @@ const ReportPage = () => {
 
   const handleDelete = (item: ReportDeleteTarget) => {
     setSelectedReport(item)
-    setDeleteOpen(true)
+    deleteReport.onOpen()
   }
 
   const hasTransactions = (transactions?.length ?? 0) > 0
@@ -263,14 +264,14 @@ const ReportPage = () => {
 
       <DeleteConfirmModal
         item={selectedReport}
-        open={deleteOpen}
+        open={deleteReport.open}
         onDeleted={() => {
           if ((reportsQuery.data?.items.length ?? 0) === 1 && page > 1) {
             setPage(page - 1)
           }
         }}
         onClose={() => {
-          setDeleteOpen(false)
+          deleteReport.onClose()
           setSelectedReport(null)
         }}
       />

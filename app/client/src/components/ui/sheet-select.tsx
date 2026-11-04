@@ -20,6 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from './sheet'
+import { useDisclosure } from '@/hooks/useDisclosure'
 import { useIsDesktop } from '@/hooks/useIsDesktop'
 import { cn } from '@/utils/cn'
 
@@ -45,19 +46,19 @@ export const SheetSelect = ({
   className,
 }: SheetSelectProps) => {
   const isDesktop = useIsDesktop()
-  const [open, setOpen] = useState(false)
+  const selection = useDisclosure()
   const [pending, setPending] = useState(value ?? '')
   const selected = options.find((option) => option.value === value)
 
   const handleOpenChange = (next: boolean) => {
     if (next) setPending(value ?? '')
-    setOpen(next)
+    selection.setOpen(next)
   }
 
   const handleDone = () => {
     if (!pending) return
     onValueChange(pending)
-    setOpen(false)
+    selection.onClose()
   }
 
   const trigger = (
@@ -78,7 +79,7 @@ export const SheetSelect = ({
 
   if (isDesktop) {
     return (
-      <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenu open={selection.open} onOpenChange={selection.setOpen}>
         <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
         <DropdownMenuContent
           align="start"
@@ -103,7 +104,7 @@ export const SheetSelect = ({
   }
 
   return (
-    <Sheet open={open} onOpenChange={handleOpenChange}>
+    <Sheet open={selection.open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent aria-describedby={undefined}>
         <SheetHeader>

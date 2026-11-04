@@ -1,7 +1,6 @@
 'use client'
 
 import { MoreVertical, Pencil, KeyRound, Trash2 } from 'lucide-react'
-import { useState } from 'react'
 import { Button } from '../../../components'
 import {
   DropdownMenu,
@@ -18,6 +17,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '../../../components/ui/sheet'
+import { useDisclosure } from '../../../hooks/useDisclosure'
 import { useIsDesktop } from '../../../hooks/useIsDesktop'
 
 interface Props {
@@ -32,10 +32,10 @@ export const ActionsDropdown = ({
   onDelete,
 }: Props) => {
   const isDesktop = useIsDesktop()
-  const [open, setOpen] = useState(false)
+  const actions = useDisclosure()
 
   const runAction = (action: () => void) => {
-    setOpen(false)
+    actions.onClose()
     action()
   }
 
@@ -51,7 +51,7 @@ export const ActionsDropdown = ({
 
   if (isDesktop) {
     return (
-      <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenu open={actions.open} onOpenChange={actions.setOpen}>
         <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
         <DropdownMenuItem onSelect={() => runAction(onEdit)}>
@@ -73,7 +73,7 @@ export const ActionsDropdown = ({
   }
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={actions.open} onOpenChange={actions.setOpen}>
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent showClose aria-describedby={undefined}>
         <SheetHeader>
