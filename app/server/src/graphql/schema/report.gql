@@ -1,0 +1,69 @@
+type ProductSale {
+  productId: String!
+  name: String!
+  quantitySold: Int!
+  pricePerUnit: Float!
+  printCount: Int!
+  total: Float!
+}
+
+type Report {
+  id: ID!
+  createdBy: User!
+  fromDate: String!
+  toDate: String!
+  products: [ProductSale!]!
+  totalCash: Float!
+  totalOnline: Float!
+  totalIncome: Float!
+  totalExpenses: Float!
+  totalPrintCount: Int!
+  expenses: [Transaction!]!
+  isRemitted: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}
+
+input CreateReportInput {
+  fromDate: String!
+  toDate: String!
+}
+
+enum AnalyticsRange {
+  TODAY
+  LAST_7_DAYS
+  LAST_15_DAYS
+  LAST_MONTH
+  LAST_6_MONTHS
+}
+
+type AnalyticsPoint {
+  date: String!
+  totalSales: Float!
+  totalExpenses: Float!
+}
+
+type TopProduct {
+  productId: String!
+  name: String!
+  quantitySold: Int!
+}
+
+type Analytics {
+  series: [AnalyticsPoint!]!
+  topProducts: [TopProduct!]!
+  totalSales: Float!
+  totalExpenses: Float!
+}
+
+extend type Query {
+  reports: [Report!]!
+  report(id: ID!): Report
+  analytics(range: AnalyticsRange!): Analytics!
+}
+
+extend type Mutation {
+  createReport(input: CreateReportInput!): Report!
+  deleteReport(id: ID!): Boolean!
+  remit(id: ID!, isRemitted: Boolean!): Report!
+}

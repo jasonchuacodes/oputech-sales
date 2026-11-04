@@ -1,0 +1,63 @@
+enum PaymentType {
+  CASH
+  ONLINE
+}
+
+enum TransactionType {
+  SALE
+  EXPENSE
+}
+
+type TransactionItem {
+  productId: ID!
+  name: String!
+  price: Float!
+  printCount: Int!
+  quantity: Int!
+}
+
+type Transaction {
+  id: ID!
+  clientMutationId: ID
+  type: TransactionType!
+  items: [TransactionItem!]!
+  label: String
+  paymentType: PaymentType!
+  total: Float!
+  processed: Boolean!
+  occurredAt: String!
+  createdAt: String!
+}
+
+input TransactionItemInput {
+  productId: ID!
+  quantity: Int!
+}
+
+input CreateTransactionInput {
+  type: TransactionType!
+  items: [TransactionItemInput!]
+  label: String
+  amount: Float
+  paymentType: PaymentType!
+  clientMutationId: ID
+  occurredAt: String
+}
+
+input TransactionFilter {
+  from: String
+  to: String
+  processed: Boolean
+}
+
+extend type Query {
+  transactions(filter: TransactionFilter): [Transaction!]!
+}
+
+extend type Mutation {
+  createTransaction(input: CreateTransactionInput!): Transaction!
+}
+
+extend type Mutation {
+  deleteTransaction(id: ID!): Boolean!
+}

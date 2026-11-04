@@ -1,0 +1,45 @@
+type ActivityStatus {
+  status: String!
+  message: String
+}
+
+type User {
+  id: ID!
+  username: String!
+  fullName: String
+  email: String
+  role: String!
+  activityStatus: ActivityStatus!
+}
+
+extend type Query {
+  users: [User!]!
+}
+
+input CreateUserInput {
+  username: String!
+  fullName: String
+  email: String
+  password: String!
+  role: String
+}
+
+input ActivityStatusInput {
+  status: String!
+  message: String
+}
+
+input UpdateUserInput {
+  username: String
+  fullName: String
+  email: String
+  role: String
+}
+
+extend type Mutation {
+  createUser(input: CreateUserInput!): User!
+  updateUser(id: ID!, input: UpdateUserInput!): User!
+  deleteUser(id: ID!): Boolean!
+  updateActivityStatus(id: ID!, input: ActivityStatusInput!): User!
+  resetPassword(id: ID!, password: String!): User!
+}

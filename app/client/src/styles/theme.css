@@ -1,0 +1,193 @@
+/*
+ * Design System Theme
+ *
+ * What lives here:
+ *   - shadcn CSS variables (:root) — aligned to brand colors
+ *   - @theme inline — registers tokens NOT built into Tailwind:
+ *       semantic color aliases (brand, surface, success, etc.)
+ *       border-radius overrides (spec differs from Tailwind defaults)
+ *       named shadows (card, dropdown, modal)
+ *
+ * What is already in Tailwind and does NOT need registration:
+ *   - Gray/neutral scale → use slate-* (slate-50=#F8FAFC, slate-200=#E2E8F0, etc.)
+ *   - Text sizes         → text-xs(12) text-sm(14) text-base(16) text-lg(18) text-xl(20) text-2xl(24) text-3xl(30)
+ *   - Font weights       → font-normal font-semibold font-bold
+ */
+
+:root {
+  /* ─── Base tokens (used by shadcn components) ─── */
+  --background: #F5F5F5;
+  --foreground: #101010;
+
+  --card: #FFFFFF;
+  --card-foreground: #101010;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #101010;
+
+  --primary: #17434D;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #FFFFFF;
+  --secondary-foreground: #101010;
+
+  --muted: #EEEEEE;
+  --muted-foreground: rgb(16 16 16 / 70%);
+
+  --accent: #E9F0F1;
+  --accent-foreground: #17434D;
+
+  --destructive: #B64E4A;
+
+  --border: rgb(16 16 16 / 12%);
+  --input: rgb(16 16 16 / 14%);
+  --ring: #17434D;
+
+  --chart-1: #17434D;
+  --chart-2: #32765A;
+  --chart-3: #B47B31;
+  --chart-4: #47769B;
+  --chart-5: #B64E4A;
+
+  --radius: 0.5rem;
+
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #101010;
+  --sidebar-primary: #17434D;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E9F0F1;
+  --sidebar-accent-foreground: #17434D;
+  --sidebar-border: rgb(16 16 16 / 12%);
+  --sidebar-ring: #17434D;
+}
+
+@theme inline {
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+
+  /* ─── shadcn color mappings ─── */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* ─── Brand ─────────────────────────────────────────────────────────────────
+     bg-brand          text-brand          border-brand
+     bg-brand-hover
+     bg-brand-light    text-brand-light                                        */
+  --color-brand: #17434D;
+  --color-brand-hover: #0F343D;
+  --color-brand-light: #E9F0F1;
+
+  /* ─── Semantic / status ──────────────────────────────────────────────────────
+     bg-success  text-success
+     bg-warning  text-warning
+     bg-danger   text-danger
+     bg-info     text-info                                                      */
+  --color-success: #32765A;
+  --color-warning: #B47B31;
+  --color-danger: #B64E4A;
+  --color-info: #47769B;
+  --color-text-primary: #101010;
+  --color-text-secondary: rgb(16 16 16 / 70%);
+  --color-text-tertiary: rgb(16 16 16 / 50%);
+  --color-status-success: #32765A;
+  --color-status-warning: #B47B31;
+  --color-status-error: #B64E4A;
+  --color-status-info: #47769B;
+
+  /* ─── Surfaces ───────────────────────────────────────────────────────────────
+     bg-surface           page background
+     bg-surface-hover     list row / nav item hover
+     bg-surface-selected  active nav item                                       */
+  --color-surface: #F5F5F5;
+  --color-surface-hover: #EEEEEE;
+  --color-surface-selected: #E9F0F1;
+
+  /* ─── Border radius ──────────────────────────────────────────────────────────
+     Overrides Tailwind defaults to match the 8px-base spec.
+     rounded-sm  8px   buttons, inputs
+     rounded-md  12px  cards
+     rounded-lg  16px  modals
+     rounded-xl  20px                                                           */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  /* ─── Shadows ────────────────────────────────────────────────────────────────
+     Overrides Tailwind defaults with spec values.
+     shadow-sm   cards
+     shadow-md   dropdowns / popovers
+     shadow-lg   modals / drawers                                               */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.12);
+  --radius-input: 8px;
+  --radius-card: 12px;
+  --radius-sheet: 20px;
+  --radius-pill: 9999px;
+  --shadow-xs: 0 1px 3px rgba(16, 16, 16, 0.07);
+}
+
+.dark {
+  --background: #0F172A;
+  --foreground: #F8FAFC;
+  --card: #1E293B;
+  --card-foreground: #F8FAFC;
+  --popover: #1E293B;
+  --popover-foreground: #F8FAFC;
+  --primary: #2563EB;
+  --primary-foreground: #FFFFFF;
+  --secondary: #1E293B;
+  --secondary-foreground: #F8FAFC;
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
+  --accent: #1E293B;
+  --accent-foreground: #F8FAFC;
+  --destructive: #EF4444;
+  --border: #FFFFFF1A;
+  --input: #FFFFFF26;
+  --ring: #2563EB;
+  --chart-1: #3B82F6;
+  --chart-2: #22C55E;
+  --chart-3: #F59E0B;
+  --chart-4: #0EA5E9;
+  --chart-5: #EF4444;
+  --sidebar: #1E293B;
+  --sidebar-foreground: #F8FAFC;
+  --sidebar-primary: #2563EB;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #1E293B;
+  --sidebar-accent-foreground: #F8FAFC;
+  --sidebar-border: #FFFFFF1A;
+  --sidebar-ring: #2563EB;
+}
