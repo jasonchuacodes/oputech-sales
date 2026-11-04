@@ -170,53 +170,51 @@ const ReportPage = () => {
         description="Review generated reports, totals, and remittance status."
       />
 
-      {!isAdmin && (
-        <section className="flex flex-col gap-3" aria-labelledby="generate-report">
-          <h2
-            id="generate-report"
-            className="text-text-secondary text-xs font-semibold tracking-[0.16em] uppercase"
+      <section className="flex flex-col gap-3" aria-labelledby="generate-report">
+        <h2
+          id="generate-report"
+          className="text-text-secondary text-xs font-semibold tracking-[0.16em] uppercase"
+        >
+          Generate daily report
+        </h2>
+        <div className="rounded-card bg-card flex flex-col gap-3 p-4 shadow-card sm:flex-row sm:items-end">
+          <DatePicker
+            label="Report date"
+            value={dayjsLocal(reportDate).toDate()}
+            onChange={(next) =>
+              next && setReportDate(dayjsLocal(next).format('YYYY-MM-DD'))
+            }
+            disableFuture
+            className="w-full sm:w-64"
+          />
+          <Button
+            className="w-full sm:w-auto"
+            onClick={handleGenerate}
+            disabled={
+              createReport.isPending || !hasTransactions || !canGenerateReport
+            }
+            title={
+              canGenerateReport
+                ? undefined
+                : 'Connect and sync pending transactions first'
+            }
           >
-            Generate daily report
-          </h2>
-          <div className="rounded-card bg-card flex flex-col gap-3 p-4 shadow-card sm:flex-row sm:items-end">
-            <DatePicker
-              label="Report date"
-              value={dayjsLocal(reportDate).toDate()}
-              onChange={(next) =>
-                next && setReportDate(dayjsLocal(next).format('YYYY-MM-DD'))
-              }
-              disableFuture
-              className="w-full sm:w-64"
-            />
-            <Button
-              className="w-full sm:w-auto"
-              onClick={handleGenerate}
-              disabled={
-                createReport.isPending || !hasTransactions || !canGenerateReport
-              }
-              title={
-                canGenerateReport
-                  ? undefined
-                  : 'Connect and sync pending transactions first'
-              }
-            >
-              {createReport.isPending ? 'Generating…' : 'Generate report'}
-            </Button>
-          </div>
+            {createReport.isPending ? 'Generating…' : 'Generate report'}
+          </Button>
+        </div>
 
-          {txLoading ? (
-            <div className="rounded-card bg-card h-32 animate-pulse shadow-card" />
-          ) : previewReport ? (
-            <ReportDisplay report={previewReport as Report} isPreview />
-          ) : (
-            <p className="text-text-secondary rounded-card bg-card p-4 text-sm shadow-card">
-              No unprocessed activity is available for this date.
-            </p>
-          )}
-        </section>
-      )}
+        {txLoading ? (
+          <div className="rounded-card bg-card h-32 animate-pulse shadow-card" />
+        ) : previewReport ? (
+          <ReportDisplay report={previewReport as Report} isPreview />
+        ) : (
+          <p className="text-text-secondary rounded-card bg-card p-4 text-sm shadow-card">
+            No unprocessed activity is available for this date.
+          </p>
+        )}
+      </section>
 
-      {!isAdmin && !canGenerateReport && (pendingCount > 0 || blockedCount > 0) && (
+      {!canGenerateReport && (pendingCount > 0 || blockedCount > 0) && (
         <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
           Report generation is available after this user&apos;s pending transactions
           are synced. Existing reports remain available.
