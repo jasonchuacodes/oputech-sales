@@ -51,9 +51,11 @@ const PULL_TO_REFRESH_THRESHOLD = 56
 const NavigationLink = ({
   item,
   compact = false,
+  bottom = false,
 }: {
   item: NavItem
   compact?: boolean
+  bottom?: boolean
 }) => {
   const pathname = usePathname()
   const active =
@@ -67,15 +69,27 @@ const NavigationLink = ({
       aria-current={active ? 'page' : undefined}
       className={cn(
         'flex min-h-12 items-center rounded-md text-sm font-medium transition-colors',
-        compact ? 'flex-col justify-center gap-1 px-1 text-xs' : 'gap-3 px-3',
+        bottom
+          ? 'flex-col justify-center gap-1.5 rounded-none px-1 py-2 text-xs'
+          : compact
+            ? 'flex-col justify-center gap-1 px-1 text-xs'
+            : 'gap-3 px-3',
         active
-          ? 'bg-primary/10 text-primary'
-          : 'text-text-secondary hover:bg-card hover:text-foreground'
+          ? bottom
+            ? 'text-primary'
+            : 'bg-primary/10 text-primary'
+          : bottom
+            ? 'text-text-tertiary hover:text-foreground'
+            : 'text-text-secondary hover:bg-card hover:text-foreground'
       )}
     >
       <Icon
         aria-hidden="true"
-        className={cn('size-5 shrink-0', active && 'stroke-[2.5]')}
+        className={cn(
+          'shrink-0',
+          bottom ? 'size-6' : 'size-5',
+          active && 'stroke-[2.5]'
+        )}
       />
       <span>{item.label}</span>
     </Link>
@@ -208,7 +222,10 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
 
         <div className="relative min-h-0 flex-1 overflow-hidden">
           <PullToRefreshIndicator
+            pullDistance={pullDistance}
+            isPulling={isPulling}
             isRefreshing={isRefreshing}
+            threshold={PULL_TO_REFRESH_THRESHOLD}
             height={PULL_TO_REFRESH_THRESHOLD}
           />
           <main
@@ -229,12 +246,12 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
 
       <nav
         aria-label="Primary navigation"
-        className="border-border/70 bg-card/95 fixed inset-x-0 bottom-0 z-30 border-t pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-2px_10px_rgba(16,16,16,0.06)] backdrop-blur md:hidden"
+        className="bg-card fixed inset-x-0 bottom-0 z-30 pt-1 pb-[calc(0.25rem+env(safe-area-inset-bottom))] shadow-[0_-2px_10px_rgba(16,16,16,0.08)] md:hidden"
       >
         <div className="mx-auto flex max-w-lg px-2">
           {navigation.map((item) => (
             <div key={item.href} className="min-w-0 flex-1">
-              <NavigationLink item={item} compact />
+              <NavigationLink item={item} bottom />
             </div>
           ))}
         </div>
