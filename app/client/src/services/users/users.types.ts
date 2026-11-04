@@ -21,7 +21,6 @@ export interface CreateUserInput {
   email?: string
   password: string
   role: string
-  tenantIds: string[]
 }
 
 export interface UpdateUserInput {
@@ -29,7 +28,6 @@ export interface UpdateUserInput {
   fullName?: string
   email?: string
   role?: string
-  tenantIds?: string[]
 }
 
 export interface ResetPasswordInput {

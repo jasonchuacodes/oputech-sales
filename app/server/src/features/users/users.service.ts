@@ -75,7 +75,7 @@ export class UsersService {
     const target = await this.user.findOne({ _id: id, ownerUserId }).exec()
     if (!target) throw new NotFoundException('The requested user was not found.')
     const role = input.role ?? target.role
-    const tenantIds = [...new Set(input.tenantIds ?? target.tenantIds)]
+    const tenantIds = target.tenantIds
     await this.tenants.assertAssignments(ownerUserId, role, tenantIds)
     const currentTenantId = tenantIds.includes(target.currentTenantId)
       ? target.currentTenantId

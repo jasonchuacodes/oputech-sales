@@ -10,7 +10,6 @@ export const editUserSchema = z.object({
   fullName: z.string().max(100, 'Full name must be at most 100 characters').optional(),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   role: z.enum([UserRole.Admin, UserRole.Staff]),
-  tenantIds: z.array(z.string()).min(1, 'Select at least one tenant'),
 })
 
 export type EditUserFormValues = z.infer<typeof editUserSchema>

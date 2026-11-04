@@ -25,7 +25,6 @@ input CreateUserInput {
   email: String
   password: String!
   role: UserRole!
-  tenantIds: [ID!]!
 }
 
 input UpdateUserInput {
@@ -33,7 +32,6 @@ input UpdateUserInput {
   fullName: String
   email: String
   role: UserRole
-  tenantIds: [ID!]
 }
 
 extend type Mutation {

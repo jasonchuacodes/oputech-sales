@@ -19,7 +19,6 @@ interface CreateUserInput {
   email?: string
   password: string
   role?: string
-  tenantIds: string[]
 }
 
 interface UpdateUserInput {
@@ -27,7 +26,6 @@ interface UpdateUserInput {
   fullName?: string
   email?: string
   role?: string
-  tenantIds?: string[]
 }
 
 @UseGuards(JwtAuthGuard, SuperAdminGuard)
@@ -42,14 +40,19 @@ export class UsersResolver {
   }
 
   @Mutation()
-  async createUser(@Args('input') input: CreateUserInput, @Context() context: any) {
+  @UseGuards(TenantAccessGuard)
+  async createUser(
+    @TenantId() tenantId: string,
+    @Args('input') input: CreateUserInput,
+    @Context() context: any,
+  ) {
     return this.usersService.createManaged(context.req.user.userId, {
       username: input.username,
       fullName: input.fullName,
       email: input.email,
       password: input.password,
       role: (input.role as UserRole) ?? UserRole.Staff,
-      tenantIds: input.tenantIds,
+      tenantIds: [tenantId],
     })
   }
 
@@ -64,7 +67,6 @@ export class UsersResolver {
       fullName: input.fullName,
       email: input.email,
       role: input.role as UserRole,
-      tenantIds: input.tenantIds,
     })
   }
 
