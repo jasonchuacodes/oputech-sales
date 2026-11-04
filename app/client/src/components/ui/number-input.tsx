@@ -41,6 +41,9 @@ interface NumberInputFieldProps extends Omit<
   hideControls?: boolean
 }
 
+const toDisplayValue = (value: number | undefined) =>
+  value === undefined || value === 0 ? '' : String(value)
+
 function NumberInputField({
   field,
   fieldState,
@@ -57,12 +60,12 @@ function NumberInputField({
 
   const round = (n: number) => Number(n.toFixed(decimals))
 
-  const [text, setText] = useState(() => field.value?.toString() ?? '')
+  const [text, setText] = useState(() => toDisplayValue(field.value))
   const [lastValue, setLastValue] = useState(field.value)
 
   if (field.value !== lastValue) {
     setLastValue(field.value)
-    setText(field.value?.toString() ?? '')
+    setText(toDisplayValue(field.value))
   }
 
   const current = Number(text || 0)
@@ -91,7 +94,7 @@ function NumberInputField({
   return (
     <div
       className={cn(
-        'border-input focus-within:border-brand focus-within:ring-brand/10 flex h-12 overflow-hidden rounded-input border bg-card shadow-xs focus-within:ring-3',
+        'border-input focus-within:border-brand focus-within:ring-brand/10 rounded-input bg-card flex h-12 overflow-hidden border shadow-xs focus-within:ring-3',
         fieldState.error && 'border-danger ring-danger/20',
         className
       )}
