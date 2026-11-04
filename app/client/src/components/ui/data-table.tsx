@@ -82,7 +82,7 @@ function DataTableComponent<T>({
   const empty = !loading && collection.items.length === 0
 
   return (
-    <div className="overflow-visible xl:overflow-x-auto xl:rounded-card xl:bg-card xl:shadow-xs">
+    <div className="xl:rounded-card xl:bg-card overflow-visible xl:overflow-x-auto xl:shadow-xs">
       <table id={id} className="block w-full text-sm xl:table xl:min-w-162.5">
         <thead className="hidden xl:table-header-group">
           <tr className="border-b border-gray-200 bg-slate-50">
@@ -132,20 +132,23 @@ function DataTableComponent<T>({
             <th aria-hidden="true" />
           </tr>
         </thead>
-        <tbody className="flex flex-col gap-3 xl:table-row-group">
+        <tbody className="flex w-full flex-col gap-3 xl:table-row-group">
           {loading ? (
-            <tr className="block rounded-card bg-card shadow-xs xl:table-row xl:shadow-none">
-              <td colSpan={columns.length + 1} className="py-8 text-center">
+            <tr className="rounded-card bg-card flex w-full shadow-xs xl:table-row xl:shadow-none">
+              <td
+                colSpan={columns.length + 1}
+                className="flex w-full items-center justify-center py-8 text-center xl:table-cell xl:w-auto"
+              >
                 <div className="flex justify-center">
                   <Spinner />
                 </div>
               </td>
             </tr>
           ) : empty ? (
-            <tr className="block rounded-card bg-card shadow-xs xl:table-row xl:shadow-none">
+            <tr className="rounded-card bg-card flex w-full shadow-xs xl:table-row xl:shadow-none">
               <td
                 colSpan={columns.length + 1}
-                className="text-muted-foreground py-8 text-center"
+                className="text-muted-foreground flex w-full items-center justify-center py-8 text-center xl:table-cell xl:w-auto"
               >
                 {emptyMessage}
               </td>
@@ -161,7 +164,7 @@ function DataTableComponent<T>({
                   aria-label={ariaLabel}
                   onClick={onRowClick ? () => onRowClick(item) : undefined}
                   className={cn(
-                    'flex flex-col overflow-hidden rounded-card bg-card shadow-xs xl:table-row xl:rounded-none xl:shadow-none',
+                    'rounded-card bg-card flex flex-col overflow-hidden shadow-xs xl:table-row xl:rounded-none xl:shadow-none',
                     !isLast && 'xl:border-b',
                     'hover:bg-card',
                     onRowClick && 'cursor-pointer'
@@ -179,7 +182,7 @@ function DataTableComponent<T>({
                             colIdx === 0 && !column.width ? 360 : undefined,
                         }}
                         className={cn(
-                          'flex min-h-11 items-center justify-between gap-4 border-b border-border/50 px-4 py-3 text-right font-normal last:border-b-0 xl:table-cell xl:border-b-0 xl:text-left xl:whitespace-nowrap before:text-left before:text-xs before:font-medium before:tracking-wide before:text-text-tertiary before:uppercase before:content-[attr(data-label)] xl:before:hidden',
+                          'border-border/50 before:text-text-tertiary flex min-h-11 items-center justify-between gap-4 border-b px-4 py-3 text-right font-normal before:text-left before:text-xs before:font-medium before:tracking-wide before:uppercase before:content-[attr(data-label)] last:border-b-0 xl:table-cell xl:border-b-0 xl:text-left xl:whitespace-nowrap xl:before:hidden',
                           alignClass[column.align ?? 'left'],
                           colIdx === 0 && !column.width && 'xl:truncate',
                           !column.heading && 'justify-end before:hidden'

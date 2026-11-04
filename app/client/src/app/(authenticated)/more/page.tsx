@@ -1,5 +1,6 @@
-import { MorePage } from '@/features/account/MorePage'
+import { redirect } from 'next/navigation'
+import { UserRoutes } from '@/routes/paths'
 
 export default function MoreRoute() {
-  return <MorePage />
+  redirect(UserRoutes.Account)
 }

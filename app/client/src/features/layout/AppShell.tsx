@@ -6,11 +6,12 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   BarChart3,
-  LayoutDashboard,
-  MoreHorizontal,
+  Bell,
+  House,
   Package,
   ReceiptText,
   ShoppingBag,
+  UserRound,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -19,7 +20,8 @@ import { useSyncContext } from '@/context/sync/useSyncContext'
 import { UserRole } from '@/types'
 import { UserStatus } from '@/services/users/users.types'
 import { cn } from '@/utils/cn'
-import { Spinner } from '@/components'
+import { Button, Spinner } from '@/components'
+import { AccountAvatar } from '@/features/account/components/AccountAvatar'
 import { StatusOverlay } from './components/StatusOverlay'
 import { SyncStatus } from './components/SyncStatus'
 import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
@@ -34,11 +36,10 @@ type NavItem = {
 }
 
 const primaryNavigation: NavItem[] = [
-  { label: 'Home', href: '/dashboard', icon: LayoutDashboard, adminOnly: true },
+  { label: 'Home', href: '/dashboard', icon: House, adminOnly: true },
   { label: 'Sell', href: '/sell', icon: ShoppingBag },
   { label: 'Activity', href: '/activity', icon: ReceiptText },
   { label: 'Reports', href: '/reports', icon: BarChart3 },
-  { label: 'More', href: '/more', icon: MoreHorizontal },
 ]
 
 const adminNavigation: NavItem[] = [
@@ -46,21 +47,26 @@ const adminNavigation: NavItem[] = [
   { label: 'Users', href: '/users', icon: Users },
 ]
 
+const accountNavigation: NavItem = {
+  label: 'Me',
+  href: '/account',
+  icon: UserRound,
+}
+
 const PULL_TO_REFRESH_THRESHOLD = 56
+
+const isRouteActive = (pathname: string, href: string) =>
+  pathname === href || pathname.startsWith(`${href}/`)
 
 const NavigationLink = ({
   item,
-  compact = false,
   bottom = false,
 }: {
   item: NavItem
-  compact?: boolean
   bottom?: boolean
 }) => {
   const pathname = usePathname()
-  const active =
-    pathname === item.href ||
-    (item.href === '/reports' && pathname.startsWith('/reports/'))
+  const active = isRouteActive(pathname, item.href)
   const Icon = item.icon
 
   return (
@@ -68,19 +74,17 @@ const NavigationLink = ({
       href={item.href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex min-h-12 items-center rounded-md text-sm font-medium transition-colors',
+        'focus-visible:ring-ring/30 flex items-center rounded-md text-sm font-medium transition-colors outline-none focus-visible:ring-3',
         bottom
-          ? 'flex-col justify-center gap-1.5 rounded-none px-1 py-2 text-xs'
-          : compact
-            ? 'flex-col justify-center gap-1 px-1 text-xs'
-            : 'gap-3 px-3',
+          ? 'min-h-16 flex-col justify-center gap-1 rounded-none px-1 py-2 text-xs'
+          : 'min-h-12 gap-3 px-2 py-3',
         active
           ? bottom
             ? 'text-primary'
             : 'bg-primary/10 text-primary'
           : bottom
-            ? 'text-text-tertiary hover:text-foreground'
-            : 'text-text-secondary hover:bg-card hover:text-foreground'
+            ? 'text-text-tertiary hover:text-text-secondary'
+            : 'text-text-secondary hover:bg-surface-hover hover:text-foreground'
       )}
     >
       <Icon
@@ -88,10 +92,50 @@ const NavigationLink = ({
         className={cn(
           'shrink-0',
           bottom ? 'size-6' : 'size-5',
-          active && 'stroke-[2.5]'
+          active && 'stroke-[2.5]',
+          active && item.href === '/dashboard' && 'fill-primary'
         )}
       />
       <span>{item.label}</span>
+    </Link>
+  )
+}
+
+const AccountProfileLink = ({
+  username,
+  email,
+  isAdmin,
+}: {
+  username: string
+  email: string
+  isAdmin: boolean
+}) => {
+  const pathname = usePathname()
+  const active = isRouteActive(pathname, accountNavigation.href)
+
+  return (
+    <Link
+      href={accountNavigation.href}
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'focus-visible:ring-ring/30 flex min-h-16 items-center gap-3 rounded-md px-2 py-2 transition-colors outline-none focus-visible:ring-3',
+        active
+          ? 'bg-primary/10 text-primary'
+          : 'text-text-secondary hover:bg-surface-hover hover:text-foreground'
+      )}
+    >
+      <AccountAvatar
+        username={username}
+        className={cn(!active && 'bg-muted text-text-secondary')}
+      />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold">
+          {username || 'Account'}
+        </span>
+        <span className="text-text-tertiary block truncate text-xs">
+          {email || (isAdmin ? 'Administrator' : 'Sales user')}
+        </span>
+      </span>
     </Link>
   )
 }
@@ -156,50 +200,40 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         onActive={setActive}
       />
 
-      <aside className="border-border/70 bg-card hidden w-64 shrink-0 flex-col border-r p-4 xl:flex">
-        <div className="flex h-14 items-center gap-3 px-2">
+      <aside className="border-border/70 bg-card hidden w-48 shrink-0 flex-col gap-6 border-r px-2 py-4 md:flex xl:w-64 xl:px-4">
+        <div className="flex h-14 shrink-0 items-center justify-center xl:justify-start xl:gap-3 xl:px-2">
           <div className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-md text-sm font-bold">
             OS
           </div>
-          <div>
+          <div className="hidden xl:block">
             <p className="font-semibold">Oputech Sales</p>
             <p className="text-text-secondary text-xs">Business operations</p>
           </div>
         </div>
         <nav
-          className="mt-6 flex flex-1 flex-col gap-1"
+          className="flex min-h-0 flex-1 flex-col gap-4"
           aria-label="Primary navigation"
         >
-          {navigation
-            .filter((item) => item.href !== '/more')
-            .map((item) => (
+          <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+            {navigation.map((item) => (
               <NavigationLink key={item.href} item={item} />
             ))}
-          {isAdmin && (
-            <div className="border-border/70 mt-5 flex flex-col gap-1 border-t pt-5">
-              <p className="text-text-tertiary px-3 pb-2 text-xs font-semibold tracking-widest uppercase">
-                Manage
-              </p>
-              {adminNavigation.map((item) => (
-                <NavigationLink key={item.href} item={item} />
-              ))}
-            </div>
-          )}
-        </nav>
-        <NavigationLink item={primaryNavigation[4]} />
-      </aside>
-
-      <aside className="border-border/70 bg-card hidden w-20 shrink-0 flex-col border-r px-2 py-4 md:flex xl:hidden">
-        <div className="bg-primary text-primary-foreground mx-auto flex size-11 items-center justify-center rounded-md text-sm font-bold">
-          OS
-        </div>
-        <nav
-          className="mt-6 flex flex-1 flex-col gap-2"
-          aria-label="Primary navigation"
-        >
-          {navigation.map((item) => (
-            <NavigationLink key={item.href} item={item} compact />
-          ))}
+            {isAdmin && (
+              <div className="border-border/70 flex flex-col gap-1 border-t pt-4">
+                <p className="text-text-tertiary px-2 py-2 text-xs font-semibold tracking-widest uppercase">
+                  Manage
+                </p>
+                {adminNavigation.map((item) => (
+                  <NavigationLink key={item.href} item={item} />
+                ))}
+              </div>
+            )}
+          </div>
+          <AccountProfileLink
+            username={auth.username}
+            email={auth.email}
+            isAdmin={isAdmin}
+          />
         </nav>
       </aside>
 
@@ -211,13 +245,16 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             </span>
             <h1 className="text-lg font-semibold">Oputech Sales</h1>
           </div>
-          <Link
-            href="/more"
-            className="bg-primary/10 text-primary flex size-11 items-center justify-center rounded-full text-sm font-semibold"
-            aria-label="Open account and settings"
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            disabled
+            aria-label="Notifications coming soon"
+            title="Notifications coming soon"
           >
-            {auth.username.slice(0, 1).toUpperCase()}
-          </Link>
+            <Bell className="size-5" aria-hidden="true" />
+          </Button>
         </header>
 
         <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -232,7 +269,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             ref={mainRef}
             aria-busy={isRefreshing}
             className={cn(
-              'relative h-full overflow-y-auto overscroll-y-none pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0',
+              'relative h-full overflow-y-auto overscroll-y-none',
               isPulling
                 ? 'transition-none'
                 : 'transition-[top] duration-200 ease-out motion-reduce:transition-none'
@@ -242,20 +279,20 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             {children}
           </main>
         </div>
-      </div>
 
-      <nav
-        aria-label="Primary navigation"
-        className="bg-card fixed inset-x-0 bottom-0 z-30 pt-1 pb-[calc(0.25rem+env(safe-area-inset-bottom))] shadow-[0_-2px_10px_rgba(16,16,16,0.08)] md:hidden"
-      >
-        <div className="mx-auto flex max-w-lg px-2">
-          {navigation.map((item) => (
-            <div key={item.href} className="min-w-0 flex-1">
-              <NavigationLink item={item} bottom />
-            </div>
-          ))}
-        </div>
-      </nav>
+        <nav
+          aria-label="Primary navigation"
+          className="bg-card z-30 shrink-0 pt-1 pb-[calc(0.25rem+env(safe-area-inset-bottom))] shadow-[0_-2px_10px_rgba(16,16,16,0.08)] md:hidden"
+        >
+          <div className="mx-auto flex w-full max-w-lg px-1">
+            {[...navigation, accountNavigation].map((item) => (
+              <div key={item.href} className="min-w-0 flex-1">
+                <NavigationLink item={item} bottom />
+              </div>
+            ))}
+          </div>
+        </nav>
+      </div>
 
       <SyncStatus />
     </div>

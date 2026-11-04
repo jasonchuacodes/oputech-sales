@@ -10,7 +10,7 @@ export const UserRoutes = {
   Transactions: '/activity',
   Reports: '/reports',
   ReportDetail: '/reports/:reportId',
-  More: '/more',
+  Account: '/account',
 }
 
 export const reportDetailPath = (reportId: string) => `/reports/${reportId}`
