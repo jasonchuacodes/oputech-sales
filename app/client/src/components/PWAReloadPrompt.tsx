@@ -12,46 +12,95 @@ const TOAST_ID = 'pwa-update'
  */
 export const PWAReloadPrompt = () => {
   useEffect(() => {
-    if (!('serviceWorker' in navigator) || process.env.NODE_ENV !== 'production') return
+    if (
+      !('serviceWorker' in navigator) ||
+      process.env.NODE_ENV !== 'production'
+    )
+      return
 
-    let refreshing = false
+    let disposed = false
+    let reloadRequested = false
+    let updateInterval: number | undefined
+    let removeUpdateListeners: (() => void) | undefined
+
     const handleControllerChange = () => {
-      if (refreshing) return
-      refreshing = true
-      window.location.reload()
+      if (reloadRequested) window.location.reload()
     }
 
-    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange)
-    void navigator.serviceWorker.register('/sw.js').then((registration) => {
-      const promptForUpdate = () => {
-        if (!registration.waiting) return
-        toast(
-          (toastInstance) => (
-            <div className="flex items-center gap-3">
-              <span className="text-sm">A new version is available.</span>
-              <button
-                onClick={() => {
-                  toast.dismiss(toastInstance.id)
-                  registration.waiting?.postMessage({ type: 'SKIP_WAITING' })
-                }}
-                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
-              >
-                Reload
-              </button>
-            </div>
-          ),
-          { id: TOAST_ID, duration: Infinity }
-        )
-      }
+    navigator.serviceWorker.addEventListener(
+      'controllerchange',
+      handleControllerChange
+    )
 
-      promptForUpdate()
-      registration.addEventListener('updatefound', () => {
-        registration.installing?.addEventListener('statechange', promptForUpdate)
+    void navigator.serviceWorker
+      .register('/sw.js', { updateViaCache: 'none' })
+      .then((registration) => {
+        if (disposed) return
+
+        const promptForUpdate = (waitingWorker = registration.waiting) => {
+          if (!waitingWorker || !navigator.serviceWorker.controller) return
+
+          toast(
+            (toastInstance) => (
+              <div className="flex items-center gap-3">
+                <span className="text-sm">A new version is available.</span>
+                <button
+                  onClick={() => {
+                    reloadRequested = true
+                    toast.dismiss(toastInstance.id)
+                    waitingWorker.postMessage({ type: 'SKIP_WAITING' })
+                  }}
+                  className="bg-primary text-primary-foreground rounded-md px-3 py-2 text-sm font-medium"
+                >
+                  Reload
+                </button>
+              </div>
+            ),
+            { id: TOAST_ID, duration: Infinity }
+          )
+        }
+
+        const handleUpdateFound = () => {
+          const installingWorker = registration.installing
+          if (!installingWorker) return
+          installingWorker.addEventListener('statechange', () => {
+            if (installingWorker.state === 'installed') {
+              promptForUpdate(installingWorker)
+            }
+          })
+        }
+
+        const checkForUpdate = () => {
+          if (document.visibilityState === 'visible' && navigator.onLine) {
+            void registration.update().catch(() => undefined)
+          }
+        }
+
+        promptForUpdate()
+        registration.addEventListener('updatefound', handleUpdateFound)
+        document.addEventListener('visibilitychange', checkForUpdate)
+        window.addEventListener('online', checkForUpdate)
+        updateInterval = window.setInterval(checkForUpdate, 60 * 60 * 1000)
+        removeUpdateListeners = () => {
+          registration.removeEventListener('updatefound', handleUpdateFound)
+          document.removeEventListener('visibilitychange', checkForUpdate)
+          window.removeEventListener('online', checkForUpdate)
+        }
       })
-      window.setInterval(() => void registration.update(), 60 * 60 * 1000)
-    })
+      .catch(() => {
+        // The app remains usable online if service worker registration fails.
+      })
 
-    return () => navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange)
+    return () => {
+      disposed = true
+      if (updateInterval !== undefined) window.clearInterval(updateInterval)
+      removeUpdateListeners?.()
+      toast.dismiss(TOAST_ID)
+      navigator.serviceWorker.removeEventListener(
+        'controllerchange',
+        handleControllerChange
+      )
+    }
   }, [])
 
   return null
