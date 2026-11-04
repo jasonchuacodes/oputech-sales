@@ -8,7 +8,10 @@ export type AggregateDocument = HydratedDocument<Aggregate>
 // via deaggregate. Powers the dashboard sales/expenses time series.
 @Schema({ timestamps: true })
 export class Aggregate {
-  @Prop({ required: true, unique: true, index: true })
+  @Prop({ required: true, index: true })
+  tenantId: string
+
+  @Prop({ required: true, index: true })
   date: Date
 
   @Prop({ required: true, default: 0 })
@@ -19,3 +22,4 @@ export class Aggregate {
 }
 
 export const AggregateSchema = SchemaFactory.createForClass(Aggregate)
+AggregateSchema.index({ tenantId: 1, date: 1 }, { unique: true })

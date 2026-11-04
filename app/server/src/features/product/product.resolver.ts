@@ -1,31 +1,38 @@
 import { Query, Mutation, Resolver, Args } from '@nestjs/graphql'
-import { UseGuards, BadRequestException } from '@nestjs/common'
+import { UseGuards } from '@nestjs/common'
 import { ProductService } from './product.service'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
+import { InvalidInputException, PayloadTooLargeException } from '../../common/exceptions'
+import { TenantAccessGuard } from '../tenant/guards/tenant-access.guard'
+import { TenantId } from '../tenant/decorators/tenant-id.decorator'
+import { AdminGuard } from '../auth/guards/admin.guard'
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, TenantAccessGuard)
 @Resolver('Product')
 export class ProductResolver {
   constructor(private readonly product: ProductService) {}
 
   @Query()
-  products(@Args('search') search?: string) {
-    return this.product.findAll(search)
+  products(@TenantId() tenantId: string, @Args('search') search?: string) {
+    return this.product.findAll(tenantId, search)
   }
 
   @Mutation()
-  async createProduct(@Args('input') input: CreateProductDto) {
+  @UseGuards(AdminGuard)
+  async createProduct(@TenantId() tenantId: string, @Args('input') input: CreateProductDto) {
     if (input.imageUrl) {
       this.validateImageUrl(input.imageUrl)
     }
-    return this.product.create(input)
+    return this.product.create(tenantId, input)
   }
 
   private validateImageUrl(imageUrl: string): void {
     if (!imageUrl.startsWith('data:image/')) {
-      throw new BadRequestException('Invalid image format')
+      throw new InvalidInputException(
+        'The product image must use a supported image data URL.',
+      )
     }
 
     const imageSizeBytes = this.getBase64Size(imageUrl)
@@ -33,13 +40,15 @@ export class ProductResolver {
     const minSizeBytes = 0
 
     if (imageSizeBytes > maxSizeBytes) {
-      throw new BadRequestException(
-        `Image size must be smaller than 5MB (received ${Math.round(imageSizeBytes / (1024 * 1024))}MB)`
+      throw new PayloadTooLargeException(
+        `The product image must be smaller than 5MB (received ${Math.round(imageSizeBytes / (1024 * 1024))}MB).`,
       )
     }
 
     if (imageSizeBytes < minSizeBytes) {
-      throw new BadRequestException('Image size is too small')
+      throw new InvalidInputException(
+        'The product image is empty.',
+      )
     }
   }
 
@@ -51,13 +60,19 @@ export class ProductResolver {
   }
 
   @Mutation()
-  updateProduct(@Args('id') id: string, @Args('input') input: UpdateProductDto) {
-    return this.product.update(id, input)
+  @UseGuards(AdminGuard)
+  updateProduct(
+    @TenantId() tenantId: string,
+    @Args('id') id: string,
+    @Args('input') input: UpdateProductDto,
+  ) {
+    return this.product.update(tenantId, id, input)
   }
 
   @Mutation()
-  async deleteProduct(@Args('id') id: string): Promise<boolean> {
-    const result = await this.product.remove(id)
+  @UseGuards(AdminGuard)
+  async deleteProduct(@TenantId() tenantId: string, @Args('id') id: string): Promise<boolean> {
+    const result = await this.product.remove(tenantId, id)
     return result !== null
   }
 }

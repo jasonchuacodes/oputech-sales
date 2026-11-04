@@ -1,4 +1,4 @@
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { UserPlus } from 'lucide-react'
 import {
@@ -10,6 +10,7 @@ import {
 import { useCreateUser } from '../../../services/users/users.queries'
 import { UserRole } from '../../../services/users/users.types'
 import { addUserSchema, AddUserFormValues } from '../schemas/add-user.schema'
+import { useTenantContext } from '../../../context/tenant/useTenantContext'
 
 interface Props {
   open: boolean
@@ -18,6 +19,7 @@ interface Props {
 
 export const AddUserModal = ({ open, onClose }: Props) => {
   const createUser = useCreateUser()
+  const tenant = useTenantContext()
 
   const {
     register,
@@ -26,9 +28,13 @@ export const AddUserModal = ({ open, onClose }: Props) => {
     control,
     formState: { isValid, errors },
   } = useForm<AddUserFormValues>({
-    defaultValues: { role: UserRole.User },
+    defaultValues: {
+      role: UserRole.Staff,
+      tenantIds: tenant.currentTenant ? [tenant.currentTenant.id] : [],
+    },
     resolver: zodResolver(addUserSchema),
   })
+  const selectedRole = useWatch({ control, name: 'role' })
 
   const handleClose = () => {
     onClose()
@@ -41,6 +47,7 @@ export const AddUserModal = ({ open, onClose }: Props) => {
         username: data.username,
         password: data.password,
         role: data.role,
+        tenantIds: data.tenantIds,
       },
       { onSuccess: handleClose }
     )
@@ -101,13 +108,46 @@ export const AddUserModal = ({ open, onClose }: Props) => {
                 onValueChange={field.onChange}
                 title="Choose a role"
                 placeholder="Select a role…"
-                options={Object.values(UserRole).map((role) => ({
+                options={[UserRole.Admin, UserRole.Staff].map((role) => ({
                   value: role,
-                  label: role === UserRole.Admin ? 'Administrator' : 'Sales user',
+                  label: role === UserRole.Admin ? 'Administrator' : 'Staff',
                 }))}
               />
             )}
           />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label>Tenant assignments</Label>
+          <Controller
+            name="tenantIds"
+            control={control}
+            render={({ field }) => (
+              <div className="flex flex-col gap-2">
+                {tenant.tenants.map((item) => (
+                  <label key={item.id} className="flex min-h-11 items-center gap-3 rounded-md border px-3">
+                    <input
+                      type="checkbox"
+                      checked={field.value.includes(item.id)}
+                      onChange={(event) =>
+                        field.onChange(
+                          event.target.checked
+                            ? selectedRole === UserRole.Staff
+                              ? [item.id]
+                              : [...field.value, item.id]
+                            : field.value.filter((id) => id !== item.id),
+                        )
+                      }
+                    />
+                    {item.name}
+                  </label>
+                ))}
+              </div>
+            )}
+          />
+          {errors.tenantIds && (
+            <p className="text-destructive text-xs">{errors.tenantIds.message}</p>
+          )}
         </div>
       </div>
     </CustomModal>

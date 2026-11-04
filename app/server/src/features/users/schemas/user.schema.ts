@@ -4,18 +4,9 @@ import { HydratedDocument } from 'mongoose'
 export type UserDocument = HydratedDocument<User>
 
 export enum UserRole {
-  User = 'USER',
+  SuperAdmin = 'SUPERADMIN',
   Admin = 'ADMIN',
-}
-
-export enum UserStatus {
-  Active = 'ACTIVE',
-  Inactive = 'INACTIVE',
-}
-
-export class ActivityStatus {
-  status: UserStatus
-  message?: string
+  Staff = 'STAFF',
 }
 
 @Schema({ timestamps: true })
@@ -32,17 +23,20 @@ export class User {
   @Prop({ required: true })
   password: string
 
-  @Prop({ enum: UserRole, default: UserRole.User })
+  @Prop({ enum: UserRole, default: UserRole.Staff })
   role: UserRole
 
-  @Prop({
-    type: {
-      status: { type: String, enum: UserStatus },
-      message: { type: String },
-    },
-    default: { status: UserStatus.Inactive },
-  })
-  activityStatus: ActivityStatus
+  @Prop({ index: true })
+  ownerUserId?: string
+
+  @Prop({ type: [String], default: [], index: true })
+  tenantIds: string[]
+
+  @Prop()
+  currentTenantId?: string
+
+  @Prop({ required: true, default: 0 })
+  tenantSelectionVersion: number
 }
 
 export const UserSchema = SchemaFactory.createForClass(User)

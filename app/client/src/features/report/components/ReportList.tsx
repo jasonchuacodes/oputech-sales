@@ -142,7 +142,7 @@ export const ReportList = ({
         <div className="rounded-card bg-card flex min-h-52 flex-col items-center justify-center gap-3 p-6 text-center shadow-card">
           <p className="font-semibold">Reports are unavailable</p>
           <p className="text-text-secondary text-sm">
-            Connect this device and finish syncing to load reports.
+            Reports are not stored for offline access. Connect and try again.
           </p>
         </div>
       ) : error ? (
@@ -184,6 +184,9 @@ export const ReportList = ({
                     </span>
                     <span className="flex min-w-0 flex-col gap-1">
                       <span className="font-semibold">{formatDate(item.toDate)}</span>
+                      <span className="text-text-tertiary text-xs">
+                        prints: {item.totalPrintCount.toLocaleString()}
+                      </span>
                       {!dayjsLocal(item.fromDate).isSame(
                         dayjsLocal(item.toDate),
                         'day'

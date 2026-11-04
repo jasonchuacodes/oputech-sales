@@ -18,10 +18,10 @@ const GET_PRODUCTS = `
   }
 `
 
-export async function getProducts(search?: string): Promise<Product[]> {
+export async function getProducts(search?: string, tenantId?: string): Promise<Product[]> {
   const data = await requestGraphQL<{ products: Product[] }>(GET_PRODUCTS, {
     search: search || undefined,
-  })
+  }, { tenantId })
   return data.products
 }
 
@@ -33,10 +33,10 @@ const CREATE_PRODUCT = `
   }
 `
 
-export async function createProduct(input: CreateProductInput): Promise<Product> {
+export async function createProduct(input: CreateProductInput, tenantId?: string): Promise<Product> {
   const data = await requestGraphQL<{ createProduct: Product }>(CREATE_PRODUCT, {
     input,
-  })
+  }, { tenantId })
   return data.createProduct
 }
 
@@ -48,11 +48,15 @@ const UPDATE_PRODUCT = `
   }
 `
 
-export async function updateProduct(id: string, input: UpdateProductInput): Promise<Product> {
+export async function updateProduct(
+  id: string,
+  input: UpdateProductInput,
+  tenantId?: string,
+): Promise<Product> {
   const data = await requestGraphQL<{ updateProduct: Product }>(UPDATE_PRODUCT, {
     id,
     input,
-  })
+  }, { tenantId })
   return data.updateProduct
 }
 
@@ -62,9 +66,9 @@ const DELETE_PRODUCT = `
   }
 `
 
-export async function deleteProduct(id: string): Promise<boolean> {
+export async function deleteProduct(id: string, tenantId?: string): Promise<boolean> {
   const data = await requestGraphQL<{ deleteProduct: boolean }>(DELETE_PRODUCT, {
     id,
-  })
+  }, { tenantId })
   return data.deleteProduct
 }

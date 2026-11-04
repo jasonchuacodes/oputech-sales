@@ -81,7 +81,7 @@ const expenseColumns: DataTableColumn<ReportExpense>[] = [
 
 export const ReportDisplay = ({ report, isPreview, onDelete }: Props) => {
   const { auth } = useAuthContext();
-  const isAdmin = auth?.role === UserRole.ADMIN;
+  const isAdmin = auth?.role !== UserRole.STAFF;
 
   return (
     <div className="flex flex-col gap-4">

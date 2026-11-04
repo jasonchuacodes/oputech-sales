@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module'
 import { ReportService } from './report.service'
 import { ReportResolver, ProductSaleResolver } from './report.resolver'
 import { AdminGuard } from '../auth/guards/admin.guard'
+import { TenantModule } from '../tenant/tenant.module'
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AdminGuard } from '../auth/guards/admin.guard'
       { name: Product.name, schema: ProductSchema },
     ]),
     UsersModule,
+    TenantModule,
   ],
   providers: [ReportService, ReportResolver, ProductSaleResolver, AdminGuard],
   exports: [ReportService],

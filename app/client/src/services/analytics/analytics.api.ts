@@ -20,9 +20,9 @@ const GET_ANALYTICS = `
   }
 `
 
-export async function getAnalytics(range: AnalyticsRange): Promise<Analytics> {
+export async function getAnalytics(range: AnalyticsRange, tenantId?: string): Promise<Analytics> {
   const data = await requestGraphQL<{ analytics: Analytics }>(GET_ANALYTICS, {
     range,
-  })
+  }, { tenantId })
   return data.analytics
 }

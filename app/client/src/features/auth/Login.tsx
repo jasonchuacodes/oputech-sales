@@ -3,7 +3,6 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
-import { isAxiosError } from 'axios'
 import { useEffect, useState } from 'react'
 import { Button, Input, Label, PasswordInput } from '../../components'
 import { Footer } from './components/Footer'
@@ -13,6 +12,7 @@ import { useAuthContext } from '../../context/auth/useAuthContext'
 import { LoginInput } from '../../services/auth/auth.types'
 import { loginSchema } from './schemas/login.schema'
 import { UserRole } from '../../types'
+import { getApiErrorMessage } from '../../lib/api-error'
 
 export default function LoginPage() {
   const { auth, loading, refetch: refetchAuth } = useAuthContext()
@@ -36,14 +36,10 @@ export default function LoginPage() {
       onSuccess: async ({ user }) => {
         await refetchAuth()
         setError(null)
-        router.replace(user.role === UserRole.ADMIN ? '/dashboard' : '/sell')
+        router.replace(user.role === UserRole.STAFF ? '/sell' : '/dashboard')
       },
       onError: (err) => {
-        setError(
-          isAxiosError(err)
-            ? (err.response?.data?.message ?? 'Invalid credentials')
-            : 'Invalid credentials'
-        )
+        setError(getApiErrorMessage(err, 'Unable to sign in. Please try again.'))
       },
       onSettled: () => {
         reset()
@@ -53,7 +49,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!loading && auth) {
-      router.replace(auth.role === UserRole.ADMIN ? '/dashboard' : '/sell')
+      router.replace(auth.role === UserRole.STAFF ? '/sell' : '/dashboard')
     }
   }, [auth, loading, router])
 

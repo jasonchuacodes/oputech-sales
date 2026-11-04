@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { UsersService } from '../../users/users.service';
+import { UnauthorizedException } from '../../../common/exceptions';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -16,7 +17,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: { sub: string; role: string }) {
     const user = await this.users.findById(payload.sub)
-    if (!user) throw new UnauthorizedException('User no longer exists')
+    if (!user) {
+      throw new UnauthorizedException(
+        'This user account is no longer available.',
+      )
+    }
     return { userId: String(user._id), role: user.role };
   }
 }

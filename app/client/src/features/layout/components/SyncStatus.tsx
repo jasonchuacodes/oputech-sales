@@ -6,22 +6,27 @@ import { formatTime } from '../../../utils/date'
 
 export const SyncStatus = () => {
   const {
-    status,
+    reachability,
+    phase,
+    authRequired,
+    isSyncing,
     pendingCount,
     blockedCount,
+    otherUserPendingCount,
     progress,
     lastSyncAt,
     lastError,
     storagePersistent,
     storagePressure,
     syncNow,
+    retryBlocked,
   } = useSyncContext()
 
-  const blocked = status === 'blocked'
-  const offline = status === 'offline' || status === 'auth-required'
-  const syncing = status === 'syncing' || status === 'checking'
+  const blocked = blockedCount > 0
+  const offline = reachability === 'unreachable' || authRequired
+  const syncing = isSyncing
   const transientSuccess =
-    status === 'online' && pendingCount === 0 && !storagePressure
+    reachability === 'reachable' && pendingCount === 0 && !storagePressure
   const delayedActivity =
     !blocked && !offline && !storagePressure && (syncing || pendingCount > 0)
 
@@ -50,14 +55,16 @@ export const SyncStatus = () => {
         <p className="text-sm font-medium">
           {blocked
             ? `${blockedCount || pendingCount} changes need attention`
-            : status === 'auth-required'
+            : authRequired
               ? 'Sign in to sync'
               : offline
                 ? 'Working offline'
-                : status === 'syncing'
+                : phase === 'syncing'
                   ? `Syncing ${progress?.completed ?? 0}/${progress?.total ?? pendingCount}`
-                  : status === 'checking'
+                  : phase === 'checking'
                     ? 'Checking connection…'
+                    : phase === 'backoff' && pendingCount > 0
+                      ? `${pendingCount} changes waiting to retry`
                     : pendingCount > 0
                       ? `${pendingCount} changes pending`
                       : 'No pending changes'}
@@ -78,6 +85,11 @@ export const SyncStatus = () => {
             Browser storage is nearly full.
           </p>
         )}
+        {otherUserPendingCount > 0 && (
+          <p className="text-xs text-slate-500">
+            {otherUserPendingCount} changes are waiting for another user.
+          </p>
+        )}
       </div>
 
       {(pendingCount > 0 || offline || blocked) && (
@@ -86,7 +98,7 @@ export const SyncStatus = () => {
           variant="outline"
           size="sm"
           disabled={syncing}
-          onClick={() => void syncNow()}
+          onClick={() => void (blocked ? retryBlocked() : syncNow())}
         >
           {blocked ? 'Retry' : 'Sync now'}
         </Button>

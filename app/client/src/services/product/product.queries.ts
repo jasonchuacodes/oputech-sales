@@ -1,36 +1,39 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
+import { useLiveQuery } from 'dexie-react-hooks'
 import toast from 'react-hot-toast'
 import { createProduct, updateProduct, deleteProduct } from './product.api'
 import { CreateProductInput, UpdateProductInput } from './product.types'
 import { listLocalProducts } from '../../offline/repository'
 import { offlineDb } from '../../offline/database'
 import { useSyncContext } from '../../context/sync/useSyncContext'
+import { useTenantContext } from '../../context/tenant/useTenantContext'
 
 export function useProducts(search?: string) {
-  return useQuery({
-    queryKey: ['products', search],
-    queryFn: () => listLocalProducts(search),
-    staleTime: 5 * 60 * 1000,
-    networkMode: 'always',
-  })
+  const { currentTenant } = useTenantContext()
+  const tenantId = currentTenant?.id
+  const data = useLiveQuery(
+    () =>
+      tenantId
+        ? listLocalProducts(tenantId, search)
+        : Promise.resolve([]),
+    [tenantId, search]
+  )
+  return { data, isLoading: data === undefined }
 }
 
 export function useCreateProduct() {
-  const queryClient = useQueryClient()
-  const { canUseOnlineFeatures } = useSyncContext()
+  const { currentTenant } = useTenantContext()
+  const tenantId = currentTenant?.id
   return useMutation({
-    mutationFn: (input: CreateProductInput) => {
-      if (!canUseOnlineFeatures) {
-        throw new Error('Sync pending records before changing inventory')
-      }
-      return createProduct(input)
-    },
+    networkMode: 'always',
+    mutationFn: (input: CreateProductInput) => createProduct(input, tenantId),
     onSuccess: async (product) => {
+      if (!tenantId) return
       await offlineDb.products.put({
         ...product,
+        tenantId,
         cachedAt: new Date().toISOString(),
       })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to create item')
@@ -39,38 +42,42 @@ export function useCreateProduct() {
 }
 
 export function useUpdateProduct() {
-  const queryClient = useQueryClient()
-  const { canUseOnlineFeatures } = useSyncContext()
+  const { currentTenant } = useTenantContext()
+  const tenantId = currentTenant?.id
+  const { canModifyCatalog } = useSyncContext()
   return useMutation({
+    networkMode: 'always',
     mutationFn: ({ id, input }: { id: string; input: UpdateProductInput }) => {
-      if (!canUseOnlineFeatures) {
+      if (!canModifyCatalog) {
         throw new Error('Sync pending records before changing inventory')
       }
-      return updateProduct(id, input)
+      return updateProduct(id, input, tenantId)
     },
     onSuccess: async (product) => {
+      if (!tenantId) return
       await offlineDb.products.put({
         ...product,
+        tenantId,
         cachedAt: new Date().toISOString(),
       })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
     },
   })
 }
 
 export function useDeleteProduct() {
-  const queryClient = useQueryClient()
-  const { canUseOnlineFeatures } = useSyncContext()
+  const { canModifyCatalog } = useSyncContext()
+  const { currentTenant } = useTenantContext()
+  const tenantId = currentTenant?.id
   return useMutation({
+    networkMode: 'always',
     mutationFn: (id: string) => {
-      if (!canUseOnlineFeatures) {
+      if (!canModifyCatalog) {
         throw new Error('Sync pending records before changing inventory')
       }
-      return deleteProduct(id)
+      return deleteProduct(id, tenantId)
     },
     onSuccess: async (_deleted, id) => {
       await offlineDb.products.delete(id)
-      queryClient.invalidateQueries({ queryKey: ['products'] })
     },
   })
 }

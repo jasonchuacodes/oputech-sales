@@ -1,10 +1,14 @@
 import axios from './axios'
+import { getActiveTenantId } from './tenant-scope'
 
 interface GraphQLErrorShape {
   message: string
   extensions?: {
     code?: string
-    originalError?: { statusCode?: number }
+    status?: number
+    type?: string
+    title?: string
+    originalError?: { status?: number; statusCode?: number; code?: string; message?: string }
   }
 }
 
@@ -16,23 +20,36 @@ interface GraphQLResponse<T> {
 export class GraphQLRequestError extends Error {
   readonly status?: number
   readonly code?: string
+  readonly type?: string
+  readonly title?: string
 
   constructor(error: GraphQLErrorShape) {
     super(error.message)
     this.name = 'GraphQLRequestError'
-    this.status = error.extensions?.originalError?.statusCode
-    this.code = error.extensions?.code
+    this.status =
+      error.extensions?.status ??
+      error.extensions?.originalError?.status ??
+      error.extensions?.originalError?.statusCode
+    this.code = error.extensions?.code ?? error.extensions?.originalError?.code
+    this.type = error.extensions?.type
+    this.title = error.extensions?.title
   }
 }
 
 export const requestGraphQL = async <T>(
   query: string,
-  variables?: Record<string, unknown>
+  variables?: Record<string, unknown>,
+  options?: { tenantId?: string; signal?: AbortSignal },
 ): Promise<T> => {
+  const tenantId = options?.tenantId ?? getActiveTenantId()
   const response = await axios.post<GraphQLResponse<T>>(
     '/graphql',
     { query, variables },
-    { baseURL: '/' }
+    {
+      baseURL: '/',
+      signal: options?.signal,
+      headers: tenantId ? { 'X-Tenant-Id': tenantId } : undefined,
+    }
   )
 
   const error = response.data.errors?.[0]

@@ -39,7 +39,10 @@ export class Transaction {
 
   updatedAt: Date
 
-  @Prop({ unique: true, sparse: true, index: true })
+  @Prop({ required: true, index: true })
+  tenantId: string
+
+  @Prop()
   clientMutationId?: string
 
   @Prop({ required: true, default: Date.now, index: true })
@@ -65,3 +68,9 @@ export class Transaction {
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction)
+TransactionSchema.index({ tenantId: 1, occurredAt: -1 })
+TransactionSchema.index({ tenantId: 1, processed: 1, occurredAt: 1 })
+TransactionSchema.index(
+  { tenantId: 1, clientMutationId: 1 },
+  { unique: true, partialFilterExpression: { clientMutationId: { $type: 'string' } } },
+)

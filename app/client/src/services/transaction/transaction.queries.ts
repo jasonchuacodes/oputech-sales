@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
+import { useLiveQuery } from 'dexie-react-hooks'
 import toast from 'react-hot-toast'
 import { CreateTransactionInput, TransactionFilter } from './transaction.api'
 import {
@@ -8,23 +9,35 @@ import {
 } from '../../offline/repository'
 import { useAuthContext } from '../../context/auth/useAuthContext'
 import { notifyOutboxChanged } from '../../context/sync/sync-context'
+import { useTenantContext } from '../../context/tenant/useTenantContext'
 
-export const useTransactions = (filter?: TransactionFilter) =>
-  useQuery({
-    queryKey: ['transactions', filter],
-    queryFn: () => listLocalTransactions(filter),
-    networkMode: 'always',
-  })
+export const useTransactions = (filter?: TransactionFilter) => {
+  const { currentTenant } = useTenantContext()
+  const tenantId = currentTenant?.id
+  const from = filter?.from
+  const to = filter?.to
+  const processed = filter?.processed
+  const data = useLiveQuery(
+    () =>
+      tenantId
+        ? listLocalTransactions(tenantId, { from, to, processed })
+        : Promise.resolve([]),
+    [tenantId, from, to, processed]
+  )
+
+  return { data, isLoading: data === undefined }
+}
 
 export const useCreateTransaction = () => {
-  const queryClient = useQueryClient()
   const { auth } = useAuthContext()
+  const { currentTenant } = useTenantContext()
 
   return useMutation({
     networkMode: 'always',
     mutationFn: (input: CreateTransactionInput) => {
       if (!auth?.id) throw new Error('Sign in before creating a transaction')
-      return queueLocalTransaction(input, auth.id)
+      if (!currentTenant) throw new Error('Select a tenant first')
+      return queueLocalTransaction(input, auth.id, currentTenant.id)
     },
     onError: (error: Error) => {
       toast.error(error.message)
@@ -33,22 +46,19 @@ export const useCreateTransaction = () => {
       toast.success('Transaction saved on this device')
       notifyOutboxChanged()
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
-    },
   })
 }
 
 export const useDeleteTransaction = () => {
-  const queryClient = useQueryClient()
   const { auth } = useAuthContext()
+  const { currentTenant } = useTenantContext()
 
   return useMutation({
     networkMode: 'always',
     mutationFn: (id: string) => {
       if (!auth?.id) throw new Error('Sign in before deleting a transaction')
-      return queueLocalTransactionDelete(id, auth.id)
+      if (!currentTenant) throw new Error('Select a tenant first')
+      return queueLocalTransactionDelete(id, auth.id, currentTenant.id)
     },
     onError: (error: Error) => {
       toast.error(error.message)
@@ -56,9 +66,6 @@ export const useDeleteTransaction = () => {
     onSuccess: () => {
       toast.success('Transaction deletion saved')
       notifyOutboxChanged()
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
     },
   })
 }

@@ -15,10 +15,11 @@ import { useDisclosure } from '../../hooks/useDisclosure'
 const ReportDetailPage = () => {
   const { reportId } = useParams<{ reportId: string }>()
   const router = useRouter()
-  const { data: report, isLoading } = useReport(reportId)
+  const reportQuery = useReport(reportId)
+  const { data: report } = reportQuery
   const deleteReport = useDisclosure()
   const { auth } = useAuthContext()
-  const isAdmin = auth?.role === UserRole.ADMIN
+  const isAdmin = auth?.role !== UserRole.STAFF
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-5 md:p-6">
@@ -38,8 +39,21 @@ const ReportDetailPage = () => {
         />
       </div>
 
-      {isLoading ? (
+      {reportQuery.isPending && reportQuery.fetchStatus === 'fetching' ? (
         <div className="h-48 animate-pulse rounded-lg border bg-slate-100" />
+      ) : !report &&
+        (reportQuery.isError || reportQuery.fetchStatus === 'paused') ? (
+        <div className="flex flex-col items-center gap-3 py-20 text-center">
+          <p className="text-lg font-medium text-slate-700">
+            Report could not be loaded
+          </p>
+          <p className="text-sm text-slate-400">
+            Reports are not stored for offline access on this device.
+          </p>
+          <Button variant="outline" onClick={() => void reportQuery.refetch()}>
+            Retry
+          </Button>
+        </div>
       ) : !report ? (
         <div className="flex flex-col items-center gap-2 py-20 text-center">
           <p className="text-lg font-medium text-slate-700">

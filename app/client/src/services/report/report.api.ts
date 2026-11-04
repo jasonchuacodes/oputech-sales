@@ -64,6 +64,7 @@ const GET_REPORTS_PAGE = `
         toDate
         createdAt
         isRemitted
+        totalPrintCount
         totalCash
         totalOnline
         totalExpenses
@@ -90,27 +91,27 @@ const CREATE_REPORT = `
   }
 `
 
-export async function getReports(): Promise<Report[]> {
-  const data = await requestGraphQL<{ reports: Report[] }>(GET_REPORTS)
+export async function getReports(tenantId?: string): Promise<Report[]> {
+  const data = await requestGraphQL<{ reports: Report[] }>(GET_REPORTS, undefined, { tenantId })
   return data.reports
 }
 
-export async function getReport(id: string): Promise<Report> {
-  const data = await requestGraphQL<{ report: Report }>(GET_REPORT, { id })
+export async function getReport(id: string, tenantId?: string): Promise<Report> {
+  const data = await requestGraphQL<{ report: Report }>(GET_REPORT, { id }, { tenantId })
   return data.report
 }
 
-export async function getReportsPage(params: ReportsPageParams): Promise<ReportsPage> {
+export async function getReportsPage(params: ReportsPageParams, tenantId?: string): Promise<ReportsPage> {
   const data = await requestGraphQL<{ reportsPage: ReportsPage }>(GET_REPORTS_PAGE, {
     ...params,
-  })
+  }, { tenantId })
   return data.reportsPage
 }
 
-export async function createReport(input: CreateReportInput): Promise<Report> {
+export async function createReport(input: CreateReportInput, tenantId?: string): Promise<Report> {
   const data = await requestGraphQL<{ createReport: Report }>(CREATE_REPORT, {
     input,
-  })
+  }, { tenantId })
   return data.createReport
 }
 
@@ -120,10 +121,10 @@ const DELETE_REPORT = `
   }
 `
 
-export async function deleteReport(id: string): Promise<boolean> {
+export async function deleteReport(id: string, tenantId?: string): Promise<boolean> {
   const data = await requestGraphQL<{ deleteReport: boolean }>(DELETE_REPORT, {
     id,
-  })
+  }, { tenantId })
   return data.deleteReport
 }
 
@@ -135,10 +136,10 @@ const REMIT = `
   }
 `
 
-export async function remit(id: string, isRemitted: boolean): Promise<Report> {
+export async function remit(id: string, isRemitted: boolean, tenantId?: string): Promise<Report> {
   const data = await requestGraphQL<{ remit: Report }>(REMIT, {
     id,
     isRemitted,
-  })
+  }, { tenantId })
   return data.remit
 }

@@ -13,8 +13,14 @@ import {
 
 const uuid = () => crypto.randomUUID()
 
-export const listLocalProducts = async (search?: string): Promise<Product[]> => {
-  const products = await offlineDb.products.toArray()
+export const listLocalProducts = async (
+  tenantId: string,
+  search?: string
+): Promise<Product[]> => {
+  const products = await offlineDb.products
+    .where('tenantId')
+    .equals(tenantId)
+    .toArray()
   const term = search?.trim().toLocaleLowerCase()
   if (!term) return products
   return products.filter((product) =>
@@ -23,27 +29,30 @@ export const listLocalProducts = async (search?: string): Promise<Product[]> => 
 }
 
 export const listLocalTransactions = async (
+  tenantId: string,
   filter?: TransactionFilter
 ): Promise<Transaction[]> => {
   const transactions = await offlineDb.transactions
-    .where('occurredAt')
-    .between(filter?.from ?? DexieMinDate, filter?.to ?? DexieMaxDate, true, true)
-    .reverse()
-    .sortBy('occurredAt')
+    .where('tenantId')
+    .equals(tenantId)
+    .toArray()
 
   return transactions.filter(
     (transaction) =>
       !transaction.deleted &&
+      transaction.occurredAt >= (filter?.from ?? DexieMinDate) &&
+      transaction.occurredAt <= (filter?.to ?? DexieMaxDate) &&
       (filter?.processed === undefined ||
         transaction.processed === filter.processed)
-  )
+  ).sort((left, right) => right.occurredAt.localeCompare(left.occurredAt))
 }
 
 const DexieMinDate = ''
 const DexieMaxDate = '\uffff'
 
 const makeTransactionItems = async (
-  input: CreateTransactionInput
+  input: CreateTransactionInput,
+  tenantId: string
 ): Promise<TransactionItem[]> => {
   if (input.type === TransactionType.Expense) return []
 
@@ -54,7 +63,9 @@ const makeTransactionItems = async (
 
   return items.map((item, index) => {
     const product = products[index]
-    if (!product) throw new Error(`Product ${item.productId} is not available offline`)
+    if (!product || product.tenantId !== tenantId) {
+      throw new Error(`Product ${item.productId} is not available offline`)
+    }
     return {
       productId: product.id,
       name: product.name,
@@ -67,12 +78,13 @@ const makeTransactionItems = async (
 
 export const queueLocalTransaction = async (
   input: CreateTransactionInput,
-  ownerUserId: string
+  ownerUserId: string,
+  tenantId: string
 ): Promise<Transaction> => {
   const clientMutationId = input.clientMutationId ?? uuid()
   const occurredAt = input.occurredAt ?? new Date().toISOString()
   const id = `local:${clientMutationId}`
-  const items = await makeTransactionItems(input)
+  const items = await makeTransactionItems(input, tenantId)
   const total =
     input.type === TransactionType.Expense
       ? (input.amount ?? 0)
@@ -84,6 +96,7 @@ export const queueLocalTransaction = async (
 
   const transaction: LocalTransaction = {
     id,
+    tenantId,
     clientMutationId,
     type: input.type,
     items,
@@ -107,6 +120,7 @@ export const queueLocalTransaction = async (
         entityId: id,
         payload: { ...input, clientMutationId, occurredAt },
         ownerUserId,
+        tenantId,
         state: 'pending',
         attempts: 0,
         createdAt: occurredAt,
@@ -119,7 +133,8 @@ export const queueLocalTransaction = async (
 
 export const queueLocalTransactionDelete = async (
   id: string,
-  ownerUserId: string
+  ownerUserId: string,
+  tenantId: string
 ): Promise<boolean> => {
   await offlineDb.transaction(
     'rw',
@@ -127,7 +142,7 @@ export const queueLocalTransactionDelete = async (
     offlineDb.outbox,
     async () => {
       const transaction = await offlineDb.transactions.get(id)
-      if (!transaction) return
+      if (!transaction || transaction.tenantId !== tenantId) return
 
       const createOperation = await offlineDb.outbox
         .where('entityId')
@@ -151,6 +166,7 @@ export const queueLocalTransactionDelete = async (
         entityId: id,
         payload: {},
         ownerUserId,
+        tenantId,
         state: 'pending',
         attempts: 0,
         createdAt: new Date().toISOString(),

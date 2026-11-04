@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { PageHeader } from '../../components/ui/page-header'
-import { SheetSelect } from '../../components'
+import { Button, SheetSelect } from '../../components'
 import { useAnalytics } from '../../services/analytics/analytics.queries'
 import { AnalyticsRange } from '../../services/analytics/analytics.types'
 import { SummaryCards } from './components/SummaryCards'
@@ -19,7 +19,12 @@ const RANGE_OPTIONS: { value: AnalyticsRange; label: string }[] = [
 
 const DashboardPage = () => {
   const [range, setRange] = useState<AnalyticsRange>('TODAY')
-  const { data, isLoading } = useAnalytics(range)
+  const analytics = useAnalytics(range)
+  const { data } = analytics
+  const initialLoading =
+    analytics.isPending && analytics.fetchStatus === 'fetching'
+  const unavailable =
+    !data && (analytics.isError || analytics.fetchStatus === 'paused')
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-5 md:p-6">
@@ -37,7 +42,7 @@ const DashboardPage = () => {
         }
       />
 
-      {isLoading || !data ? (
+      {initialLoading ? (
         <div className="flex flex-col gap-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -49,7 +54,17 @@ const DashboardPage = () => {
           </div>
           <div className="h-80 animate-pulse rounded-card bg-card shadow-card" />
         </div>
-      ) : (
+      ) : unavailable ? (
+        <div className="rounded-card bg-card flex min-h-52 flex-col items-center justify-center gap-3 p-6 text-center shadow-card">
+          <p className="font-semibold">Analytics could not be loaded</p>
+          <p className="text-text-secondary text-sm">
+            Analytics are not stored for offline access on this device.
+          </p>
+          <Button variant="outline" size="sm" onClick={() => void analytics.refetch()}>
+            Retry
+          </Button>
+        </div>
+      ) : data ? (
         <>
           <SummaryCards
             totalSales={data.totalSales}
@@ -60,7 +75,7 @@ const DashboardPage = () => {
             <TopProducts products={data.topProducts} />
           </div>
         </>
-      )}
+      ) : null}
     </div>
   )
 }

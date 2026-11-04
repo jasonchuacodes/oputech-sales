@@ -3,15 +3,15 @@ import {
   Mutation,
   Resolver,
   Args,
+  Context,
 } from '@nestjs/graphql'
 import { UseGuards } from '@nestjs/common'
-import * as bcrypt from 'bcrypt'
 import { UsersService } from './users.service'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
-import {
-  UserRole,
-  UserStatus,
-} from './schemas/user.schema'
+import { UserRole } from './schemas/user.schema'
+import { SuperAdminGuard } from '../auth/guards/superadmin.guard'
+import { TenantId } from '../tenant/decorators/tenant-id.decorator'
+import { TenantAccessGuard } from '../tenant/guards/tenant-access.guard'
 
 interface CreateUserInput {
   username: string
@@ -19,11 +19,7 @@ interface CreateUserInput {
   email?: string
   password: string
   role?: string
-}
-
-interface ActivityStatusInput {
-  status: string
-  message?: string
+  tenantIds: string[]
 }
 
 interface UpdateUserInput {
@@ -31,62 +27,59 @@ interface UpdateUserInput {
   fullName?: string
   email?: string
   role?: string
+  tenantIds?: string[]
 }
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SuperAdminGuard)
 @Resolver('User')
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
   @Query()
-  users() {
-    return this.usersService.findAll()
+  @UseGuards(TenantAccessGuard)
+  users(@TenantId() tenantId: string, @Context() context: any) {
+    return this.usersService.findAll(context.req.user.userId, tenantId)
   }
 
   @Mutation()
-  async createUser(@Args('input') input: CreateUserInput) {
-    const hashed = await bcrypt.hash(input.password, 10)
-    return this.usersService.create({
+  async createUser(@Args('input') input: CreateUserInput, @Context() context: any) {
+    return this.usersService.createManaged(context.req.user.userId, {
       username: input.username,
       fullName: input.fullName,
       email: input.email,
-      password: hashed,
-      role: (input.role as UserRole) ?? UserRole.User,
+      password: input.password,
+      role: (input.role as UserRole) ?? UserRole.Staff,
+      tenantIds: input.tenantIds,
     })
   }
 
   @Mutation()
-  updateUser(@Args('id') id: string, @Args('input') input: UpdateUserInput) {
-    return this.usersService.update(id, {
+  updateUser(
+    @Args('id') id: string,
+    @Args('input') input: UpdateUserInput,
+    @Context() context: any,
+  ) {
+    return this.usersService.updateManaged(context.req.user.userId, id, {
       username: input.username,
       fullName: input.fullName,
       email: input.email,
       role: input.role as UserRole,
+      tenantIds: input.tenantIds,
     })
   }
 
   @Mutation()
-  async deleteUser(@Args('id') id: string): Promise<boolean> {
-    const result = await this.usersService.remove(id)
+  async deleteUser(@Args('id') id: string, @Context() context: any): Promise<boolean> {
+    const result = await this.usersService.remove(context.req.user.userId, id)
     return result !== null
-  }
-
-  @Mutation()
-  updateActivityStatus(
-    @Args('id') id: string,
-    @Args('input') input: ActivityStatusInput,
-  ) {
-    return this.usersService.updateStatus(id, {
-      activityStatus: { status: input.status as UserStatus, message: input.message },
-    })
   }
 
   @Mutation()
   async resetPassword(
     @Args('id') id: string,
     @Args('password') password: string,
+    @Context() context: any,
   ) {
-    const hashed = await bcrypt.hash(password, 10)
-    return this.usersService.resetPassword(id, hashed)
+    return this.usersService.resetPassword(context.req.user.userId, id, password)
   }
 }

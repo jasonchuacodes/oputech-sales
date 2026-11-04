@@ -11,6 +11,7 @@ import { PaymentType, TransactionType } from '../services/transaction/transactio
 
 const product = {
   id: 'product-1',
+  tenantId: 'tenant-1',
   name: 'Photo Strip',
   price: 120,
   printCount: 1,
@@ -47,7 +48,8 @@ describe('offline repository', () => {
         paymentType: PaymentType.Cash,
         items: [{ productId: product.id, quantity: 2 }],
       },
-      'user-1'
+      'user-1',
+      'tenant-1'
     )
 
     expect(transaction.total).toBe(240)
@@ -70,16 +72,22 @@ describe('offline repository', () => {
         label: 'Supplies',
         amount: 50,
       },
-      'user-1'
+      'user-1',
+      'tenant-1'
     )
 
-    await queueLocalTransactionDelete(transaction.id, 'user-1')
+    await queueLocalTransactionDelete(transaction.id, 'user-1', 'tenant-1')
 
     expect(await offlineDb.transactions.count()).toBe(0)
     expect(await offlineDb.outbox.count()).toBe(0)
   })
 
   it('searches products and filters transaction history locally', async () => {
+    await offlineDb.products.add({
+      ...product,
+      id: 'product-tenant-2',
+      tenantId: 'tenant-2',
+    })
     const sale = await queueLocalTransaction(
       {
         type: TransactionType.Sale,
@@ -87,18 +95,22 @@ describe('offline repository', () => {
         items: [{ productId: product.id, quantity: 1 }],
         occurredAt: '2026-08-20T03:00:00.000Z',
       },
-      'user-1'
+      'user-1',
+      'tenant-1'
     )
 
-    expect(await listLocalProducts('strip')).toHaveLength(1)
+    expect(await listLocalProducts('tenant-1', 'strip')).toHaveLength(1)
+    expect(await listLocalProducts('tenant-2', 'strip')).toHaveLength(1)
     expect(
-      await listLocalTransactions({
+      await listLocalTransactions('tenant-1', {
         from: '2026-08-20T00:00:00.000Z',
         to: '2026-08-20T23:59:59.999Z',
       })
     ).toEqual([sale])
     expect(
-      await listLocalTransactions({ from: '2026-08-21T00:00:00.000Z' })
+      await listLocalTransactions('tenant-1', {
+        from: '2026-08-21T00:00:00.000Z',
+      })
     ).toEqual([])
   })
 })

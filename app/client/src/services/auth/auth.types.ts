@@ -1,10 +1,4 @@
 import { UserRole as AppUserRole } from '../../types'
-import { ActivityStatus } from '../users/users.types'
-
-export enum UserRole {
-  USER = 'user',
-  ADMIN = 'admin',
-}
 
 export interface LoginInput {
   username: string
@@ -21,7 +15,8 @@ export interface AuthUser {
   username: string
   email: string
   role: AppUserRole
-  activityStatus: ActivityStatus
+  currentTenantId?: string
+  tenantSelectionVersion: number
 }
 
 export interface LoginResponse {

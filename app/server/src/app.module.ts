@@ -10,6 +10,8 @@ import { AuthModule } from './features/auth/auth.module'
 import { ProductModule } from './features/product/product.module'
 import { TransactionModule } from './features/transaction/transaction.module'
 import { ReportModule } from './features/report/report.module'
+import { formatGraphQLError } from './common/exceptions'
+import { TenantModule } from './features/tenant/tenant.module'
 
 @Module({
   imports: [
@@ -18,12 +20,14 @@ import { ReportModule } from './features/report/report.module'
       driver: ApolloDriver,
       typePaths: [path.resolve(__dirname, './graphql/schema/*.gql')],
       playground: true,
+      formatError: formatGraphQLError,
     }),
     UsersModule,
     AuthModule,
     ProductModule,
     TransactionModule,
     ReportModule,
+    TenantModule,
   ],
   controllers: [AppController],
   providers: [AppService],

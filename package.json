@@ -3,9 +3,10 @@
   "private": true,
   "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "dev": "pnpm --parallel --filter @oputech/sales-client --filter @oputech/sales-server dev",
+    "dev": "node scripts/dev.mjs",
     "dev:client": "pnpm --filter @oputech/sales-client dev",
     "dev:server": "pnpm --filter @oputech/sales-server dev",
+    "register-superadmin": "pnpm --filter @oputech/sales-server register-superadmin",
     "build": "pnpm --filter @oputech/sales-client build && pnpm --filter @oputech/sales-server build",
     "lint": "pnpm --filter @oputech/sales-client lint && pnpm --filter @oputech/sales-server typecheck",
     "test": "pnpm --recursive test"

@@ -18,7 +18,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '../../../components/ui/sheet'
-import { useSyncContext } from '../../../context/sync/useSyncContext'
 import { useDisclosure } from '../../../hooks/useDisclosure'
 import { useIsDesktop } from '../../../hooks/useIsDesktop'
 import { useRemit } from '../../../services/report/report.queries'
@@ -32,11 +31,10 @@ interface Props {
 export const ReportDetailActions = ({ reportId, isRemitted, onDelete }: Props) => {
   const isDesktop = useIsDesktop()
   const actions = useDisclosure()
-  const { canUseOnlineFeatures } = useSyncContext()
   const remit = useRemit()
   const RemitIcon = isRemitted ? RotateCcw : Send
   const remitLabel = isRemitted ? 'Undo remit' : 'Mark as remitted'
-  const disabled = remit.isPending || !canUseOnlineFeatures
+  const disabled = remit.isPending
 
   const handleRemit = () => {
     actions.onClose()
@@ -69,7 +67,6 @@ export const ReportDetailActions = ({ reportId, isRemitted, onDelete }: Props) =
           </DropdownMenuItem>
           {onDelete && (
             <DropdownMenuItem
-              disabled={!canUseOnlineFeatures}
               variant="destructive"
               onSelect={handleDelete}
             >
@@ -116,7 +113,6 @@ export const ReportDetailActions = ({ reportId, isRemitted, onDelete }: Props) =
               type="button"
               variant="destructive"
               className="w-full"
-              disabled={!canUseOnlineFeatures}
               onClick={handleDelete}
             >
               <Trash2 />

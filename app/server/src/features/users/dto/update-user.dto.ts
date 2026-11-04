@@ -5,4 +5,6 @@ export class UpdateUserDto {
   fullName?: string;
   email?: string;
   role?: UserRole;
+  tenantIds?: string[];
+  currentTenantId?: string;
 }

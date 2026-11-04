@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { ShoppingCart } from 'lucide-react'
+import toast from 'react-hot-toast'
 import {
   PaymentType,
   TransactionItem,
@@ -10,12 +11,12 @@ import { useCreateTransaction } from '../../../services/transaction/transaction.
 import { clearDraft } from '../../../offline/database'
 import { useDisclosure } from '../../../hooks/useDisclosure'
 import { useMediaQuery } from '../../../hooks/useMediaQuery'
-import { POS_DRAFT_KEY } from '../constants'
 import { CartSheet } from './CartSheet'
 import { type CashPaymentForm, CurrentSale } from './CurrentSale'
 import { TransactionConfirmationModal } from './TransactionConfirmationModal'
 
 interface SaleCheckoutProps {
+  draftKey: string
   items: TransactionItem[]
   paymentType: PaymentType
   onPaymentTypeChange: (type: PaymentType) => void
@@ -26,6 +27,7 @@ interface SaleCheckoutProps {
 }
 
 export const SaleCheckout = ({
+  draftKey,
   items,
   paymentType,
   onPaymentTypeChange,
@@ -107,7 +109,11 @@ export const SaleCheckout = ({
           handleClear()
           confirmation.onClose()
           closeCart()
-          void clearDraft(POS_DRAFT_KEY)
+          void clearDraft(draftKey).catch(() => {
+            toast.error('The saved cart could not be cleared', {
+              id: 'pos-draft-storage',
+            })
+          })
         },
       }
     )

@@ -1,16 +1,7 @@
 export enum UserRole {
-  User = 'USER',
+  SuperAdmin = 'SUPERADMIN',
   Admin = 'ADMIN',
-}
-
-export enum UserStatus {
-  Active = 'ACTIVE',
-  Inactive = 'INACTIVE',
-}
-
-export interface ActivityStatus {
-  status: UserStatus
-  message?: string
+  Staff = 'STAFF',
 }
 
 export interface User {
@@ -19,12 +10,9 @@ export interface User {
   fullName?: string
   email?: string
   role: string
-  activityStatus: ActivityStatus
-}
-
-export interface UpdateActivityStatusInput {
-  status: UserStatus
-  message?: string
+  tenantIds: string[]
+  currentTenantId?: string
+  tenantSelectionVersion: number
 }
 
 export interface CreateUserInput {
@@ -32,7 +20,8 @@ export interface CreateUserInput {
   fullName?: string
   email?: string
   password: string
-  role?: string
+  role: string
+  tenantIds: string[]
 }
 
 export interface UpdateUserInput {
@@ -40,6 +29,7 @@ export interface UpdateUserInput {
   fullName?: string
   email?: string
   role?: string
+  tenantIds?: string[]
 }
 
 export interface ResetPasswordInput {

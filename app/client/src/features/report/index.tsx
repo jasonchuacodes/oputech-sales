@@ -45,8 +45,8 @@ const PAGE_SIZE = 10
 const ReportPage = () => {
   const router = useRouter()
   const { auth } = useAuthContext()
-  const isAdmin = auth?.role === UserRole.ADMIN
-  const { canUseOnlineFeatures } = useSyncContext()
+  const isAdmin = auth?.role !== UserRole.STAFF
+  const { canGenerateReport, pendingCount, blockedCount } = useSyncContext()
   const [reportDate, setReportDate] = useState(dayjsLocal().format('YYYY-MM-DD'))
   const [preset, setPreset] = useState<ReportFilterPreset>('this_month')
   const [range, setRange] = useState<ReportCalendarRange>(() =>
@@ -192,10 +192,10 @@ const ReportPage = () => {
               className="w-full sm:w-auto"
               onClick={handleGenerate}
               disabled={
-                createReport.isPending || !hasTransactions || !canUseOnlineFeatures
+                createReport.isPending || !hasTransactions || !canGenerateReport
               }
               title={
-                canUseOnlineFeatures
+                canGenerateReport
                   ? undefined
                   : 'Connect and sync pending transactions first'
               }
@@ -216,9 +216,10 @@ const ReportPage = () => {
         </section>
       )}
 
-      {!canUseOnlineFeatures && (
+      {!isAdmin && !canGenerateReport && (pendingCount > 0 || blockedCount > 0) && (
         <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          Reports are available after this device is online and all pending transactions are synced.
+          Report generation is available after this user&apos;s pending transactions
+          are synced. Existing reports remain available.
         </p>
       )}
 
@@ -251,10 +252,12 @@ const ReportPage = () => {
         data={reportsQuery.data}
         loading={reportsQuery.isLoading}
         fetching={reportsQuery.isFetching}
-        error={reportsQuery.isError}
-        unavailable={!canUseOnlineFeatures && !reportsQuery.data}
+        error={reportsQuery.isError && !reportsQuery.data}
+        unavailable={
+          reportsQuery.fetchStatus === 'paused' && !reportsQuery.data
+        }
         isAdmin={isAdmin}
-        actionsDisabled={!canUseOnlineFeatures || remitReport.isPending}
+        actionsDisabled={remitReport.isPending}
         onPageChange={setPage}
         onRetry={() => void reportsQuery.refetch()}
         onView={(item) => router.push(reportDetailPath(item.id))}

@@ -158,7 +158,7 @@ const processCreate = async (
   ensureLease: () => Promise<void>
 ) => {
   if (operation.kind !== 'CREATE_TRANSACTION') return
-  const remote = await createTransaction(operation.payload)
+  const remote = await createTransaction(operation.payload, operation.tenantId)
   await ensureLease()
 
   await offlineDb.transaction(
@@ -171,6 +171,7 @@ const processCreate = async (
         await offlineDb.transactions.put({
           ...remote,
           id: local.id,
+          tenantId: operation.tenantId,
           serverId: remote.id,
           occurredAt: local.occurredAt,
           syncState: local.deleted ? 'deleting' : 'synced',
@@ -199,7 +200,7 @@ const processDelete = async (
     )
   }
 
-  await deleteTransaction(local.serverId)
+  await deleteTransaction(local.serverId, operation.tenantId)
   await ensureLease()
   await offlineDb.transaction(
     'rw',
@@ -213,14 +214,16 @@ const processDelete = async (
 }
 
 export const refreshLocalSnapshot = async (
+  tenantId: string,
   beforeCommit?: () => Promise<void>
 ): Promise<void> => {
-  await setSnapshotRefreshNeeded(true)
+  await setSnapshotRefreshNeeded(true, tenantId)
+  const requestedAt = new Date().toISOString()
   const cutoff = new Date(Date.now() - HISTORY_DAYS * 24 * 60 * 60 * 1000)
   cutoff.setHours(0, 0, 0, 0)
   const [products, transactions] = await Promise.all([
-    getProducts(),
-    getTransactions({ from: cutoff.toISOString() }),
+    getProducts(undefined, tenantId),
+    getTransactions({ from: cutoff.toISOString() }, tenantId),
   ])
   const cachedAt = new Date().toISOString()
   await beforeCommit?.()
@@ -231,9 +234,27 @@ export const refreshLocalSnapshot = async (
     offlineDb.transactions,
     offlineDb.meta,
     async () => {
-      await offlineDb.products.clear()
+      const recentLocalProducts = await offlineDb.products
+        .where('tenantId')
+        .equals(tenantId)
+        .filter((product) => product.cachedAt > requestedAt)
+        .toArray()
+      const recentById = new Map(
+        recentLocalProducts.map((product) => [product.id, product])
+      )
+      const mergedProducts = products.map(
+        (product) =>
+          recentById.get(product.id) ?? { ...product, tenantId, cachedAt }
+      )
+      const remoteProductIds = new Set(products.map((product) => product.id))
+
+      await offlineDb.products.where('tenantId').equals(tenantId).delete()
       await offlineDb.products.bulkPut(
-        products.map((product) => ({ ...product, cachedAt }))
+        mergedProducts.concat(
+          recentLocalProducts.filter(
+            (product) => !remoteProductIds.has(product.id)
+          )
+        )
       )
 
       const serverIds = new Set(
@@ -250,6 +271,7 @@ export const refreshLocalSnapshot = async (
         await offlineDb.transactions.put({
           ...remote,
           id: existing?.id ?? remote.id,
+          tenantId,
           serverId: remote.id,
           occurredAt: existing?.occurredAt ?? remote.occurredAt,
           syncState: existing?.deleted ? 'deleting' : 'synced',
@@ -257,7 +279,10 @@ export const refreshLocalSnapshot = async (
         })
       }
 
-      const localTransactions = await offlineDb.transactions.toArray()
+      const localTransactions = await offlineDb.transactions
+        .where('tenantId')
+        .equals(tenantId)
+        .toArray()
       for (const local of localTransactions) {
         const isSynced = local.syncState === 'synced'
         const isOutsideWindow = local.occurredAt < cutoff.toISOString()
@@ -268,13 +293,15 @@ export const refreshLocalSnapshot = async (
         }
       }
 
-      await setLastSyncAt(cachedAt)
-      await setSnapshotRefreshNeeded(false)
+      await setLastSyncAt(cachedAt, tenantId)
+      await setSnapshotRefreshNeeded(false, tenantId)
     }
   )
 }
 
 export interface FlushOptions {
+  ownerUserId: string
+  tenantId: string
   force?: boolean
   refreshSnapshot?: boolean
   retryBlocked?: boolean
@@ -288,11 +315,13 @@ export interface FlushResult {
 }
 
 export const flushOutbox = async ({
+  ownerUserId,
+  tenantId,
   force = false,
   refreshSnapshot = false,
   retryBlocked = false,
   onProgress,
-}: FlushOptions = {}): Promise<FlushResult> => {
+}: FlushOptions): Promise<FlushResult> => {
   if (!(await acquireLease())) {
     return { status: 'lease-busy', completed: 0, snapshotRefreshed: false }
   }
@@ -315,31 +344,42 @@ export const flushOutbox = async ({
   }, LEASE_RENEW_INTERVAL_MS)
 
   try {
-    if (refreshSnapshot) await setSnapshotRefreshNeeded(true)
-    if (retryBlocked) await retryBlockedOperations()
+    if (refreshSnapshot) await setSnapshotRefreshNeeded(true, tenantId)
+    if (retryBlocked) await retryBlockedOperations(ownerUserId, tenantId)
 
-    const total = await offlineDb.outbox.count()
+    const ownerOperations = () =>
+      offlineDb.outbox
+        .where('[tenantId+ownerUserId]')
+        .equals([tenantId, ownerUserId])
+        .sortBy('createdAt')
+
+    const total = (await ownerOperations()).length
     let completed = 0
+    let deferredWork = false
 
     while (true) {
-      const operation = await offlineDb.outbox.orderBy('createdAt').first()
-      if (!operation) break
-      if (operation.state === 'blocked') {
-        throw new SyncFailure(
-          'blocked',
-          operation.lastError ?? 'Sync is blocked'
+      const operations = await ownerOperations()
+      if (operations.length === 0) break
+
+      const seenEntities = new Set<string>()
+      const firstOperations = operations.filter((operation) => {
+        if (seenEntities.has(operation.entityId)) return false
+        seenEntities.add(operation.entityId)
+        return true
+      })
+      const operation = firstOperations.find(
+        (candidate) =>
+          candidate.state !== 'blocked' &&
+          (force ||
+            !candidate.nextAttemptAt ||
+            new Date(candidate.nextAttemptAt).getTime() <= Date.now())
+      )
+
+      if (!operation) {
+        deferredWork = firstOperations.some(
+          (candidate) => candidate.state !== 'blocked'
         )
-      }
-      if (
-        !force &&
-        operation.nextAttemptAt &&
-        new Date(operation.nextAttemptAt).getTime() > Date.now()
-      ) {
-        return {
-          status: 'deferred',
-          completed,
-          snapshotRefreshed: false,
-        }
+        break
       }
 
       await ensureLease()
@@ -358,23 +398,23 @@ export const flushOutbox = async ({
         const failure =
           error instanceof SyncFailure ? error : classifyError(error)
         await markFailed(operation, failure)
+        if (failure.kind === 'blocked') continue
         throw failure
       }
     }
 
     const shouldRefreshSnapshot =
-      completed > 0 ||
       refreshSnapshot ||
-      (await getSnapshotRefreshNeeded()) === true
+      (await getSnapshotRefreshNeeded(tenantId)) === true
     if (shouldRefreshSnapshot) {
       try {
-        await refreshLocalSnapshot(ensureLease)
+        await refreshLocalSnapshot(tenantId, ensureLease)
       } catch (error) {
         throw error instanceof SyncFailure ? error : classifyError(error)
       }
     }
 
-    if ((await offlineDb.outbox.count()) > 0) {
+    if ((await ownerOperations()).length > 0 || deferredWork) {
       return {
         status: 'deferred',
         completed,
@@ -393,14 +433,32 @@ export const flushOutbox = async ({
   }
 }
 
-export const retryBlockedOperations = async () => {
-  await offlineDb.outbox.where('state').equals('blocked').modify({
-    state: 'pending',
-    nextAttemptAt: undefined,
-    lastError: undefined,
-  })
-  await offlineDb.transactions
-    .where('syncState')
-    .equals('blocked')
-    .modify({ syncState: 'pending' })
+export const retryBlockedOperations = async (
+  ownerUserId: string,
+  tenantId: string
+) => {
+  const operations = await offlineDb.outbox
+    .where('[tenantId+ownerUserId+state]')
+    .equals([tenantId, ownerUserId, 'blocked'])
+    .toArray()
+
+  await offlineDb.transaction(
+    'rw',
+    offlineDb.outbox,
+    offlineDb.transactions,
+    async () => {
+      for (const operation of operations) {
+        await offlineDb.outbox.update(operation.operationId, {
+          state: 'pending',
+          nextAttemptAt: undefined,
+          lastError: undefined,
+        })
+        await offlineDb.transactions.update(operation.entityId, {
+          syncState:
+            operation.kind === 'DELETE_TRANSACTION' ? 'deleting' : 'pending',
+          ...(operation.kind === 'DELETE_TRANSACTION' ? { deleted: true } : {}),
+        })
+      }
+    }
+  )
 }

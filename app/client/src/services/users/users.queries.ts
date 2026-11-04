@@ -1,78 +1,67 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getUsers, createUser, updateUser, deleteUser, updateActivityStatus, resetPassword } from './users.api'
-import { CreateUserInput, UpdateUserInput, UpdateActivityStatusInput } from './users.types'
-import { useSyncContext } from '../../context/sync/useSyncContext'
+import toast from 'react-hot-toast'
+import { getUsers, createUser, updateUser, deleteUser, resetPassword } from './users.api'
+import { CreateUserInput, UpdateUserInput } from './users.types'
+import { useTenantContext } from '../../context/tenant/useTenantContext'
+
+const showMutationError = (error: unknown) => {
+  toast.error(
+    error instanceof Error ? error.message : 'The request could not be completed'
+  )
+}
 
 export function useUsers() {
-  const { canUseOnlineFeatures } = useSyncContext()
+  const { currentTenant } = useTenantContext()
   return useQuery({
-    queryKey: ['users'],
+    queryKey: ['users', currentTenant?.id],
     queryFn: getUsers,
+    enabled: !!currentTenant,
     staleTime: 5 * 60 * 1000,
-    enabled: canUseOnlineFeatures,
   })
 }
 
 export function useCreateUser() {
   const queryClient = useQueryClient()
-  const { canUseOnlineFeatures } = useSyncContext()
   return useMutation({
-    mutationFn: (input: CreateUserInput) => {
-      if (!canUseOnlineFeatures) throw new Error('User administration requires an online, synced device')
-      return createUser(input)
-    },
+    networkMode: 'always',
+    mutationFn: (input: CreateUserInput) => createUser(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },
+    onError: showMutationError,
   })
 }
 
 export function useUpdateUser() {
   const queryClient = useQueryClient()
-  const { canUseOnlineFeatures } = useSyncContext()
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateUserInput }) => {
-      if (!canUseOnlineFeatures) throw new Error('User administration requires an online, synced device')
-      return updateUser(id, input)
-    },
+    networkMode: 'always',
+    mutationFn: ({ id, input }: { id: string; input: UpdateUserInput }) =>
+      updateUser(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },
+    onError: showMutationError,
   })
 }
 
 export function useDeleteUser() {
   const queryClient = useQueryClient()
-  const { canUseOnlineFeatures } = useSyncContext()
   return useMutation({
-    mutationFn: (id: string) => {
-      if (!canUseOnlineFeatures) throw new Error('User administration requires an online, synced device')
-      return deleteUser(id)
-    },
+    networkMode: 'always',
+    mutationFn: (id: string) => deleteUser(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },
-  })
-}
-
-export function useUpdateActivityStatus() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateActivityStatusInput }) =>
-      updateActivityStatus(id, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] })
-      queryClient.invalidateQueries({ queryKey: ['auth'] })
-    },
+    onError: showMutationError,
   })
 }
 
 export function useResetPassword() {
-  const { canUseOnlineFeatures } = useSyncContext()
   return useMutation({
-    mutationFn: ({ id, password }: { id: string; password: string }) => {
-      if (!canUseOnlineFeatures) throw new Error('User administration requires an online, synced device')
-      return resetPassword(id, password)
-    },
+    networkMode: 'always',
+    mutationFn: ({ id, password }: { id: string; password: string }) =>
+      resetPassword(id, password),
+    onError: showMutationError,
   })
 }

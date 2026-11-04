@@ -66,26 +66,35 @@ const DELETE_TRANSACTION = `
   }
 `
 
-export async function getTransactions(filter?: TransactionFilter): Promise<ServerTransaction[]> {
+export async function getTransactions(
+  filter?: TransactionFilter,
+  tenantId?: string,
+): Promise<ServerTransaction[]> {
   const data = await requestGraphQL<{ transactions: ServerTransaction[] }>(
     GET_TRANSACTIONS,
-    { filter }
+    { filter },
+    { tenantId },
   )
   return data.transactions
 }
 
-export async function createTransaction(input: CreateTransactionInput): Promise<ServerTransaction> {
+export async function createTransaction(
+  input: CreateTransactionInput,
+  tenantId?: string,
+): Promise<ServerTransaction> {
   const data = await requestGraphQL<{ createTransaction: ServerTransaction }>(
     CREATE_TRANSACTION,
-    { input }
+    { input },
+    { tenantId },
   )
   return data.createTransaction
 }
 
-export async function deleteTransaction(id: string): Promise<boolean> {
+export async function deleteTransaction(id: string, tenantId?: string): Promise<boolean> {
   const data = await requestGraphQL<{ deleteTransaction: boolean }>(
     DELETE_TRANSACTION,
-    { id }
+    { id },
+    { tenantId },
   )
   return data.deleteTransaction
 }

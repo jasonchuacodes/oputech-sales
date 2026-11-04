@@ -9,7 +9,8 @@ export const editUserSchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers, and underscores allowed'),
   fullName: z.string().max(100, 'Full name must be at most 100 characters').optional(),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
-  role: z.enum(Object.values(UserRole) as [string, ...string[]]).optional(),
+  role: z.enum([UserRole.Admin, UserRole.Staff]),
+  tenantIds: z.array(z.string()).min(1, 'Select at least one tenant'),
 })
 
 export type EditUserFormValues = z.infer<typeof editUserSchema>

@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common'
+import { InvalidInputException } from '../../common/exceptions'
 import { describe, expect, it, vi } from 'vitest'
 import { ReportService } from './report.service'
 import { ReportSortOrder } from './report.types'
@@ -48,7 +48,7 @@ describe('ReportService paginated listing', () => {
       { collection: { name: 'transactions' } } as never
     )
 
-    const result = await service.findPage({
+    const result = await service.findPage('tenant-1', {
       filter: {
         dateRange: {
           from: '2026-10-31T16:00:00.000Z',
@@ -75,6 +75,7 @@ describe('ReportService paginated listing', () => {
     const pipeline = aggregate.mock.calls[0][0]
     expect(pipeline[0]).toEqual({
       $match: {
+        tenantId: 'tenant-1',
         toDate: {
           $gte: new Date('2026-10-31T16:00:00.000Z'),
           $lt: new Date('2026-11-30T16:00:00.000Z'),
@@ -83,6 +84,11 @@ describe('ReportService paginated listing', () => {
     })
     expect(pipeline[1]).toEqual({
       $sort: { toDate: 1, createdAt: 1, _id: 1 },
+    })
+    const lookup = pipeline.find((stage: any) => stage.$lookup)?.$lookup
+    expect(lookup.let).toEqual({
+      transactionIds: '$transactionObjectIds',
+      tenantId: '$tenantId',
     })
     expect(pipeline.at(-1).$facet.items.slice(0, 2)).toEqual([
       { $skip: 10 },
@@ -94,6 +100,24 @@ describe('ReportService paginated listing', () => {
           $subtract: [{ $add: ['$totalCash', '$totalOnline'] }, '$totalExpenses'],
         },
       },
+    })
+    expect(pipeline.find((stage: any) => stage.$set?.totalPrintCount)).toEqual({
+      $set: expect.objectContaining({
+        totalPrintCount: {
+          $sum: {
+            $map: {
+              input: { $ifNull: ['$products', []] },
+              as: 'product',
+              in: {
+                $multiply: [
+                  { $ifNull: ['$$product.printCount', 0] },
+                  { $ifNull: ['$$product.quantitySold', 0] },
+                ],
+              },
+            },
+          },
+        },
+      }),
     })
   })
 
@@ -107,7 +131,7 @@ describe('ReportService paginated listing', () => {
       { collection: { name: 'transactions' } } as never
     )
 
-    await expect(service.findPage({})).resolves.toEqual({
+    await expect(service.findPage('tenant-1', {})).resolves.toEqual({
       items: [],
       totalCount: 0,
       page: 1,
@@ -130,7 +154,7 @@ describe('ReportService paginated listing', () => {
     )
 
     await expect(
-      service.findPage({
+      service.findPage('tenant-1', {
         filter: {
           dateRange: {
             from: '2026-11-04T00:00:00.000Z',
@@ -138,7 +162,7 @@ describe('ReportService paginated listing', () => {
           },
         },
       })
-    ).rejects.toBeInstanceOf(BadRequestException)
+    ).rejects.toBeInstanceOf(InvalidInputException)
     expect(aggregate).not.toHaveBeenCalled()
   })
 })

@@ -1,0 +1,17 @@
+type Tenant {
+  id: ID!
+  name: String!
+}
+
+input CreateTenantInput {
+  name: String!
+}
+
+extend type Query {
+  tenants: [Tenant!]!
+}
+
+extend type Mutation {
+  createTenant(input: CreateTenantInput!): Tenant!
+  selectTenant(tenantId: ID!, expectedVersion: Int!): User!
+}

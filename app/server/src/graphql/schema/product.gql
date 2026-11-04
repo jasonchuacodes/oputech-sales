@@ -1,5 +1,6 @@
 type Product {
   id: ID!
+  tenantId: ID!
   name: String!
   price: Float!
   imageUrl: String

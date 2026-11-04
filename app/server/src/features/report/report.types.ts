@@ -28,6 +28,7 @@ export interface ReportListItem {
   toDate: string
   createdAt: string
   isRemitted: boolean
+  totalPrintCount: number
   totalCash: number
   totalOnline: number
   totalExpenses: number

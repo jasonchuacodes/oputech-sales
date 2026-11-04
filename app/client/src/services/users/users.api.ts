@@ -1,5 +1,5 @@
 import { requestGraphQL } from '../../lib/graphql'
-import { User, CreateUserInput, UpdateUserInput, UpdateActivityStatusInput } from './users.types'
+import { User, CreateUserInput, UpdateUserInput } from './users.types'
 
 const GET_USERS = `
   query GetUsers {
@@ -9,10 +9,9 @@ const GET_USERS = `
       fullName
       email
       role
-      activityStatus {
-        status
-        message
-      }
+      tenantIds
+      currentTenantId
+      tenantSelectionVersion
     }
   }
 `
@@ -30,6 +29,9 @@ const CREATE_USER = `
       fullName
       email
       role
+      tenantIds
+      currentTenantId
+      tenantSelectionVersion
     }
   }
 `
@@ -46,6 +48,9 @@ const UPDATE_USER = `
       fullName
       email
       role
+      tenantIds
+      currentTenantId
+      tenantSelectionVersion
     }
   }
 `
@@ -67,26 +72,6 @@ const DELETE_USER = `
 export async function deleteUser(id: string): Promise<boolean> {
   const data = await requestGraphQL<{ deleteUser: boolean }>(DELETE_USER, { id })
   return data.deleteUser
-}
-
-const UPDATE_ACTIVITY_STATUS = `
-  mutation UpdateActivityStatus($id: ID!, $input: ActivityStatusInput!) {
-    updateActivityStatus(id: $id, input: $input) {
-      id
-      activityStatus {
-        status
-        message
-      }
-    }
-  }
-`
-
-export async function updateActivityStatus(id: string, input: UpdateActivityStatusInput): Promise<User> {
-  const data = await requestGraphQL<{ updateActivityStatus: User }>(
-    UPDATE_ACTIVITY_STATUS,
-    { id, input }
-  )
-  return data.updateActivityStatus
 }
 
 const RESET_PASSWORD = `

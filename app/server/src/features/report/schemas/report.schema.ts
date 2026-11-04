@@ -25,6 +25,9 @@ const ProductSaleSchema = SchemaFactory.createForClass(ProductSale)
 
 @Schema({ timestamps: true })
 export class Report {
+  @Prop({ required: true, index: true })
+  tenantId: string
+
   @Prop({ required: true })
   createdBy: string
 
@@ -46,4 +49,4 @@ export class Report {
 
 export const ReportSchema = SchemaFactory.createForClass(Report)
 
-ReportSchema.index({ toDate: -1, createdAt: -1, _id: -1 })
+ReportSchema.index({ tenantId: 1, toDate: -1, createdAt: -1, _id: -1 })

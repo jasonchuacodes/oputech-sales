@@ -9,26 +9,31 @@ import {
   type ReactNode,
 } from 'react'
 import { liveQuery } from 'dexie'
-import { useQueryClient } from '@tanstack/react-query'
 import { useAuthContext } from '../auth/useAuthContext'
 import {
+  adoptLegacyOfflineData,
   getLastSyncAt,
   getSnapshotRefreshNeeded,
   offlineDb,
   setSnapshotRefreshNeeded,
 } from '../../offline/database'
 import { flushOutbox, probeApi, SyncFailure } from '../../offline/sync'
+import { useTenantContext } from '../tenant/useTenantContext'
 import {
   SyncContext,
-  type ConnectivityStatus,
+  type Reachability,
   type SyncContextValue,
+  type SyncPhase,
 } from './sync-context'
 
 const AUTOMATIC_RETRY_MS = 5 * 60 * 1000
+const SNAPSHOT_STALE_MS = 5 * 60 * 1000
 
 interface SyncRequest {
   source: 'automatic' | 'bootstrap' | 'manual' | 'reconnect'
   refreshSnapshot?: boolean
+  refreshIfStale?: boolean
+  retryBlocked?: boolean
 }
 
 const mergeSyncRequests = (
@@ -40,23 +45,33 @@ const mergeSyncRequests = (
       ? 'manual'
       : next.source,
   refreshSnapshot: current?.refreshSnapshot || next.refreshSnapshot,
+  refreshIfStale: current?.refreshIfStale || next.refreshIfStale,
+  retryBlocked: current?.retryBlocked || next.retryBlocked,
 })
+
+const isSnapshotStale = (syncedAt?: string) =>
+  !syncedAt || Date.now() - new Date(syncedAt).getTime() >= SNAPSHOT_STALE_MS
 
 export const SyncProvider = ({ children }: { children: ReactNode }) => {
   const { auth } = useAuthContext()
+  const { currentTenant } = useTenantContext()
   const authId = auth?.id
-  const queryClient = useQueryClient()
+  const tenantId = currentTenant?.id ?? auth?.currentTenantId
   const running = useRef<Promise<void> | null>(null)
   const queuedRequest = useRef<SyncRequest | null>(null)
   const runSyncRef = useRef<(request: SyncRequest) => Promise<void>>(async () =>
     Promise.resolve()
   )
-  const statusRef = useRef<ConnectivityStatus>('checking')
   const retryAtRef = useRef<number | undefined>(undefined)
-  const observedSyncAt = useRef<string | undefined>(undefined)
-  const [status, setStatus] = useState<ConnectivityStatus>('checking')
+  const observedPendingCount = useRef<number | undefined>(undefined)
+  const [reachability, setReachability] =
+    useState<Reachability>('unknown')
+  const [phase, setPhase] = useState<SyncPhase>('idle')
+  const [authRequired, setAuthRequired] = useState(false)
+  const [statsReady, setStatsReady] = useState(false)
   const [pendingCount, setPendingCount] = useState(0)
   const [blockedCount, setBlockedCount] = useState(0)
+  const [otherUserPendingCount, setOtherUserPendingCount] = useState(0)
   const [progress, setProgress] = useState<SyncContextValue['progress']>()
   const [lastSyncAt, setLastSyncAtState] = useState<string>()
   const [lastError, setLastError] = useState<string>()
@@ -64,29 +79,36 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
   const [storagePressure, setStoragePressure] = useState<boolean>()
   const [retryAt, setRetryAt] = useState<number>()
 
-  const updateStatus = useCallback((next: ConnectivityStatus) => {
-    statusRef.current = next
-    setStatus(next)
-  }, [])
-
   const refreshStats = useCallback(async () => {
-    const [pending, blocked, syncedAt, snapshotRefreshNeeded] =
-      await Promise.all([
-        offlineDb.outbox.count(),
-        offlineDb.outbox.where('state').equals('blocked').count(),
-        getLastSyncAt(),
-        getSnapshotRefreshNeeded(),
-      ])
+    const [allOperations, syncedAt, snapshotRefreshNeeded] = await Promise.all([
+      offlineDb.outbox.toArray(),
+      getLastSyncAt(tenantId),
+      getSnapshotRefreshNeeded(tenantId),
+    ])
+    const tenantOperations = tenantId
+      ? allOperations.filter((operation) => operation.tenantId === tenantId)
+      : []
+    const currentOperations = authId && tenantId
+      ? tenantOperations.filter((operation) => operation.ownerUserId === authId)
+      : []
+    const pending = currentOperations.length
+    const blocked = currentOperations.filter(
+      (operation) => operation.state === 'blocked'
+    ).length
+    const otherPending = tenantOperations.length - pending
+
     setPendingCount(pending)
     setBlockedCount(blocked)
+    setOtherUserPendingCount(otherPending)
     setLastSyncAtState(syncedAt)
+    setStatsReady(true)
     return {
       pending,
       blocked,
       syncedAt,
       snapshotRefreshNeeded: !!snapshotRefreshNeeded,
     }
-  }, [])
+  }, [authId, tenantId])
 
   const scheduleRetry = useCallback(() => {
     const dueAt = Date.now() + AUTOMATIC_RETRY_MS
@@ -112,53 +134,68 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
 
       const task = (async () => {
         const manual = request.source === 'manual'
-        if (request.refreshSnapshot) await setSnapshotRefreshNeeded(true)
-
+        if (authId && tenantId) {
+          await adoptLegacyOfflineData(authId, tenantId)
+        }
         const statsAtStart = await refreshStats()
-        const showActivity =
-          manual ||
+        const refreshSnapshot =
+          !!request.refreshSnapshot ||
+          !!statsAtStart.snapshotRefreshNeeded ||
+          (!!request.refreshIfStale && isSnapshotStale(statsAtStart.syncedAt))
+
+        if (refreshSnapshot && tenantId) {
+          await setSnapshotRefreshNeeded(true, tenantId)
+        }
+
+        const hasWork =
           statsAtStart.pending > 0 ||
-          statsAtStart.snapshotRefreshNeeded ||
-          request.refreshSnapshot ||
-          statusRef.current !== 'online'
-
-        if (showActivity) updateStatus('checking')
+          refreshSnapshot ||
+          !!request.retryBlocked
         setLastError(undefined)
+
+        if (!authId || !tenantId) {
+          setPhase('idle')
+          return
+        }
+
         if (!manual && navigator.onLine === false) {
-          updateStatus('offline')
-          scheduleRetry()
+          setReachability('unreachable')
+          if (hasWork) {
+            setPhase('backoff')
+            scheduleRetry()
+          }
           return
         }
+
+        setPhase('checking')
         if (!(await probeApi())) {
-          updateStatus('offline')
-          const stats = await refreshStats()
-          if (stats.pending > 0 || stats.snapshotRefreshNeeded) scheduleRetry()
+          setReachability('unreachable')
+          setPhase(hasWork ? 'backoff' : 'idle')
+          if (hasWork) scheduleRetry()
           return
         }
 
-        if (!authId) {
-          updateStatus('auth-required')
-          await refreshStats()
+        setReachability('reachable')
+        setAuthRequired(false)
+        if (!hasWork) {
+          setPhase('idle')
+          cancelRetry()
           return
         }
 
-        if (showActivity) updateStatus('syncing')
+        setPhase('syncing')
         try {
           const result = await flushOutbox({
+            ownerUserId: authId,
+            tenantId,
             force: manual,
-            refreshSnapshot: request.refreshSnapshot,
-            retryBlocked: manual,
-            onProgress: (completed, total) => setProgress({ completed, total }),
+            refreshSnapshot,
+            retryBlocked: request.retryBlocked,
+            onProgress: (completed, total) =>
+              setProgress({ completed, total }),
           })
-          updateStatus('online')
-          if (result.completed > 0 || result.snapshotRefreshed) {
-            await queryClient.invalidateQueries({
-              predicate: (query) =>
-                ['products', 'transactions', 'reports', 'analytics'].includes(
-                  String(query.queryKey[0])
-                ),
-            })
-          }
+          setReachability('reachable')
+          setPhase('idle')
 
           const stats = await refreshStats()
           if (
@@ -167,7 +204,14 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
             !stats.snapshotRefreshNeeded
           ) {
             cancelRetry()
+          } else if (
+            stats.pending === stats.blocked &&
+            !stats.snapshotRefreshNeeded
+          ) {
+            setPhase('idle')
+            cancelRetry()
           } else {
+            setPhase('backoff')
             scheduleRetry()
           }
         } catch (error) {
@@ -179,30 +223,32 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
                   error instanceof Error ? error.message : 'Sync failed'
                 )
           setLastError(failure.message)
-          updateStatus(
-            failure.kind === 'auth'
-              ? 'auth-required'
-              : failure.kind === 'blocked'
-                ? 'blocked'
-                : 'offline'
-          )
-          if (failure.kind === 'network') scheduleRetry()
+          if (failure.kind === 'auth') {
+            setAuthRequired(true)
+            setPhase('idle')
+          } else if (failure.kind === 'network') {
+            setReachability('unreachable')
+            setPhase('backoff')
+            scheduleRetry()
+          } else {
+            setPhase('idle')
+          }
         } finally {
           setProgress(undefined)
           await refreshStats()
         }
       })().catch(async (error) => {
         setProgress(undefined)
+        setPhase('idle')
         setLastError(
           error instanceof Error
             ? error.message
             : 'Local synchronization failed'
         )
-        updateStatus('blocked')
         try {
           await refreshStats()
         } catch {
-          // Keep the actionable error visible when browser storage is unavailable.
+          // Keep the actionable storage error visible.
         }
       })
 
@@ -218,14 +264,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     },
-    [
-      authId,
-      cancelRetry,
-      queryClient,
-      refreshStats,
-      scheduleRetry,
-      updateStatus,
-    ]
+    [authId, tenantId, cancelRetry, refreshStats, scheduleRetry]
   )
 
   useEffect(() => {
@@ -237,43 +276,84 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
     [runSync]
   )
 
-  useEffect(() => {
-    const subscription = liveQuery(async () => ({
-      pending: await offlineDb.outbox.count(),
-      blocked: await offlineDb.outbox.where('state').equals('blocked').count(),
-      syncedAt: await getLastSyncAt(),
-      snapshotRefreshNeeded: !!(await getSnapshotRefreshNeeded()),
-    })).subscribe(({ pending, blocked, syncedAt, snapshotRefreshNeeded }) => {
-      setPendingCount(pending)
-      setBlockedCount(blocked)
-      setLastSyncAtState(syncedAt)
-      if (pending === 0 && !snapshotRefreshNeeded) cancelRetry()
+  const retryBlocked = useCallback(
+    () => runSync({ source: 'manual', retryBlocked: true }),
+    [runSync]
+  )
 
-      if (observedSyncAt.current && observedSyncAt.current !== syncedAt) {
-        void queryClient.invalidateQueries({
-          predicate: (query) =>
-            ['products', 'transactions', 'reports', 'analytics'].includes(
-              String(query.queryKey[0])
-            ),
-        })
+  useEffect(() => {
+    observedPendingCount.current = undefined
+    const subscription = liveQuery(async () => {
+      const [operations, syncedAt, snapshotRefreshNeeded] = await Promise.all([
+        offlineDb.outbox.toArray(),
+        getLastSyncAt(tenantId),
+        getSnapshotRefreshNeeded(tenantId),
+      ])
+      const tenantOperations = tenantId
+        ? operations.filter((operation) => operation.tenantId === tenantId)
+        : []
+      const current = authId && tenantId
+        ? tenantOperations.filter((operation) => operation.ownerUserId === authId)
+        : []
+      return {
+        pending: current.length,
+        blocked: current.filter((operation) => operation.state === 'blocked')
+          .length,
+        otherPending: tenantOperations.length - current.length,
+        syncedAt,
+        snapshotRefreshNeeded: !!snapshotRefreshNeeded,
       }
-      observedSyncAt.current = syncedAt
-    })
+    }).subscribe(
+      ({
+        pending,
+        blocked,
+        otherPending,
+        syncedAt,
+        snapshotRefreshNeeded,
+      }) => {
+        setPendingCount(pending)
+        setBlockedCount(blocked)
+        setOtherUserPendingCount(otherPending)
+        setLastSyncAtState(syncedAt)
+        setStatsReady(true)
+        if (pending === 0 && !snapshotRefreshNeeded) cancelRetry()
+        if (
+          authId && tenantId &&
+          observedPendingCount.current !== undefined &&
+          pending > observedPendingCount.current
+        ) {
+          queueMicrotask(() =>
+            void runSyncRef.current({ source: 'automatic' })
+          )
+        }
+        observedPendingCount.current = pending
+      },
+      (error) => {
+        setStatsReady(false)
+        setLastError(
+          error instanceof Error ? error.message : 'Browser storage unavailable'
+        )
+      }
+    )
     return () => subscription.unsubscribe()
-  }, [cancelRetry, queryClient])
+  }, [authId, tenantId, cancelRetry])
 
   useEffect(() => {
-    if (!authId) {
+    if (!authId || !tenantId) {
       queuedRequest.current = null
       retryAtRef.current = undefined
-      queueMicrotask(cancelRetry)
+      queueMicrotask(() => {
+        setAuthRequired(false)
+        setPhase('idle')
+        cancelRetry()
+      })
       return
     }
-    void runSync({ source: 'bootstrap', refreshSnapshot: true })
+    void runSync({ source: 'bootstrap', refreshIfStale: true })
 
     const handleReconnect = () =>
-      void runSync({ source: 'reconnect', refreshSnapshot: true })
-    const handleOffline = () => updateStatus('offline')
+      void runSync({ source: 'reconnect', refreshIfStale: true })
+    const handleOffline = () => setReachability('unreachable')
     const handleOutboxChanged = () => void runSync({ source: 'automatic' })
     const handleVisibility = () => {
       if (
@@ -282,7 +362,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
         retryAtRef.current <= Date.now()
       ) {
         cancelRetry()
-        void runSync({ source: 'automatic' })
+        void runSync({ source: 'automatic', refreshIfStale: true })
       }
     }
     window.addEventListener('online', handleReconnect)
@@ -299,30 +379,27 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
       )
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [authId, cancelRetry, runSync, updateStatus])
+  }, [authId, tenantId, cancelRetry, runSync])
 
   useEffect(() => {
-    if (!authId || retryAt === undefined) return
+    if (!authId || !tenantId || retryAt === undefined) return
     const timeout = window.setTimeout(
       () => {
         if (document.visibilityState !== 'visible') return
         cancelRetry()
-        void runSync({ source: 'automatic' })
+        void runSync({ source: 'automatic', refreshIfStale: true })
       },
       Math.max(0, retryAt - Date.now())
     )
-
     return () => window.clearTimeout(timeout)
-  }, [authId, cancelRetry, retryAt, runSync])
+  }, [authId, tenantId, cancelRetry, retryAt, runSync])
 
   useEffect(() => {
     if (!authId || !navigator.storage?.persist) return
     void navigator.storage
       .persist()
       .then(setStoragePersistent)
-      .catch(() => {
-        setStoragePersistent(false)
-      })
+      .catch(() => setStoragePersistent(false))
   }, [authId])
 
   useEffect(() => {
@@ -336,30 +413,50 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
     })
   }, [authId, pendingCount])
 
+  const canUseQueueSensitiveFeatures =
+    statsReady &&
+    reachability === 'reachable' &&
+    !authRequired &&
+    phase === 'idle' &&
+    pendingCount === 0 &&
+    blockedCount === 0
+
   const value = useMemo<SyncContextValue>(
     () => ({
-      status,
+      reachability,
+      phase,
+      authRequired,
+      statsReady,
+      isSyncing: phase === 'checking' || phase === 'syncing',
       pendingCount,
       blockedCount,
+      otherUserPendingCount,
       progress,
       lastSyncAt,
       lastError,
       storagePersistent,
       storagePressure,
-      canUseOnlineFeatures:
-        status === 'online' && pendingCount === 0 && blockedCount === 0,
+      canGenerateReport: canUseQueueSensitiveFeatures,
+      canModifyCatalog: canUseQueueSensitiveFeatures,
       syncNow,
+      retryBlocked,
     }),
     [
-      status,
+      reachability,
+      phase,
+      authRequired,
+      statsReady,
       pendingCount,
       blockedCount,
+      otherUserPendingCount,
       progress,
       lastSyncAt,
       lastError,
       storagePersistent,
       storagePressure,
+      canUseQueueSensitiveFeatures,
       syncNow,
+      retryBlocked,
     ]
   )
 

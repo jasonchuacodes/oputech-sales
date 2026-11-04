@@ -12,7 +12,8 @@
     "migrate:transaction-occurred-at": "ts-node --project scripts/tsconfig.json scripts/migrate-transaction-occurred-at.ts",
     "migrate:data": "pnpm migrate-expenses && pnpm migrate:transaction-occurred-at",
     "migrate:data:dry-run": "pnpm migrate-expenses -- --dry-run && pnpm migrate:transaction-occurred-at -- --dry-run",
-    "register-admin": "ts-node scripts/register-admin.ts",
+    "register-superadmin": "ts-node --project scripts/tsconfig.json scripts/register-superadmin.ts",
+    "reset-tenancy-data": "ts-node --project scripts/tsconfig.json scripts/reset-tenancy-data.ts",
     "migrate-expenses": "ts-node scripts/migrate-expenses-to-transactions.ts"
   },
   "dependencies": {

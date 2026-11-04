@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/context/auth/AuthContext'
 import { SyncProvider } from '@/context/sync/SyncContext'
 import { PWAReloadPrompt } from '@/components/PWAReloadPrompt'
+import { TenantProvider } from '@/context/tenant/TenantContext'
 
 export const AppProviders = ({ children }: { children: ReactNode }) => {
   const [queryClient] = useState(
@@ -20,11 +21,13 @@ export const AppProviders = ({ children }: { children: ReactNode }) => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <SyncProvider>
-          {children}
-          <PWAReloadPrompt />
-          <Toaster position="top-center" />
-        </SyncProvider>
+        <TenantProvider>
+          <SyncProvider>
+            {children}
+            <PWAReloadPrompt />
+            <Toaster position="top-center" />
+          </SyncProvider>
+        </TenantProvider>
       </AuthProvider>
     </QueryClientProvider>
   )

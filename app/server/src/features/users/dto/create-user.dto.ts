@@ -6,4 +6,7 @@ export class CreateUserDto {
   email?: string;
   password: string;
   role?: UserRole;
+  ownerUserId?: string;
+  tenantIds?: string[];
+  currentTenantId?: string;
 }

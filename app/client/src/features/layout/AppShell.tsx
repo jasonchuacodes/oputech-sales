@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   BarChart3,
   Bell,
+  Building2,
   House,
   Package,
   PanelLeftClose,
@@ -27,15 +28,13 @@ import {
 import { useAuthContext } from '@/context/auth/useAuthContext'
 import { useSyncContext } from '@/context/sync/useSyncContext'
 import { UserRole } from '@/types'
-import { UserStatus } from '@/services/users/users.types'
 import { cn } from '@/utils/cn'
 import { Button, Spinner } from '@/components'
 import { AccountAvatar } from '@/features/account/components/AccountAvatar'
-import { StatusOverlay } from './components/StatusOverlay'
 import { SyncStatus } from './components/SyncStatus'
 import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
-import { useCurrentUserActivityStatus } from './hooks/useCurrentUserActivityStatus'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
+import { useTenantContext } from '@/context/tenant/useTenantContext'
 
 type NavItem = {
   label: string
@@ -214,7 +213,7 @@ const AccountProfileLink = ({
           {username || 'Account'}
         </span>
         <span className="text-text-tertiary block truncate text-xs">
-          {email || (isAdmin ? 'Administrator' : 'Sales user')}
+          {email || (isAdmin ? 'Administrator' : 'Staff')}
         </span>
       </span>
     </Link>
@@ -232,9 +231,10 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     getServerSidebarCollapsedSnapshot
   )
   const { auth, loading } = useAuthContext()
-  const { status: connectivityStatus, syncNow } = useSyncContext()
-  const { status, setActive } = useCurrentUserActivityStatus()
-  const isAdmin = auth?.role === UserRole.ADMIN
+  const { syncNow } = useSyncContext()
+  const tenant = useTenantContext()
+  const isSuperAdmin = auth?.role === UserRole.SUPERADMIN
+  const isAdmin = auth?.role === UserRole.ADMIN || isSuperAdmin
 
   useEffect(() => {
     if (loading) return
@@ -244,7 +244,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     }
     if (
       !isAdmin &&
-      ['/dashboard', '/catalog', '/users'].some((path) =>
+       ['/dashboard', '/catalog'].some((path) =>
         pathname.startsWith(path)
       )
     ) {
@@ -252,9 +252,23 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     }
   }, [auth, isAdmin, loading, pathname, router])
 
+  useEffect(() => {
+    if (!loading && auth && !isSuperAdmin && pathname.startsWith('/users')) {
+      router.replace('/sell')
+    }
+  }, [auth, isSuperAdmin, loading, pathname, router])
+
   const handleRefresh = useCallback(async () => {
-    await syncNow()
-    await queryClient.invalidateQueries()
+    await Promise.allSettled([
+      syncNow(),
+      queryClient.refetchQueries({
+        type: 'active',
+        predicate: (query) =>
+          ['reports', 'report', 'analytics', 'users'].includes(
+            String(query.queryKey[0])
+          ),
+      }),
+    ])
   }, [queryClient, syncNow])
 
   const { pullDistance, isPulling, isRefreshing } = usePullToRefresh(
@@ -285,11 +299,6 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
 
   return (
     <div className="bg-background flex h-dvh overflow-hidden">
-      <StatusOverlay
-        open={status === UserStatus.Inactive && connectivityStatus === 'online'}
-        onActive={setActive}
-      />
-
       <aside
         className={cn(
           'border-border/70 bg-card hidden shrink-0 flex-col gap-4 border-r px-2 py-4 transition-[width,padding] duration-200 ease-out motion-reduce:transition-none md:flex',
@@ -335,6 +344,20 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             )}
           </Button>
         </div>
+        <div
+          className={cn(
+            'bg-primary/5 text-primary flex min-h-12 items-center gap-3 rounded-md px-2',
+            isSidebarCollapsed && 'justify-center px-0',
+          )}
+          title={isSidebarCollapsed ? tenant.currentTenant?.name : undefined}
+        >
+          <span className="flex size-8 shrink-0 items-center justify-center">
+            <Building2 className="size-5" aria-hidden="true" />
+          </span>
+          <span className={cn('min-w-0 truncate text-sm font-semibold', isSidebarCollapsed && 'sr-only')}>
+            {tenant.currentTenant?.name ?? 'No tenant selected'}
+          </span>
+        </div>
         <nav
           id="desktop-sidebar-navigation"
           className="flex min-h-0 flex-1 flex-col gap-4"
@@ -358,13 +381,15 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                 >
                   Manage
                 </p>
-                {adminNavigation.map((item) => (
+                {adminNavigation
+                  .filter((item) => item.href !== '/users' || isSuperAdmin)
+                  .map((item) => (
                   <NavigationLink
                     key={item.href}
                     item={item}
                     collapsed={isSidebarCollapsed}
                   />
-                ))}
+                  ))}
               </div>
             )}
           </div>
@@ -383,7 +408,9 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md text-xs font-bold">
               OS
             </span>
-            <h1 className="text-lg font-semibold">Oputech Sales</h1>
+            <h1 className="max-w-[13rem] truncate text-lg font-semibold">
+              {tenant.currentTenant?.name ?? 'Oputech Sales'}
+            </h1>
           </div>
           <Button
             type="button"

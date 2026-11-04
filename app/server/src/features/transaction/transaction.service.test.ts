@@ -30,7 +30,7 @@ describe('TransactionService offline synchronization', () => {
       {} as never,
     )
 
-    const result = await service.createTransaction({
+    const result = await service.createTransaction('tenant-1', {
       type: TransactionType.EXPENSE,
       label: 'Supplies',
       amount: 100,
@@ -42,6 +42,10 @@ describe('TransactionService offline synchronization', () => {
     expect(result).toBe(existing)
     expect(result.occurredAt).toEqual(new Date('2026-08-20T03:00:00.000Z'))
     expect(result.createdAt).toEqual(new Date('2026-08-20T03:15:00.000Z'))
+    expect(transactionModel.findOne).toHaveBeenCalledWith({
+      tenantId: 'tenant-1',
+      clientMutationId: 'mutation-1',
+    })
     expect(transactionModel.create).not.toHaveBeenCalled()
   })
 
@@ -68,7 +72,7 @@ describe('TransactionService offline synchronization', () => {
       productModel as never,
     )
 
-    const result = await service.createTransaction({
+    const result = await service.createTransaction('tenant-1', {
       type: TransactionType.SALE,
       items: [{ productId: 'product-1', quantity: 2 }],
       paymentType: PaymentType.ONLINE,
@@ -84,6 +88,10 @@ describe('TransactionService offline synchronization', () => {
         total: 240,
       })
     )
+    expect(productModel.find).toHaveBeenCalledWith({
+      _id: { $in: ['product-1'] },
+      tenantId: 'tenant-1',
+    })
   })
 
   it('queries by occurredAt with a legacy createdAt fallback', async () => {
@@ -92,13 +100,14 @@ describe('TransactionService offline synchronization', () => {
     const find = vi.fn().mockReturnValue({ sort })
     const service = new TransactionService({ find } as never, {} as never)
 
-    await service.getTransactions({
+    await service.getTransactions('tenant-1', {
       from: '2026-08-20T00:00:00.000Z',
       to: '2026-08-20T23:59:59.999Z',
     })
 
     expect(find).toHaveBeenCalledWith(
       expect.objectContaining({
+        tenantId: 'tenant-1',
         $or: [
           { occurredAt: expect.any(Object) },
           {

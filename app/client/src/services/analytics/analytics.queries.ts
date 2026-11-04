@@ -1,13 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { getAnalytics } from './analytics.api'
 import { AnalyticsRange } from './analytics.types'
-import { useSyncContext } from '../../context/sync/useSyncContext'
+import { useTenantContext } from '../../context/tenant/useTenantContext'
 
 export const useAnalytics = (range: AnalyticsRange) => {
-  const { canUseOnlineFeatures } = useSyncContext()
+  const { currentTenant } = useTenantContext()
+  const tenantId = currentTenant?.id
   return useQuery({
-    queryKey: ['analytics', range],
-    queryFn: () => getAnalytics(range),
-    enabled: canUseOnlineFeatures,
+    queryKey: ['analytics', tenantId, range],
+    queryFn: () => getAnalytics(range, tenantId),
+    enabled: !!tenantId,
+    staleTime: 60 * 1000,
   })
 }

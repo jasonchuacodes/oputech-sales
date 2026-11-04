@@ -4,7 +4,6 @@ import Link from 'next/link'
 import {
   AlertTriangle,
   BarChart3,
-  CheckCircle2,
   ChevronRight,
   Cloud,
   LogOut,
@@ -16,11 +15,10 @@ import {
 import { Button } from '@/components'
 import { useAuthContext } from '@/context/auth/useAuthContext'
 import { useSyncContext } from '@/context/sync/useSyncContext'
-import { useUpdateActivityStatus } from '@/services/users/users.queries'
-import { UserStatus } from '@/services/users/users.types'
 import { UserRole } from '@/types'
 import { formatTime } from '@/utils/date'
 import { AccountAvatar } from './components/AccountAvatar'
+import { TenantSelector } from './components/TenantSelector'
 
 const ManagementLink = ({
   href,
@@ -51,30 +49,24 @@ const ManagementLink = ({
 export const AccountPage = () => {
   const { auth, logout } = useAuthContext()
   const sync = useSyncContext()
-  const updateStatus = useUpdateActivityStatus()
-  const isAdmin = auth?.role === UserRole.ADMIN
-  const isActive = auth?.activityStatus.status === UserStatus.Active
-
-  const setStatus = (status: UserStatus, message?: string) => {
-    if (!auth?.id) return
-    updateStatus.mutate({ id: auth.id, input: { status, message } })
-  }
+  const isSuperAdmin = auth?.role === UserRole.SUPERADMIN
+  const isAdmin = auth?.role === UserRole.ADMIN || isSuperAdmin
 
   const SyncIcon =
-    sync.status === 'blocked'
+    sync.blockedCount > 0
       ? AlertTriangle
-      : sync.status === 'online'
+      : sync.reachability === 'reachable' && !sync.isSyncing
         ? Cloud
-        : sync.status === 'syncing' || sync.status === 'checking'
+        : sync.isSyncing
           ? RefreshCw
           : WifiOff
-  const syncBusy = sync.status === 'syncing' || sync.status === 'checking'
+  const syncBusy = sync.isSyncing
   const syncTitle =
-    sync.status === 'blocked'
+    sync.blockedCount > 0
       ? `${sync.blockedCount || sync.pendingCount} changes need attention`
-      : sync.status === 'auth-required'
+      : sync.authRequired
         ? 'Sign in to sync'
-        : sync.status === 'offline'
+        : sync.reachability === 'unreachable'
           ? 'Working offline'
           : syncBusy
             ? 'Syncing changes'
@@ -95,50 +87,16 @@ export const AccountPage = () => {
             {auth?.username || 'Account'}
           </h2>
           <p className="text-text-secondary text-sm">
-            {isAdmin ? 'Administrator' : 'Sales user'}
+            {isSuperAdmin ? 'Super administrator' : isAdmin ? 'Administrator' : 'Staff'}
           </p>
         </div>
       </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-xs font-semibold tracking-[0.16em] uppercase">
-          Work status
+          Tenant
         </h2>
-        <div className="rounded-card bg-card flex flex-col gap-4 p-4 shadow-card">
-          <div className="flex items-center gap-3">
-            <CheckCircle2
-              className={
-                isActive ? 'text-status-success' : 'text-text-tertiary'
-              }
-            />
-            <div className="flex-1">
-              <p className="font-semibold">
-                {isActive
-                  ? 'Active'
-                  : (auth?.activityStatus.message ?? 'Inactive')}
-              </p>
-              <p className="text-text-secondary text-sm">
-                Inactive users must go active before using the app.
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              className="h-12 flex-1"
-              variant={isActive ? 'outline' : 'default'}
-              onClick={() => setStatus(UserStatus.Active)}
-            >
-              Go active
-            </Button>
-            <Button
-              className="h-12 flex-1"
-              variant={!isActive ? 'outline' : 'secondary'}
-              onClick={() => setStatus(UserStatus.Inactive, 'On Break')}
-            >
-              Take a break
-            </Button>
-          </div>
-        </div>
+        <TenantSelector />
       </section>
 
       {isAdmin && (
@@ -153,12 +111,14 @@ export const AccountPage = () => {
               title="Product catalog"
               description="Manage products, pricing, and images"
             />
-            <ManagementLink
-              href="/users"
-              icon={Users}
-              title="Users"
-              description="Manage access, roles, and passwords"
-            />
+            {isSuperAdmin && (
+              <ManagementLink
+                href="/users"
+                icon={Users}
+                title="Users"
+                description="Manage access, roles, and tenant assignments"
+              />
+            )}
             <ManagementLink
               href="/dashboard"
               icon={BarChart3}
@@ -179,8 +139,8 @@ export const AccountPage = () => {
               className={
                 syncBusy
                   ? 'text-primary animate-spin'
-                  : sync.status === 'blocked'
-                    ? 'text-status-error'
+                    : sync.blockedCount > 0
+                      ? 'text-status-error'
                     : 'text-primary'
               }
             />
@@ -197,10 +157,14 @@ export const AccountPage = () => {
           <Button
             className="h-12 w-full"
             variant="outline"
-            disabled={syncBusy || sync.status === 'auth-required'}
-            onClick={() => void sync.syncNow()}
+            disabled={syncBusy || sync.authRequired}
+            onClick={() =>
+              void (sync.blockedCount > 0
+                ? sync.retryBlocked()
+                : sync.syncNow())
+            }
           >
-            {sync.status === 'blocked' ? 'Retry blocked changes' : 'Sync now'}
+            {sync.blockedCount > 0 ? 'Retry blocked changes' : 'Sync now'}
             {sync.pendingCount ? ` (${sync.pendingCount})` : ''}
           </Button>
         </div>

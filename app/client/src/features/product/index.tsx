@@ -19,8 +19,8 @@ import { useDisclosure } from '../../hooks/useDisclosure'
 
 const ProductPage = () => {
   const { auth } = useAuthContext()
-  const isAdmin = auth?.role === UserRole.ADMIN
-  const { canUseOnlineFeatures } = useSyncContext()
+  const isAdmin = auth?.role !== UserRole.STAFF
+  const { canModifyCatalog, pendingCount, blockedCount } = useSyncContext()
 
   const [search, setSearch] = useState('')
   const addItem = useDisclosure()
@@ -77,7 +77,7 @@ const ProductPage = () => {
       align: 'right',
       cell: (item) => (
         <div className="flex items-center justify-end gap-1">
-          {isAdmin && canUseOnlineFeatures && (
+          {isAdmin && canModifyCatalog && (
             <ActionsDropdown
               onEdit={() => openEdit(item)}
               onDelete={() => openDelete(item)}
@@ -149,7 +149,7 @@ const ProductPage = () => {
                   {formatCurrency(item.price)}
                 </span>
               </span>
-              {isAdmin && canUseOnlineFeatures && (
+              {isAdmin && canModifyCatalog && (
                 <ActionsDropdown
                   onEdit={() => openEdit(item)}
                   onDelete={() => openDelete(item)}
@@ -171,12 +171,6 @@ const ProductPage = () => {
           isAdmin && (
             <Button
               className="gap-2"
-              disabled={!canUseOnlineFeatures}
-              title={
-                canUseOnlineFeatures
-                  ? undefined
-                  : 'Connect and sync pending transactions first'
-              }
               onClick={addItem.onOpen}
             >
               <Plus size={16} />
@@ -186,9 +180,10 @@ const ProductPage = () => {
         }
       />
 
-      {!canUseOnlineFeatures && isAdmin && (
+      {!canModifyCatalog && isAdmin && (pendingCount > 0 || blockedCount > 0) && (
         <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          Inventory changes are available after this device is online and fully synced.
+          Existing products can be edited or deleted after pending transactions
+          are synced. New products can still be added while connected.
         </p>
       )}
 

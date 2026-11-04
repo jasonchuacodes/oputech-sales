@@ -1,6 +1,7 @@
-type ActivityStatus {
-  status: String!
-  message: String
+enum UserRole {
+  SUPERADMIN
+  ADMIN
+  STAFF
 }
 
 type User {
@@ -8,8 +9,10 @@ type User {
   username: String!
   fullName: String
   email: String
-  role: String!
-  activityStatus: ActivityStatus!
+  role: UserRole!
+  tenantIds: [ID!]!
+  currentTenantId: ID
+  tenantSelectionVersion: Int!
 }
 
 extend type Query {
@@ -21,25 +24,21 @@ input CreateUserInput {
   fullName: String
   email: String
   password: String!
-  role: String
-}
-
-input ActivityStatusInput {
-  status: String!
-  message: String
+  role: UserRole!
+  tenantIds: [ID!]!
 }
 
 input UpdateUserInput {
   username: String
   fullName: String
   email: String
-  role: String
+  role: UserRole
+  tenantIds: [ID!]
 }
 
 extend type Mutation {
   createUser(input: CreateUserInput!): User!
   updateUser(id: ID!, input: UpdateUserInput!): User!
   deleteUser(id: ID!): Boolean!
-  updateActivityStatus(id: ID!, input: ActivityStatusInput!): User!
   resetPassword(id: ID!, password: String!): User!
 }

@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  ForbiddenException,
   Get,
   Headers,
   HttpCode,
@@ -16,6 +15,7 @@ import { AuthService } from './auth.service'
 import { LoginDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
 import { JwtAuthGuard } from './guards/jwt-auth.guard'
+import { ForbiddenException } from '../../common/exceptions'
 
 @Controller('auth')
 export class AuthController {
@@ -24,10 +24,14 @@ export class AuthController {
   @Post('register')
   register(
     @Body() input: RegisterDto,
-    @Headers('x-admin-script-secret') secret: string
+    @Headers('x-superadmin-script-secret') secret: string
   ) {
-    if (!secret || secret !== process.env.ADMIN_SCRIPT_SECRET) {
-      throw new ForbiddenException('Invalid or missing admin script secret')
+    const configuredSecret =
+      process.env.SUPERADMIN_SCRIPT_SECRET ?? process.env.ADMIN_SCRIPT_SECRET
+    if (!secret || secret !== configuredSecret) {
+      throw new ForbiddenException(
+        'The super admin registration secret is invalid or missing.',
+      )
     }
     return this.auth.register(input)
   }

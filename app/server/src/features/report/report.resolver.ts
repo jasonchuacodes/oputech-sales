@@ -9,8 +9,10 @@ import { CreateReportDto } from './dto/create-report.dto'
 import { ReportFilterDto, ReportPaginationDto } from './dto/reports-page.dto'
 import { ReportSortOrder } from './report.types'
 import { AdminGuard } from '../auth/guards/admin.guard'
+import { TenantAccessGuard } from '../tenant/guards/tenant-access.guard'
+import { TenantId } from '../tenant/decorators/tenant-id.decorator'
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, TenantAccessGuard)
 @Resolver('Report')
 export class ReportResolver {
   constructor(
@@ -19,48 +21,54 @@ export class ReportResolver {
   ) {}
 
   @Query()
-  reports() {
-    return this.reportService.findAll()
+  reports(@TenantId() tenantId: string) {
+    return this.reportService.findAll(tenantId)
   }
 
   @Query()
   reportsPage(
+    @TenantId() tenantId: string,
     @Args('filter', { nullable: true }) filter?: ReportFilterDto,
     @Args('pagination', { nullable: true }) pagination?: ReportPaginationDto,
     @Args('sort', { nullable: true }) sort?: ReportSortOrder,
   ) {
-    return this.reportService.findPage({ filter, pagination, sort })
+    return this.reportService.findPage(tenantId, { filter, pagination, sort })
   }
 
   @Query()
-  report(@Args('id') id: string) {
-    return this.reportService.findById(id)
+  report(@TenantId() tenantId: string, @Args('id') id: string) {
+    return this.reportService.findById(tenantId, id)
   }
 
   @Query()
-  analytics(@Args('range') range: AnalyticsRange) {
-    return this.reportService.getAnalytics(range)
+  analytics(@TenantId() tenantId: string, @Args('range') range: AnalyticsRange) {
+    return this.reportService.getAnalytics(tenantId, range)
   }
 
   @Mutation()
-  createReport(@Args('input') input: CreateReportDto, @Context() context: any) {
+  createReport(
+    @TenantId() tenantId: string,
+    @Args('input') input: CreateReportDto,
+    @Context() context: any,
+  ) {
     const userId: string = context.req.user.userId
-    return this.reportService.create(input, userId)
+    return this.reportService.create(tenantId, input, userId)
   }
 
   @Mutation()
   @UseGuards(AdminGuard)
-  deleteReport(@Args('id') id: string): Promise<boolean> {
-    return this.reportService.delete(id)
+  deleteReport(@TenantId() tenantId: string, @Args('id') id: string): Promise<boolean> {
+    return this.reportService.delete(tenantId, id)
   }
 
   @Mutation()
   @UseGuards(AdminGuard)
   remit(
+    @TenantId() tenantId: string,
     @Args('id') id: string,
     @Args('isRemitted') isRemitted: boolean,
   ): Promise<ReportDocument> {
-    return this.reportService.remit(id, isRemitted)
+    return this.reportService.remit(tenantId, id, isRemitted)
   }
 
   @ResolveField('createdBy')
@@ -70,31 +78,31 @@ export class ReportResolver {
 
   @ResolveField('totalCash')
   totalCash(@Parent() report: ReportDocument): Promise<number> {
-    return this.reportService.getTotalByPaymentType(report.transactionIds, PaymentType.CASH)
+    return this.reportService.getTotalByPaymentType(report.tenantId, report.transactionIds, PaymentType.CASH)
   }
 
   @ResolveField('totalOnline')
   totalOnline(@Parent() report: ReportDocument): Promise<number> {
-    return this.reportService.getTotalByPaymentType(report.transactionIds, PaymentType.ONLINE)
+    return this.reportService.getTotalByPaymentType(report.tenantId, report.transactionIds, PaymentType.ONLINE)
   }
 
   @ResolveField('totalIncome')
   async totalIncome(@Parent() report: ReportDocument): Promise<number> {
     const [cash, online] = await Promise.all([
-      this.reportService.getTotalByPaymentType(report.transactionIds, PaymentType.CASH),
-      this.reportService.getTotalByPaymentType(report.transactionIds, PaymentType.ONLINE),
+      this.reportService.getTotalByPaymentType(report.tenantId, report.transactionIds, PaymentType.CASH),
+      this.reportService.getTotalByPaymentType(report.tenantId, report.transactionIds, PaymentType.ONLINE),
     ])
     return cash + online
   }
 
   @ResolveField('totalExpenses')
   totalExpenses(@Parent() report: ReportDocument): Promise<number> {
-    return this.reportService.getExpenseTotalFromTransactions(report.transactionIds)
+    return this.reportService.getExpenseTotalFromTransactions(report.tenantId, report.transactionIds)
   }
 
   @ResolveField('expenses')
   expenses(@Parent() report: ReportDocument): Promise<TransactionDocument[]> {
-    return this.reportService.getExpenseTransactions(report.transactionIds)
+    return this.reportService.getExpenseTransactions(report.tenantId, report.transactionIds)
   }
 
   @ResolveField('totalPrintCount')

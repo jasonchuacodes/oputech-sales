@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import toast from 'react-hot-toast'
 import { Input, Spinner } from '../../components'
 import { PageHeader } from '../../components/ui/page-header'
 import { PaymentType, TransactionItem } from '../../services/transaction/transaction.types'
@@ -8,9 +9,10 @@ import { Product } from '../../services/product/product.types'
 import { useProducts } from '../../services/product/product.queries'
 import { ProductCard } from './components/ProductCard'
 import { SaleCheckout } from './components/SaleCheckout'
-import { POS_DRAFT_KEY } from './constants'
+import { getPosDraftKey } from './constants'
 import { getDraft, saveDraft } from '../../offline/database'
 import { useSyncContext } from '../../context/sync/useSyncContext'
+import { useAuthContext } from '../../context/auth/useAuthContext'
 
 interface PosDraft {
   items: TransactionItem[]
@@ -24,27 +26,42 @@ const POSPage = () => {
   const [paymentType, setPaymentType] = useState<PaymentType>(PaymentType.Cash)
   const [search, setSearch] = useState('')
   const draftLoaded = useRef(false)
+  const { auth } = useAuthContext()
+  const draftKey = getPosDraftKey(auth?.currentTenantId)
 
   const { data: products = [], isLoading } = useProducts(search)
-  const { status } = useSyncContext()
+  const { reachability } = useSyncContext()
 
   useEffect(() => {
-    void getDraft<PosDraft>(POS_DRAFT_KEY).then((draft) => {
+    draftLoaded.current = false
+    void getDraft<PosDraft>(draftKey).then((draft) => {
       if (draft) {
         setTransactionItems(draft.items)
         setPaymentType(draft.paymentType)
+      } else {
+        setTransactionItems([])
+        setPaymentType(PaymentType.Cash)
       }
       draftLoaded.current = true
+    }).catch(() => {
+      draftLoaded.current = true
+      toast.error('The saved cart could not be restored', {
+        id: 'pos-draft-storage',
+      })
     })
-  }, [])
+  }, [draftKey])
 
   useEffect(() => {
     if (!draftLoaded.current) return
-    void saveDraft<PosDraft>(POS_DRAFT_KEY, {
+    void saveDraft<PosDraft>(draftKey, {
       items: transactionItems,
       paymentType,
+    }).catch(() => {
+      toast.error('This cart could not be saved for offline recovery', {
+        id: 'pos-draft-storage',
+      })
     })
-  }, [paymentType, transactionItems])
+  }, [draftKey, paymentType, transactionItems])
 
   const mainProducts = products.filter((p) => p.category === 'main')
   const addOnProducts = products.filter((p) => p.category === 'add-on')
@@ -116,7 +133,7 @@ const POSPage = () => {
             )}
             {!isLoading && products.length === 0 && (
               <p className="py-12 text-center text-sm text-slate-400">
-                {status === 'offline' && !search
+                {reachability === 'unreachable' && !search
                   ? 'Connect once to prepare this device for offline sales.'
                   : 'No products found.'}
               </p>
@@ -157,6 +174,7 @@ const POSPage = () => {
         </div>
 
         <SaleCheckout
+          draftKey={draftKey}
           items={transactionItems}
           paymentType={paymentType}
           onPaymentTypeChange={setPaymentType}

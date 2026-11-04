@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { isValidObjectId, Model, PipelineStage } from 'mongoose'
 import { Report, ReportDocument } from './schemas/report.schema'
@@ -16,6 +16,11 @@ import {
   ReportSortOrder,
 } from './report.types'
 import { dayjsLocal } from '../../common/utils/date'
+import {
+  BadRequestException,
+  InvalidInputException,
+  NotFoundException,
+} from '../../common/exceptions'
 
 export enum AnalyticsRange {
   TODAY = 'TODAY',
@@ -53,12 +58,13 @@ export class ReportService {
     @InjectModel(Transaction.name) private transactionModel: Model<TransactionDocument>,
   ) {}
 
-  async create(input: CreateReportInput, userId: string): Promise<ReportDocument> {
+  async create(tenantId: string, input: CreateReportInput, userId: string): Promise<ReportDocument> {
     const from = new Date(input.fromDate)
     const to = new Date(input.toDate)
 
     const transactions = await this.transactionModel
       .find({
+        tenantId,
         processed: { $ne: true },
         $or: [
           { occurredAt: { $gte: from, $lte: to } },
@@ -97,7 +103,9 @@ export class ReportService {
       ...v,
     }))
 
-    await this.transactionModel.updateMany({ _id: { $in: ids } }, { processed: true }).exec()
+    await this.transactionModel
+      .updateMany({ _id: { $in: ids }, tenantId }, { processed: true })
+      .exec()
 
     const totalSales = transactions
       .filter((t) => t.type === TransactionType.SALE)
@@ -105,9 +113,10 @@ export class ReportService {
     const totalExpenses = transactions
       .filter((t) => t.type === TransactionType.EXPENSE)
       .reduce((sum, t) => sum + t.total, 0)
-    await this.aggregate(this.startOfDay(to), totalSales, totalExpenses)
+    await this.aggregate(tenantId, this.startOfDay(to), totalSales, totalExpenses)
 
     return this.reportModel.create({
+      tenantId,
       createdBy: userId,
       fromDate: from,
       toDate: to,
@@ -116,74 +125,84 @@ export class ReportService {
     })
   }
 
-  async delete(reportId: string): Promise<boolean> {
+  async delete(tenantId: string, reportId: string): Promise<boolean> {
     this.assertValidReportId(reportId)
-    const report = await this.reportModel.findById(reportId).exec()
-    if (!report) throw new NotFoundException('Report not found')
+    const report = await this.reportModel.findOne({ _id: reportId, tenantId }).exec()
+    if (!report) {
+      throw new NotFoundException(
+        'The requested report was not found.',
+      )
+    }
 
     const transactions = await this.transactionModel
-      .find({ _id: { $in: report.transactionIds } })
+      .find({ _id: { $in: report.transactionIds }, tenantId })
       .exec()
     const totalSales = transactions
       .filter((t) => t.type === TransactionType.SALE)
       .reduce((sum, t) => sum + t.total, 0)
-    const totalExpenses = await this.getExpenseTotalFromTransactions(report.transactionIds)
+    const totalExpenses = await this.getExpenseTotalFromTransactions(tenantId, report.transactionIds)
 
-    await this.deaggregate(this.startOfDay(report.toDate), totalSales, totalExpenses)
+    await this.deaggregate(tenantId, this.startOfDay(report.toDate), totalSales, totalExpenses)
     await this.transactionModel
-      .updateMany({ _id: { $in: report.transactionIds } }, { processed: false })
+      .updateMany({ _id: { $in: report.transactionIds }, tenantId }, { processed: false })
       .exec()
     await report.deleteOne()
 
     return true
   }
 
-  async remit(reportId: string, isRemitted: boolean): Promise<ReportDocument> {
+  async remit(tenantId: string, reportId: string, isRemitted: boolean): Promise<ReportDocument> {
     this.assertValidReportId(reportId)
     const report = await this.reportModel
-      .findByIdAndUpdate(reportId, { isRemitted }, { new: true })
+      .findOneAndUpdate({ _id: reportId, tenantId }, { isRemitted }, { new: true })
       .exec()
-    if (!report) throw new NotFoundException('Report not found')
+    if (!report) {
+      throw new NotFoundException(
+        'The requested report was not found.',
+      )
+    }
     return report
   }
 
-  async getTotalByPaymentType(transactionIds: string[], paymentType: PaymentType): Promise<number> {
+  async getTotalByPaymentType(tenantId: string, transactionIds: string[], paymentType: PaymentType): Promise<number> {
     const transactions = await this.transactionModel
-      .find({ _id: { $in: transactionIds }, paymentType, type: TransactionType.SALE })
+      .find({ _id: { $in: transactionIds }, tenantId, paymentType, type: TransactionType.SALE })
       .exec()
     return transactions.reduce((sum, t) => sum + t.total, 0)
   }
 
-  async getExpenseTotalFromTransactions(transactionIds: string[]): Promise<number> {
+  async getExpenseTotalFromTransactions(tenantId: string, transactionIds: string[]): Promise<number> {
     const transactions = await this.transactionModel
-      .find({ _id: { $in: transactionIds }, type: TransactionType.EXPENSE })
+      .find({ _id: { $in: transactionIds }, tenantId, type: TransactionType.EXPENSE })
       .exec()
     return transactions.reduce((sum, t) => sum + t.total, 0)
   }
 
-  getExpenseTransactions(transactionIds: string[]): Promise<TransactionDocument[]> {
+  getExpenseTransactions(tenantId: string, transactionIds: string[]): Promise<TransactionDocument[]> {
     return this.transactionModel
-      .find({ _id: { $in: transactionIds }, type: TransactionType.EXPENSE })
+      .find({ _id: { $in: transactionIds }, tenantId, type: TransactionType.EXPENSE })
       .sort({ createdAt: 1 })
       .exec()
   }
 
-  findAll(): Promise<ReportDocument[]> {
-    return this.reportModel.find().sort({ createdAt: -1 }).exec()
+  findAll(tenantId: string): Promise<ReportDocument[]> {
+    return this.reportModel.find({ tenantId }).sort({ createdAt: -1 }).exec()
   }
 
-  async findPage(query: ReportsPageQuery): Promise<ReportsPageResult> {
+  async findPage(tenantId: string, query: ReportsPageQuery): Promise<ReportsPageResult> {
     const page = query.pagination?.page ?? 1
     const pageSize = query.pagination?.pageSize ?? 10
     const sortOrder = query.sort ?? ReportSortOrder.DATE_DESC
     const dateRange = query.filter?.dateRange
-    const match: Record<string, unknown> = {}
+    const match: Record<string, unknown> = { tenantId }
 
     if (dateRange) {
       const from = new Date(dateRange.from)
       const to = new Date(dateRange.to)
       if (from >= to) {
-        throw new BadRequestException('Report date range must end after it starts')
+        throw new InvalidInputException(
+          'The report end date must be after its start date.',
+        )
       }
       match.toDate = { $gte: from, $lt: to }
     }
@@ -200,10 +219,12 @@ export class ReportService {
       { $sort: sort },
       {
         $project: {
+          tenantId: 1,
           fromDate: 1,
           toDate: 1,
           createdAt: 1,
           isRemitted: 1,
+          products: 1,
           transactionIds: 1,
         },
       },
@@ -239,11 +260,16 @@ export class ReportService {
       {
         $lookup: {
           from: this.transactionModel.collection.name,
-          let: { transactionIds: '$transactionObjectIds' },
+          let: { transactionIds: '$transactionObjectIds', tenantId: '$tenantId' },
           pipeline: [
             {
               $match: {
-                $expr: { $in: ['$_id', '$$transactionIds'] },
+                $expr: {
+                  $and: [
+                    { $in: ['$_id', '$$transactionIds'] },
+                    { $eq: ['$tenantId', '$$tenantId'] },
+                  ],
+                },
               },
             },
             {
@@ -290,6 +316,20 @@ export class ReportService {
       },
       {
         $set: {
+          totalPrintCount: {
+            $sum: {
+              $map: {
+                input: { $ifNull: ['$products', []] },
+                as: 'product',
+                in: {
+                  $multiply: [
+                    { $ifNull: ['$$product.printCount', 0] },
+                    { $ifNull: ['$$product.quantitySold', 0] },
+                  ],
+                },
+              },
+            },
+          },
           totalCash: { $ifNull: [{ $arrayElemAt: ['$financial.totalCash', 0] }, 0] },
           totalOnline: { $ifNull: [{ $arrayElemAt: ['$financial.totalOnline', 0] }, 0] },
           totalExpenses: {
@@ -317,6 +357,7 @@ export class ReportService {
                 toDate: { $toString: '$toDate' },
                 createdAt: { $toString: '$createdAt' },
                 isRemitted: 1,
+                totalPrintCount: 1,
                 totalCash: 1,
                 totalOnline: 1,
                 totalExpenses: 1,
@@ -357,12 +398,12 @@ export class ReportService {
     }
   }
 
-  findById(id: string): Promise<ReportDocument | null> {
+  findById(tenantId: string, id: string): Promise<ReportDocument | null> {
     this.assertValidReportId(id)
-    return this.reportModel.findById(id).exec()
+    return this.reportModel.findOne({ _id: id, tenantId }).exec()
   }
 
-  async getAnalytics(range: AnalyticsRange) {
+  async getAnalytics(tenantId: string, range: AnalyticsRange) {
     const now = new Date()
     const end = this.endOfDay(now)
     const start = dayjsLocal(now)
@@ -371,7 +412,7 @@ export class ReportService {
       .toDate()
 
     const aggregates = await this.aggregateModel
-      .find({ date: { $gte: start, $lte: end } })
+      .find({ tenantId, date: { $gte: start, $lte: end } })
       .sort({ date: 1 })
       .exec()
 
@@ -385,7 +426,7 @@ export class ReportService {
       series = this.bucketWeekly(aggregates)
     }
 
-    const topProducts = await this.getTopProducts(start, end)
+    const topProducts = await this.getTopProducts(tenantId, start, end)
 
     return {
       series,
@@ -395,9 +436,9 @@ export class ReportService {
     }
   }
 
-  private async getTopProducts(start: Date, end: Date): Promise<TopProduct[]> {
+  private async getTopProducts(tenantId: string, start: Date, end: Date): Promise<TopProduct[]> {
     const rows = await this.reportModel.aggregate([
-      { $match: { toDate: { $gte: start, $lte: end } } },
+      { $match: { tenantId, toDate: { $gte: start, $lte: end } } },
       { $unwind: '$products' },
       {
         $group: {
@@ -432,22 +473,29 @@ export class ReportService {
     return Array.from(buckets.values())
   }
 
-  private async aggregate(date: Date, sales: number, expenses: number): Promise<void> {
+  private async aggregate(tenantId: string, date: Date, sales: number, expenses: number): Promise<void> {
     await this.aggregateModel
       .updateOne(
-        { date },
-        { $inc: { totalSales: sales, totalExpenses: expenses }, $setOnInsert: { date } },
+        { tenantId, date },
+        {
+          $inc: { totalSales: sales, totalExpenses: expenses },
+          $setOnInsert: { tenantId, date },
+        },
         { upsert: true },
       )
       .exec()
   }
 
-  private async deaggregate(date: Date, sales: number, expenses: number): Promise<void> {
-    await this.aggregate(date, -sales, -expenses)
+  private async deaggregate(tenantId: string, date: Date, sales: number, expenses: number): Promise<void> {
+    await this.aggregate(tenantId, date, -sales, -expenses)
   }
 
   private assertValidReportId(id: string): void {
-    if (!isValidObjectId(id)) throw new BadRequestException('Invalid report ID')
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException(
+        'The report ID is invalid.',
+      )
+    }
   }
 
   // Truncate to APP_TZ midnight. Sales are attributed to the report's toDate day.

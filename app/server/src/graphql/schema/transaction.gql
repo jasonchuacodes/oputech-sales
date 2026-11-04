@@ -18,6 +18,7 @@ type TransactionItem {
 
 type Transaction {
   id: ID!
+  tenantId: ID!
   clientMutationId: ID
   type: TransactionType!
   items: [TransactionItem!]!

@@ -9,6 +9,7 @@ type ProductSale {
 
 type Report {
   id: ID!
+  tenantId: ID!
   createdBy: User!
   fromDate: String!
   toDate: String!
@@ -54,6 +55,7 @@ type ReportListItem {
   toDate: String!
   createdAt: String!
   isRemitted: Boolean!
+  totalPrintCount: Int!
   totalCash: Float!
   totalOnline: Float!
   totalExpenses: Float!
