@@ -1,6 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
@@ -9,6 +16,8 @@ import {
   Bell,
   House,
   Package,
+  PanelLeftClose,
+  PanelLeftOpen,
   ReceiptText,
   ShoppingBag,
   UserRound,
@@ -54,6 +63,55 @@ const accountNavigation: NavItem = {
 }
 
 const PULL_TO_REFRESH_THRESHOLD = 56
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'oputech-sales:sidebar-collapsed'
+let sidebarCollapsedFallback = false
+const sidebarPreferenceListeners = new Set<() => void>()
+
+const getSidebarCollapsedSnapshot = () => {
+  try {
+    const storedPreference = window.localStorage.getItem(
+      SIDEBAR_COLLAPSED_STORAGE_KEY
+    )
+
+    return storedPreference === null
+      ? sidebarCollapsedFallback
+      : storedPreference === 'true'
+  } catch {
+    return sidebarCollapsedFallback
+  }
+}
+
+const getServerSidebarCollapsedSnapshot = () => false
+
+const subscribeToSidebarPreference = (onChange: () => void) => {
+  sidebarPreferenceListeners.add(onChange)
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === SIDEBAR_COLLAPSED_STORAGE_KEY) onChange()
+  }
+
+  window.addEventListener('storage', handleStorage)
+
+  return () => {
+    sidebarPreferenceListeners.delete(onChange)
+    window.removeEventListener('storage', handleStorage)
+  }
+}
+
+const setSidebarCollapsedPreference = (collapsed: boolean) => {
+  sidebarCollapsedFallback = collapsed
+
+  try {
+    window.localStorage.setItem(
+      SIDEBAR_COLLAPSED_STORAGE_KEY,
+      String(collapsed)
+    )
+  } catch {
+    // Keep the preference in memory when browser storage is unavailable.
+  }
+
+  sidebarPreferenceListeners.forEach((listener) => listener())
+}
 
 const isRouteActive = (pathname: string, href: string) =>
   pathname === href || pathname.startsWith(`${href}/`)
@@ -61,9 +119,11 @@ const isRouteActive = (pathname: string, href: string) =>
 const NavigationLink = ({
   item,
   bottom = false,
+  collapsed = false,
 }: {
   item: NavItem
   bottom?: boolean
+  collapsed?: boolean
 }) => {
   const pathname = usePathname()
   const active = isRouteActive(pathname, item.href)
@@ -73,11 +133,13 @@ const NavigationLink = ({
     <Link
       href={item.href}
       aria-current={active ? 'page' : undefined}
+      title={collapsed && !bottom ? item.label : undefined}
       className={cn(
         'focus-visible:ring-ring/30 flex items-center rounded-md text-sm font-medium transition-colors outline-none focus-visible:ring-3',
         bottom
           ? 'min-h-16 flex-col justify-center gap-1 rounded-none px-1 py-2 text-xs'
           : 'min-h-12 gap-3 px-2 py-3',
+        collapsed && !bottom && 'justify-center gap-0 px-0',
         active
           ? bottom
             ? 'text-primary'
@@ -87,16 +149,24 @@ const NavigationLink = ({
             : 'text-text-secondary hover:bg-surface-hover hover:text-foreground'
       )}
     >
-      <Icon
-        aria-hidden="true"
+      <span
         className={cn(
-          'shrink-0',
-          bottom ? 'size-6' : 'size-5',
-          active && 'stroke-[2.5]',
-          active && item.href === '/dashboard' && 'fill-primary'
+          'flex shrink-0 items-center justify-center',
+          bottom ? 'size-6' : 'size-8'
         )}
-      />
-      <span>{item.label}</span>
+      >
+        <Icon
+          aria-hidden="true"
+          className={cn(
+            bottom ? 'size-6' : 'size-5',
+            active && 'stroke-[2.5]',
+            active && item.href === '/dashboard' && 'fill-primary'
+          )}
+        />
+      </span>
+      <span className={cn(collapsed && !bottom && 'sr-only')}>
+        {item.label}
+      </span>
     </Link>
   )
 }
@@ -105,10 +175,12 @@ const AccountProfileLink = ({
   username,
   email,
   isAdmin,
+  collapsed = false,
 }: {
   username: string
   email: string
   isAdmin: boolean
+  collapsed?: boolean
 }) => {
   const pathname = usePathname()
   const active = isRouteActive(pathname, accountNavigation.href)
@@ -117,8 +189,13 @@ const AccountProfileLink = ({
     <Link
       href={accountNavigation.href}
       aria-current={active ? 'page' : undefined}
+      aria-label={collapsed ? accountNavigation.label : undefined}
+      title={collapsed ? accountNavigation.label : undefined}
       className={cn(
-        'focus-visible:ring-ring/30 flex min-h-16 items-center gap-3 rounded-md px-2 py-2 transition-colors outline-none focus-visible:ring-3',
+        'focus-visible:ring-ring/30 flex items-center rounded-md transition-colors outline-none focus-visible:ring-3',
+        collapsed
+          ? 'min-h-12 justify-center px-0 py-2'
+          : 'min-h-16 gap-3 px-2 py-2',
         active
           ? 'bg-primary/10 text-primary'
           : 'text-text-secondary hover:bg-surface-hover hover:text-foreground'
@@ -126,9 +203,13 @@ const AccountProfileLink = ({
     >
       <AccountAvatar
         username={username}
-        className={cn(!active && 'bg-muted text-text-secondary')}
+        className={cn(
+          'size-8 text-xs',
+          !active && 'bg-muted text-text-secondary'
+        )}
+        iconClassName="size-5"
       />
-      <span className="min-w-0 flex-1">
+      <span className={cn('min-w-0 flex-1', collapsed && 'sr-only')}>
         <span className="block truncate text-sm font-semibold">
           {username || 'Account'}
         </span>
@@ -145,6 +226,11 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
   const router = useRouter()
   const queryClient = useQueryClient()
   const mainRef = useRef<HTMLElement>(null)
+  const isSidebarCollapsed = useSyncExternalStore(
+    subscribeToSidebarPreference,
+    getSidebarCollapsedSnapshot,
+    getServerSidebarCollapsedSnapshot
+  )
   const { auth, loading } = useAuthContext()
   const { status: connectivityStatus, syncNow } = useSyncContext()
   const { status, setActive } = useCurrentUserActivityStatus()
@@ -185,6 +271,10 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     [isAdmin]
   )
 
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsedPreference(!isSidebarCollapsed)
+  }, [isSidebarCollapsed])
+
   if (loading || !auth) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
@@ -200,31 +290,80 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         onActive={setActive}
       />
 
-      <aside className="border-border/70 bg-card hidden w-48 shrink-0 flex-col gap-6 border-r px-2 py-4 md:flex xl:w-64 xl:px-4">
-        <div className="flex h-14 shrink-0 items-center justify-center xl:justify-start xl:gap-3 xl:px-2">
-          <div className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-md text-sm font-bold">
-            OS
-          </div>
-          <div className="hidden xl:block">
-            <p className="font-semibold">Oputech Sales</p>
-            <p className="text-text-secondary text-xs">Business operations</p>
-          </div>
+      <aside
+        className={cn(
+          'border-border/70 bg-card hidden shrink-0 flex-col gap-4 border-r px-2 py-4 transition-[width,padding] duration-200 ease-out motion-reduce:transition-none md:flex',
+          isSidebarCollapsed ? 'w-20' : 'w-64'
+        )}
+      >
+        <div
+          className={cn(
+            'flex h-14 shrink-0 items-center',
+            isSidebarCollapsed ? 'justify-center' : 'justify-between gap-2 px-2'
+          )}
+        >
+          {!isSidebarCollapsed && (
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-md text-xs font-bold">
+                OS
+              </div>
+              <div className="min-w-0">
+                <p className="truncate font-semibold">Oputech Sales</p>
+                <p className="text-text-secondary truncate text-xs">
+                  Business operations
+                </p>
+              </div>
+            </div>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-11"
+            onClick={toggleSidebar}
+            aria-controls="desktop-sidebar-navigation"
+            aria-expanded={!isSidebarCollapsed}
+            aria-label={
+              isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'
+            }
+            title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isSidebarCollapsed ? (
+              <PanelLeftOpen className="size-5" aria-hidden="true" />
+            ) : (
+              <PanelLeftClose className="size-5" aria-hidden="true" />
+            )}
+          </Button>
         </div>
         <nav
+          id="desktop-sidebar-navigation"
           className="flex min-h-0 flex-1 flex-col gap-4"
           aria-label="Primary navigation"
         >
           <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
             {navigation.map((item) => (
-              <NavigationLink key={item.href} item={item} />
+              <NavigationLink
+                key={item.href}
+                item={item}
+                collapsed={isSidebarCollapsed}
+              />
             ))}
             {isAdmin && (
-              <div className="border-border/70 flex flex-col gap-1 border-t pt-4">
-                <p className="text-text-tertiary px-2 py-2 text-xs font-semibold tracking-widest uppercase">
+              <div className="border-border/70 mt-3 flex flex-col gap-1 border-t pt-3">
+                <p
+                  className={cn(
+                    'text-text-tertiary px-2 py-1 text-xs font-semibold tracking-wider uppercase',
+                    isSidebarCollapsed && 'sr-only'
+                  )}
+                >
                   Manage
                 </p>
                 {adminNavigation.map((item) => (
-                  <NavigationLink key={item.href} item={item} />
+                  <NavigationLink
+                    key={item.href}
+                    item={item}
+                    collapsed={isSidebarCollapsed}
+                  />
                 ))}
               </div>
             )}
@@ -233,6 +372,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             username={auth.username}
             email={auth.email}
             isAdmin={isAdmin}
+            collapsed={isSidebarCollapsed}
           />
         </nav>
       </aside>
