@@ -10,7 +10,6 @@ import {
   LogOut,
   Package,
   RefreshCw,
-  UserRound,
   Users,
   WifiOff,
 } from 'lucide-react'

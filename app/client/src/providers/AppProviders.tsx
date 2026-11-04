@@ -2,7 +2,6 @@
 
 import { useState, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/context/auth/AuthContext'
 import { SyncProvider } from '@/context/sync/SyncContext'
@@ -25,7 +24,6 @@ export const AppProviders = ({ children }: { children: ReactNode }) => {
           {children}
           <PWAReloadPrompt />
           <Toaster position="top-center" />
-          {/* <ReactQueryDevtools initialIsOpen={false} /> */}
         </SyncProvider>
       </AuthProvider>
     </QueryClientProvider>

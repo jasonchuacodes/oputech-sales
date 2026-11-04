@@ -10,9 +10,6 @@
     "lint": "pnpm --filter @oputech/sales-client lint && pnpm --filter @oputech/sales-server typecheck",
     "test": "pnpm --recursive test"
   },
-  "dependencies": {
-    "lucide-react": "^1.17.0"
-  },
   "pnpm": {
     "onlyBuiltDependencies": [
       "@nestjs/core",
