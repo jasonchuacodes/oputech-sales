@@ -7,8 +7,10 @@ import { AuthProvider } from '@/context/auth/AuthContext'
 import { SyncProvider } from '@/context/sync/SyncContext'
 import { PWAReloadPrompt } from '@/components/PWAReloadPrompt'
 import { TenantProvider } from '@/context/tenant/TenantContext'
+import { useIsDesktop } from '@/hooks/useIsDesktop'
 
 export const AppProviders = ({ children }: { children: ReactNode }) => {
+  const isDesktop = useIsDesktop()
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -25,7 +27,7 @@ export const AppProviders = ({ children }: { children: ReactNode }) => {
           <SyncProvider>
             {children}
             <PWAReloadPrompt />
-            <Toaster position="top-center" />
+            <Toaster position={isDesktop ? 'bottom-right' : 'top-center'} />
           </SyncProvider>
         </TenantProvider>
       </AuthProvider>
