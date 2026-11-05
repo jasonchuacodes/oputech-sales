@@ -19,7 +19,7 @@ export const SidebarTenantSwitcher = ({
         aria-label="Active tenant"
         title={collapsed ? tenantName : undefined}
         className={cn(
-          'border-primary/25 bg-primary/5 text-primary flex min-h-12 w-full items-center gap-3 rounded-md border border-dashed px-3',
+          'border-primary/25 bg-primary/5 text-primary flex min-h-10 w-full items-center gap-2 rounded-sm border border-dashed px-2',
           collapsed && 'justify-center px-1'
         )}
       >
@@ -66,7 +66,7 @@ export const SidebarTenantSwitcher = ({
   )
 
   const className = cn(
-    'bg-primary/5 text-primary focus-visible:ring-ring/30 flex min-h-12 w-full items-center gap-3 rounded-md px-2 text-left outline-none focus-visible:ring-3',
+    'bg-primary/5 text-primary focus-visible:ring-ring/30 flex min-h-10 w-full items-center gap-2 rounded-sm px-1.5 text-left text-sm outline-none focus-visible:ring-3',
     'hover:bg-primary/10',
     collapsed && 'justify-center px-0'
   )

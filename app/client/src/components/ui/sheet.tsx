@@ -16,22 +16,22 @@ const SheetContent = ({
   ...props
 }: ComponentProps<typeof Dialog.Content> & { showClose?: boolean }) => (
   <Dialog.Portal>
-    <Dialog.Overlay className="fixed inset-0 z-50 bg-foreground/50 backdrop-blur-sm data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=open]:animate-in data-[state=open]:fade-in" />
+    <Dialog.Overlay className="bg-foreground/50 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=open]:animate-in data-[state=open]:fade-in fixed inset-0 z-50 backdrop-blur-sm" />
     <Dialog.Content
       className={cn(
-        'fixed inset-x-0 bottom-0 z-60 mx-auto flex max-h-[90dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-sheet bg-card px-5 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-lg outline-none data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom md:inset-x-auto md:top-1/2 md:bottom-auto md:left-1/2 md:w-[calc(100%-3rem)] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-lg md:p-6 md:data-[state=closed]:fade-out-0 md:data-[state=closed]:zoom-out-95 md:data-[state=closed]:slide-out-to-bottom-0 md:data-[state=open]:fade-in-0 md:data-[state=open]:zoom-in-95 md:data-[state=open]:slide-in-from-bottom-0',
+        'rounded-t-sheet bg-card data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom md:data-[state=closed]:fade-out-0 md:data-[state=closed]:zoom-out-95 md:data-[state=closed]:slide-out-to-bottom-0 md:data-[state=open]:fade-in-0 md:data-[state=open]:zoom-in-95 md:data-[state=open]:slide-in-from-bottom-0 fixed inset-x-0 bottom-0 z-60 mx-auto flex max-h-[90dvh] w-full max-w-xl flex-col overflow-hidden px-5 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-lg outline-none md:inset-x-auto md:top-1/2 md:bottom-auto md:left-1/2 md:w-[calc(100%-3rem)] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-lg md:p-6',
         className
       )}
       {...props}
     >
       <div
         aria-hidden="true"
-        className="mx-auto h-1.5 w-14 shrink-0 rounded-pill bg-foreground/45 md:hidden"
+        className="rounded-pill bg-foreground/45 mx-auto h-1.5 w-14 shrink-0 md:hidden"
       />
       {showClose && (
         <Dialog.Close
           aria-label="Close"
-          className="absolute top-5 right-4 flex size-11 items-center justify-center rounded-md text-text-secondary hover:bg-background focus-visible:ring-3 focus-visible:ring-ring/30"
+          className="text-text-secondary hover:bg-background focus-visible:ring-ring/30 absolute top-5 right-4 flex size-11 items-center justify-center rounded-md focus-visible:ring-3 md:size-10"
         >
           <X className="size-5" />
         </Dialog.Close>
@@ -48,12 +48,24 @@ const SheetHeader = ({ className, ...props }: ComponentProps<'div'>) => (
   />
 )
 
-const SheetTitle = ({ className, ...props }: ComponentProps<typeof Dialog.Title>) => (
-  <Dialog.Title className={cn('text-xl font-semibold', className)} {...props} />
+const SheetTitle = ({
+  className,
+  ...props
+}: ComponentProps<typeof Dialog.Title>) => (
+  <Dialog.Title
+    className={cn('text-xl font-semibold md:text-lg', className)}
+    {...props}
+  />
 )
 
-const SheetDescription = ({ className, ...props }: ComponentProps<typeof Dialog.Description>) => (
-  <Dialog.Description className={cn('text-base text-text-secondary', className)} {...props} />
+const SheetDescription = ({
+  className,
+  ...props
+}: ComponentProps<typeof Dialog.Description>) => (
+  <Dialog.Description
+    className={cn('text-text-secondary text-base md:text-sm', className)}
+    {...props}
+  />
 )
 
 const SheetBody = ({ className, ...props }: ComponentProps<'div'>) => (

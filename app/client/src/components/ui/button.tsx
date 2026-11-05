@@ -22,14 +22,14 @@ const buttonVariants = cva(
       },
       size: {
         default:
-          'h-12 gap-2 px-4 text-base has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3',
+          'h-12 gap-2 px-4 text-base has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3 md:h-10 md:gap-1.5 md:px-3 md:text-sm md:has-data-[icon=inline-end]:pr-2 md:has-data-[icon=inline-start]:pl-2',
         xs: "h-9 gap-1 px-2.5 text-xs has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-10 gap-1.5 px-3 text-sm has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: 'h-12 gap-2 px-5 text-base has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4',
-        icon: 'size-12',
+        lg: 'h-12 gap-2 px-5 text-base has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4 md:h-10 md:gap-1.5 md:px-4 md:text-sm md:has-data-[icon=inline-end]:pr-3 md:has-data-[icon=inline-start]:pl-3',
+        icon: 'size-12 md:size-10',
         'icon-xs': 'size-7',
         'icon-sm': 'size-8',
-        'icon-lg': 'size-12',
+        'icon-lg': 'size-12 md:size-10',
       },
     },
     defaultVariants: {

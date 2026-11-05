@@ -32,12 +32,12 @@ function Calendar({
         month: cn('flex flex-col gap-3', defaultClassNames.month),
         weekdays: cn('flex', defaultClassNames.weekdays),
         weekday: cn(
-          'text-muted-foreground w-11 text-center text-xs font-normal',
+          'text-muted-foreground w-11 text-center text-xs font-normal md:w-10',
           defaultClassNames.weekday
         ),
         week: cn('mt-1 flex w-full', defaultClassNames.week),
         day: cn(
-          'group/day relative aspect-square h-11 w-11 p-0 text-center select-none',
+          'group/day relative aspect-square h-11 w-11 p-0 text-center select-none md:h-10 md:w-10',
           defaultClassNames.day
         ),
         range_start: cn(
@@ -77,7 +77,7 @@ function CalendarMonthCaption({
   const isLastMonth = displayIndex === months.length - 1
 
   return (
-    <div className="flex h-11 items-center justify-between">
+    <div className="flex h-11 items-center justify-between md:h-10">
       {isFirstMonth ? (
         <button
           type="button"
@@ -86,13 +86,13 @@ function CalendarMonthCaption({
           onClick={() => previousMonth && goToMonth(previousMonth)}
           className={cn(
             buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
-            'size-11 select-none'
+            'size-11 select-none md:size-10'
           )}
         >
           <ChevronLeftIcon className="h-4 w-4" />
         </button>
       ) : (
-        <span className="size-11" />
+        <span className="size-11 md:size-10" />
       )}
       <span className="text-sm font-medium">
         {formatDate(calendarMonth.date, 'MMMM YYYY')}
@@ -105,13 +105,13 @@ function CalendarMonthCaption({
           onClick={() => nextMonth && goToMonth(nextMonth)}
           className={cn(
             buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
-            'size-11 select-none'
+            'size-11 select-none md:size-10'
           )}
         >
           <ChevronRightIcon className="h-4 w-4" />
         </button>
       ) : (
-        <span className="size-11" />
+        <span className="size-11 md:size-10" />
       )}
     </div>
   )
@@ -138,7 +138,7 @@ function CalendarDayButton({
       data-range-middle={modifiers.range_middle}
       className={cn(
         buttonVariants({ variant: 'ghost' }),
-        'h-11 w-11 rounded-sm p-0 text-base font-normal',
+        'h-11 w-11 rounded-sm p-0 text-base font-normal md:h-10 md:w-10 md:text-sm',
         'data-[selected-single=true]:bg-brand data-[selected-single=true]:hover:bg-brand-hover data-[selected-single=true]:text-white',
         'data-[range-middle=true]:bg-accent data-[range-middle=true]:rounded-none',
         'data-[range-start=true]:bg-brand data-[range-end=true]:bg-brand data-[range-end=true]:text-white data-[range-start=true]:text-white',

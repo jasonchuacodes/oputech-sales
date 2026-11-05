@@ -136,10 +136,10 @@ const NavigationLink = ({
       aria-current={active ? 'page' : undefined}
       title={collapsed && !bottom ? item.label : undefined}
       className={cn(
-        'focus-visible:ring-ring/30 flex items-center rounded-md text-sm font-medium transition-colors outline-none focus-visible:ring-3',
+        'focus-visible:ring-ring/30 flex items-center rounded-sm text-sm font-medium transition-colors outline-none focus-visible:ring-3',
         bottom
           ? 'min-h-16 flex-col justify-center gap-1 rounded-none px-1 py-2 text-xs'
-          : 'min-h-12 gap-3 px-2 py-3',
+          : 'min-h-10 gap-2 px-1.5 py-1',
         collapsed && !bottom && 'justify-center gap-0 px-0',
         active
           ? bottom
@@ -153,7 +153,7 @@ const NavigationLink = ({
       <span
         className={cn(
           'flex shrink-0 items-center justify-center',
-          bottom ? 'size-6' : 'size-8'
+          bottom ? 'size-6' : 'size-7'
         )}
       >
         <Icon
@@ -193,10 +193,10 @@ const AccountProfileLink = ({
       aria-label={collapsed ? accountNavigation.label : undefined}
       title={collapsed ? accountNavigation.label : undefined}
       className={cn(
-        'focus-visible:ring-ring/30 flex items-center rounded-md transition-colors outline-none focus-visible:ring-3',
+        'focus-visible:ring-ring/30 flex items-center rounded-sm transition-colors outline-none focus-visible:ring-3',
         collapsed
-          ? 'min-h-12 justify-center px-0 py-2'
-          : 'min-h-16 gap-3 px-2 py-2',
+          ? 'min-h-10 justify-center px-0 py-1'
+          : 'min-h-12 gap-2 px-1.5 py-1',
         active
           ? 'bg-primary/10 text-primary'
           : 'text-text-secondary hover:bg-surface-hover hover:text-foreground'
@@ -330,7 +330,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             type="button"
             variant="ghost"
             size="icon"
-            className="size-11"
+            className="size-10"
             onClick={toggleSidebar}
             aria-controls="desktop-sidebar-navigation"
             aria-expanded={!isSidebarCollapsed}
@@ -352,7 +352,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
           className="flex min-h-0 flex-1 flex-col gap-4"
           aria-label="Primary navigation"
         >
-          <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+          <div className="flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto">
             {navigation.map((item) => (
               <NavigationLink
                 key={item.href}
@@ -361,10 +361,10 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
               />
             ))}
             {isAdmin && (
-              <div className="border-border/70 mt-3 flex flex-col gap-1 border-t pt-3">
+              <div className="border-border/70 mt-2 flex flex-col gap-0 border-t pt-2">
                 <p
                   className={cn(
-                    'text-text-tertiary px-2 py-1 text-xs font-semibold tracking-wider uppercase',
+                    'text-text-tertiary px-1.5 py-1 text-xs font-semibold tracking-wider uppercase',
                     isSidebarCollapsed && 'sr-only'
                   )}
                 >
@@ -440,7 +440,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
 
         <nav
           aria-label="Primary navigation"
-          className="bg-card z-30 shrink-0 pt-1 pb-[calc(0.25rem+env(safe-area-inset-bottom))] shadow-[0_-2px_10px_rgba(16,16,16,0.08)] md:hidden"
+          className="bg-card z-30 shrink-0 pt-1 pb-[calc(0.25rem+env(safe-area-inset-bottom))] shadow-[0_-2px_8px_rgba(16,16,16,0.05)] md:hidden"
         >
           <div className="mx-auto flex w-full max-w-lg px-1">
             {[...navigation, accountNavigation].map((item) => (

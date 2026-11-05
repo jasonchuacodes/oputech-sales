@@ -83,7 +83,7 @@ function DataTableComponent<T>({
   const empty = !loading && collection.items.length === 0
 
   return (
-    <div className="rounded-card bg-card overflow-hidden shadow-card md:overflow-x-auto">
+    <div className="rounded-card bg-card shadow-card overflow-hidden md:overflow-x-auto">
       <table id={id} className="block w-full text-sm md:table md:min-w-162.5">
         <thead className="hidden md:table-header-group">
           <tr className="border-b border-gray-200 bg-slate-50">
@@ -91,7 +91,8 @@ function DataTableComponent<T>({
               <th
                 key={column.id}
                 style={{
-                  width: column.width ?? (column.id === 'actions' ? 64 : undefined),
+                  width:
+                    column.width ?? (column.id === 'actions' ? 64 : undefined),
                   minWidth: column.id === 'actions' ? 64 : undefined,
                   maxWidth: colIdx === 0 && !column.width ? 360 : undefined,
                 }}
@@ -100,7 +101,7 @@ function DataTableComponent<T>({
                   alignClass[column.align ?? 'left'],
                   column.orderable && 'cursor-pointer select-none',
                   column.id === 'actions' &&
-                    'border-border/60 sticky right-0 z-20 border-l shadow-[-6px_0_10px_-10px_rgba(16,16,16,0.45)]'
+                    'border-border/60 sticky right-0 z-20 border-l shadow-[-5px_0_8px_-8px_rgba(16,16,16,0.3)]'
                 )}
                 onClick={
                   column.orderable ? () => handleSort(column.id) : undefined
@@ -192,7 +193,7 @@ function DataTableComponent<T>({
                           colIdx === 0 && !column.width && 'md:truncate',
                           !column.heading && 'justify-end before:hidden',
                           column.id === 'actions' &&
-                            'border-border/60 bg-card md:sticky md:right-0 md:z-10 md:border-l md:shadow-[-6px_0_10px_-10px_rgba(16,16,16,0.45)]'
+                            'border-border/60 bg-card md:sticky md:right-0 md:z-10 md:border-l md:shadow-[-5px_0_8px_-8px_rgba(16,16,16,0.3)]'
                         )}
                       >
                         {column.cell(item, idx)}
@@ -204,29 +205,33 @@ function DataTableComponent<T>({
             })
           )}
         </tbody>
-        {!loading && !empty && columns.some((column) => column.footer !== undefined) && (
-          <tfoot className="hidden border-t-2 md:table-footer-group">
-            <tr>
-              {columns.map((column) => (
-                <td
-                  key={column.id}
-                  style={{
-                    width: column.width ?? (column.id === 'actions' ? 64 : undefined),
-                    minWidth: column.id === 'actions' ? 64 : undefined,
-                  }}
-                  className={cn(
-                    'bg-surface px-4 py-3 font-semibold whitespace-nowrap',
-                    alignClass[column.align ?? 'left'],
-                    column.id === 'actions' &&
-                      'border-border/60 sticky right-0 z-10 border-l shadow-[-6px_0_10px_-10px_rgba(16,16,16,0.45)]'
-                  )}
-                >
-                  {column.footer}
-                </td>
-              ))}
-            </tr>
-          </tfoot>
-        )}
+        {!loading &&
+          !empty &&
+          columns.some((column) => column.footer !== undefined) && (
+            <tfoot className="hidden border-t-2 md:table-footer-group">
+              <tr>
+                {columns.map((column) => (
+                  <td
+                    key={column.id}
+                    style={{
+                      width:
+                        column.width ??
+                        (column.id === 'actions' ? 64 : undefined),
+                      minWidth: column.id === 'actions' ? 64 : undefined,
+                    }}
+                    className={cn(
+                      'bg-surface px-4 py-3 font-semibold whitespace-nowrap',
+                      alignClass[column.align ?? 'left'],
+                      column.id === 'actions' &&
+                        'border-border/60 sticky right-0 z-10 border-l shadow-[-5px_0_8px_-8px_rgba(16,16,16,0.3)]'
+                    )}
+                  >
+                    {column.footer}
+                  </td>
+                ))}
+              </tr>
+            </tfoot>
+          )}
       </table>
     </div>
   )

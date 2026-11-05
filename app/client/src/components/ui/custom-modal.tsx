@@ -55,18 +55,24 @@ export function CustomModal({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6">
-      <div className="absolute inset-0 bg-foreground/50 backdrop-blur-sm" onClick={onClose} />
       <div
-        className="relative flex w-full flex-col overflow-hidden rounded-t-sheet bg-card shadow-lg md:w-[95%] md:rounded-lg"
+        className="bg-foreground/50 absolute inset-0 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div
+        className="rounded-t-sheet bg-card relative flex w-full flex-col overflow-hidden shadow-lg md:w-[95%] md:rounded-lg"
         style={{ maxWidth, maxHeight: '90vh' }}
       >
-        <div aria-hidden="true" className="mx-auto mt-3 h-1.5 w-14 shrink-0 rounded-pill bg-foreground/40 md:hidden" />
+        <div
+          aria-hidden="true"
+          className="rounded-pill bg-foreground/40 mx-auto mt-3 h-1.5 w-14 shrink-0 md:hidden"
+        />
         {/* Header */}
         <div className="flex shrink-0 items-start gap-3 p-4">
           {Icon && (
             <div
               className={cn(
-                'relative flex size-10 shrink-0 items-center justify-center rounded-md',
+                'relative flex size-10 shrink-0 items-center justify-center rounded-md md:size-9',
                 type === 'danger' ? 'bg-destructive' : 'bg-primary'
               )}
             >
@@ -74,7 +80,9 @@ export function CustomModal({
             </div>
           )}
           <div className="flex-1 overflow-hidden">
-            <p className="text-foreground text-lg font-bold">{title}</p>
+            <p className="text-foreground text-lg font-bold md:text-base">
+              {title}
+            </p>
             {subheader && (
               <div className="text-muted-foreground mt-0.5 text-sm">
                 {subheader}
@@ -84,7 +92,7 @@ export function CustomModal({
           <button
             aria-label="close"
             onClick={onClose}
-            className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-11 shrink-0 items-center justify-center rounded-md transition-colors"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-11 shrink-0 items-center justify-center rounded-md transition-colors md:size-10"
           >
             <X className="size-5" />
           </button>

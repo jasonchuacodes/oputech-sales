@@ -76,7 +76,7 @@ export const AccountPage = () => {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-5 md:p-6">
-      <section className="rounded-card bg-card flex items-center gap-4 p-4 shadow-card">
+      <section className="rounded-card bg-card shadow-card flex items-center gap-4 p-4">
         <AccountAvatar
           username={auth?.username}
           className="size-14 text-xl"
@@ -87,7 +87,11 @@ export const AccountPage = () => {
             {auth?.username || 'Account'}
           </h2>
           <p className="text-text-secondary text-sm">
-            {isSuperAdmin ? 'Super administrator' : isAdmin ? 'Administrator' : 'Staff'}
+            {isSuperAdmin
+              ? 'Super administrator'
+              : isAdmin
+                ? 'Administrator'
+                : 'Staff'}
           </p>
         </div>
       </section>
@@ -104,7 +108,7 @@ export const AccountPage = () => {
           <h2 className="text-xs font-semibold tracking-[0.16em] uppercase">
             Manage
           </h2>
-          <div className="rounded-card bg-card overflow-hidden shadow-card">
+          <div className="rounded-card bg-card shadow-card overflow-hidden">
             <ManagementLink
               href="/catalog"
               icon={Package}
@@ -133,14 +137,14 @@ export const AccountPage = () => {
         <h2 className="text-xs font-semibold tracking-[0.16em] uppercase">
           Device
         </h2>
-        <div className="rounded-card bg-card flex flex-col gap-4 p-4 shadow-card">
+        <div className="rounded-card bg-card shadow-card flex flex-col gap-4 p-4">
           <div className="flex items-center gap-3">
             <SyncIcon
               className={
                 syncBusy
                   ? 'text-primary animate-spin'
-                    : sync.blockedCount > 0
-                      ? 'text-status-error'
+                  : sync.blockedCount > 0
+                    ? 'text-status-error'
                     : 'text-primary'
               }
             />
@@ -155,7 +159,7 @@ export const AccountPage = () => {
             </div>
           </div>
           <Button
-            className="h-12 w-full"
+            className="h-12 w-full md:h-10"
             variant="outline"
             disabled={syncBusy || sync.authRequired}
             onClick={() =>
@@ -170,8 +174,12 @@ export const AccountPage = () => {
         </div>
       </section>
 
-      <Button className="h-12 w-full gap-2" variant="outline" onClick={logout}>
-        <LogOut className="size-5" />
+      <Button
+        className="h-12 w-full gap-2 md:h-10"
+        variant="outline"
+        onClick={logout}
+      >
+        <LogOut className="size-5 md:size-4" />
         Sign out
       </Button>
     </div>
