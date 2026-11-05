@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { ImageOff, Plus, Search } from 'lucide-react'
-import { Button, Input, PageHeader } from '../../components'
+import { Button, ContentSection, Input, PageHeader } from '../../components'
 import { DataTable, DataTableColumn } from '../../components/ui/data-table'
 import { useProducts } from '../../services/product/product.queries'
 import { Product } from '../../services/product/product.types'
@@ -200,15 +200,16 @@ const ProductPage = () => {
         />
       </div>
 
-      <div className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-card-title font-medium">Main</h2>
-          {!isLoading && (
+      <ContentSection
+        label="Main"
+        rightContent={
+          !isLoading ? (
             <span className="text-text-tertiary text-sm">
               {mainProducts.length} {mainProducts.length === 1 ? 'item' : 'items'}
             </span>
-          )}
-        </div>
+          ) : undefined
+        }
+      >
         <div className="md:hidden">{renderMobileProducts(mainProducts)}</div>
         <div className="hidden md:block">
           <DataTable
@@ -218,17 +219,18 @@ const ProductPage = () => {
             emptyMessage="No items found"
           />
         </div>
-      </div>
+      </ContentSection>
 
-      <div className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-card-title font-medium">Add-ons</h2>
-          {!isLoading && (
+      <ContentSection
+        label="Add-ons"
+        rightContent={
+          !isLoading ? (
             <span className="text-text-tertiary text-sm">
               {addOnProducts.length} {addOnProducts.length === 1 ? 'item' : 'items'}
             </span>
-          )}
-        </div>
+          ) : undefined
+        }
+      >
         <div className="md:hidden">{renderMobileProducts(addOnProducts)}</div>
         <div className="hidden md:block">
           <DataTable
@@ -238,7 +240,7 @@ const ProductPage = () => {
             emptyMessage="No items found"
           />
         </div>
-      </div>
+      </ContentSection>
 
       <AddItemModal
         key={addItem.open ? 'add-open' : 'add-closed'}

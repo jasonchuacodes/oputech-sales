@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Search } from 'lucide-react'
-import { Input, Spinner } from '../../components'
+import { ContentSection, Input, Spinner } from '../../components'
 import { PageHeader } from '../../components/ui/page-header'
 import { PaymentType, TransactionItem } from '../../services/transaction/transaction.types'
 import { Product } from '../../services/product/product.types'
@@ -146,8 +146,7 @@ const POSPage = () => {
               </p>
             )}
             {!isLoading && mainProducts.length > 0 && (
-              <div className="flex flex-col gap-3 px-1">
-                <h2 className="text-text-heading text-sm font-medium">Main</h2>
+              <ContentSection label="Main" className="px-1">
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
                   {mainProducts.map((product) => (
                     <ProductCard
@@ -158,13 +157,10 @@ const POSPage = () => {
                     />
                   ))}
                 </div>
-              </div>
+              </ContentSection>
             )}
             {!isLoading && addOnProducts.length > 0 && (
-              <div className="flex flex-col gap-3 px-1">
-                <h2 className="text-text-heading text-sm font-medium">
-                  Add-ons
-                </h2>
+              <ContentSection label="Add-ons" className="px-1">
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
                   {addOnProducts.map((product) => (
                     <ProductCard
@@ -175,7 +171,7 @@ const POSPage = () => {
                     />
                   ))}
                 </div>
-              </div>
+              </ContentSection>
             )}
           </div>
         </div>

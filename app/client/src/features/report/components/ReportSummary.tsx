@@ -1,5 +1,6 @@
 import type { ReportTotals } from '../../../services/report/report.types'
 import { formatCurrency } from '../../../utils/number'
+import { ContentSection } from '../../../components'
 
 interface Props {
   totals: ReportTotals
@@ -7,16 +8,7 @@ interface Props {
 }
 
 export const ReportSummary = ({ totals, action }: Props) => (
-  <section className="flex flex-col gap-0" aria-labelledby="reports-summary">
-    <div className="flex min-h-10 items-center justify-between gap-3">
-      <h2
-        id="reports-summary"
-        className="text-card-title font-medium"
-      >
-        Summary
-      </h2>
-      {action}
-    </div>
+  <ContentSection label="Summary" rightContent={action}>
     <dl className="rounded-card bg-card grid grid-cols-2 gap-px overflow-hidden shadow-card sm:grid-cols-4">
       <div className="bg-card p-3">
         <dt className="text-text-secondary text-sm">Cash</dt>
@@ -35,5 +27,5 @@ export const ReportSummary = ({ totals, action }: Props) => (
         <dd className="mt-1 font-semibold">{formatCurrency(totals.netIncome)}</dd>
       </div>
     </dl>
-  </section>
+  </ContentSection>
 )

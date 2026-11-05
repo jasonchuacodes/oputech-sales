@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, Plus, Receipt, ShoppingBag } from 'lucide-react'
-import { Button, Spinner } from '../../components'
+import { Button, ContentSection, PageHeader, Spinner } from '../../components'
 import { DataTable, type DataTableColumn } from '../../components/ui/data-table'
 import { DatePicker } from '../../components/ui/date-picker'
 import { useTransactions } from '../../services/transaction/transaction.queries'
@@ -161,34 +161,24 @@ const TransactionsPage = () => {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-5 md:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h1 className="text-page-title font-semibold">Activity</h1>
-          <p className="text-text-secondary text-sm text-balance">
-            Review sales and expenses by transaction date.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          className="shrink-0 gap-1.5 px-3"
-          onClick={logExpense.onOpen}
-        >
-          <Plus className="size-4" />
-          Log expense
-        </Button>
-      </div>
-
-      <section
-        className="flex flex-col gap-0"
-        aria-labelledby="activity-transactions"
-      >
-        <div className="flex min-h-10 items-center justify-between gap-3">
-          <h2
-            id="activity-transactions"
-            className="text-card-title font-medium"
+      <PageHeader
+        title="Activity"
+        description="Review sales and expenses by transaction date."
+        action={
+          <Button
+            variant="outline"
+            className="shrink-0 gap-1.5 px-3"
+            onClick={logExpense.onOpen}
           >
-            Transactions
-          </h2>
+            <Plus className="size-4" />
+            Log expense
+          </Button>
+        }
+      />
+
+      <ContentSection
+        label="Transactions"
+        rightContent={
           <div className="flex min-w-0 items-center justify-end gap-1.5">
             <span className="text-text-tertiary shrink-0 text-xs">Period</span>
             <DatePicker
@@ -201,8 +191,8 @@ const TransactionsPage = () => {
               className="text-text-secondary h-10 w-auto min-w-0 border-0 bg-transparent px-1 text-sm font-medium shadow-none [&_svg]:size-4"
             />
           </div>
-        </div>
-
+        }
+      >
         {isLoading ? (
           <div className="rounded-card bg-card shadow-card flex min-h-40 items-center justify-center">
             <Spinner />
@@ -328,7 +318,7 @@ const TransactionsPage = () => {
             </Button>
           </div>
         )}
-      </section>
+      </ContentSection>
 
       <TransactionActionsSheet
         item={selectedItem}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { ChevronRight, LogOut } from 'lucide-react'
-import { Button } from '@/components'
+import { Button, ContentSection } from '@/components'
 import { useAuthContext } from '@/context/auth/useAuthContext'
 import { useSyncContext } from '@/context/sync/useSyncContext'
 import { UserRole } from '@/types'
@@ -73,18 +73,12 @@ export const AccountPage = () => {
         </div>
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-xs font-medium tracking-[0.1em] uppercase">
-          Tenant
-        </h2>
+      <ContentSection label="Tenant">
         <TenantSelector />
-      </section>
+      </ContentSection>
 
       {isAdmin && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-xs font-medium tracking-[0.1em] uppercase">
-            Manage
-          </h2>
+        <ContentSection label="Manage">
           <div className="rounded-card bg-card shadow-card overflow-hidden">
             <ManagementLink
               href="/catalog"
@@ -104,13 +98,10 @@ export const AccountPage = () => {
               description="Review sales and expense performance"
             />
           </div>
-        </section>
+        </ContentSection>
       )}
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-xs font-medium tracking-[0.1em] uppercase">
-          Device
-        </h2>
+      <ContentSection label="Device">
         <div className="rounded-card bg-card shadow-card flex flex-col gap-3 p-3">
           <div className="min-w-0">
             <p className="text-text-heading font-medium">{syncTitle}</p>
@@ -135,7 +126,7 @@ export const AccountPage = () => {
             {sync.pendingCount ? ` (${sync.pendingCount})` : ''}
           </Button>
         </div>
-      </section>
+      </ContentSection>
 
       <Button
         className="w-full gap-2"

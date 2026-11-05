@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowDown, ArrowUp } from 'lucide-react'
-import { Button } from '../../components'
+import { Button, ContentSection } from '../../components'
 import { PageHeader } from '../../components/ui/page-header'
 import { useRemit, useReportsPage } from '../../services/report/report.queries'
 import type {
@@ -99,35 +99,35 @@ const ReportPage = () => {
         }
       />
 
-      <div className="flex flex-col gap-0">
-        <div className="flex items-center justify-between gap-3">
-        <h2 className="text-card-title font-medium">Generated reports</h2>
-        <div className="flex items-center gap-1.5">
-          <span className="text-text-tertiary text-xs">Sort</span>
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-10 gap-1 px-1.5 text-sm text-text-secondary"
-            aria-label={
-              sort === 'DATE_DESC'
-                ? 'Sort reports oldest first'
-                : 'Sort reports newest first'
-            }
-            onClick={() => {
-              setSort(sort === 'DATE_DESC' ? 'DATE_ASC' : 'DATE_DESC')
-              setPage(1)
-            }}
-          >
-            {sort === 'DATE_DESC' ? 'Newest' : 'Oldest'}
-            {sort === 'DATE_DESC' ? (
-              <ArrowDown aria-hidden="true" />
-            ) : (
-              <ArrowUp aria-hidden="true" />
-            )}
-          </Button>
-        </div>
-        </div>
-
+      <ContentSection
+        label="Generated reports"
+        rightContent={
+          <div className="flex items-center gap-1.5">
+            <span className="text-text-tertiary text-xs">Sort</span>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 gap-1 px-1.5 text-sm text-text-secondary"
+              aria-label={
+                sort === 'DATE_DESC'
+                  ? 'Sort reports oldest first'
+                  : 'Sort reports newest first'
+              }
+              onClick={() => {
+                setSort(sort === 'DATE_DESC' ? 'DATE_ASC' : 'DATE_DESC')
+                setPage(1)
+              }}
+            >
+              {sort === 'DATE_DESC' ? 'Newest' : 'Oldest'}
+              {sort === 'DATE_DESC' ? (
+                <ArrowDown aria-hidden="true" />
+              ) : (
+                <ArrowUp aria-hidden="true" />
+              )}
+            </Button>
+          </div>
+        }
+      >
         <ReportList
           data={reportsQuery.data}
           loading={reportsQuery.isLoading}
@@ -144,7 +144,7 @@ const ReportPage = () => {
           onRemit={handleRemit}
           onDelete={handleDelete}
         />
-      </div>
+      </ContentSection>
 
       <DeleteConfirmModal
         item={selectedReport}

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { PageHeader } from '../../components/ui/page-header'
-import { Button, SheetSelect } from '../../components'
+import { Button, ContentSection, SheetSelect } from '../../components'
 import { useAnalytics } from '../../services/analytics/analytics.queries'
 import { AnalyticsRange } from '../../services/analytics/analytics.types'
 import { SummaryCards } from './components/SummaryCards'
@@ -32,11 +32,9 @@ const DashboardPage = () => {
         description="Sales and expense performance"
       />
 
-      <section className="flex flex-col gap-0" aria-labelledby="overview-summary">
-        <div className="flex min-h-10 items-center justify-between gap-3">
-          <h2 id="overview-summary" className="text-card-title font-medium">
-            Summary
-          </h2>
+      <ContentSection
+        label="Summary"
+        rightContent={
           <div className="flex items-center gap-1.5">
             <span className="text-text-tertiary text-xs">Period</span>
             <SheetSelect
@@ -47,8 +45,8 @@ const DashboardPage = () => {
               className="text-text-secondary h-10 w-auto border-0 bg-transparent px-1 text-sm font-medium shadow-none [&_svg]:size-4"
             />
           </div>
-        </div>
-
+        }
+      >
         {initialLoading ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
             <div className="col-span-2 h-28 animate-pulse rounded-card bg-card shadow-card sm:col-span-1" />
@@ -77,7 +75,7 @@ const DashboardPage = () => {
             totalExpenses={data.totalExpenses}
           />
         ) : null}
-      </section>
+      </ContentSection>
 
       {initialLoading ? (
         <div className="h-80 animate-pulse rounded-card bg-card shadow-card" />

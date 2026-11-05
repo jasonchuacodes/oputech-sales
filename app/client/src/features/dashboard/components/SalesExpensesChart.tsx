@@ -1,5 +1,6 @@
 import { Line } from 'react-chartjs-2'
 import type { ChartDataset, ChartOptions } from 'chart.js'
+import { ContentSection } from '../../../components'
 import './chartSetup'
 import { AnalyticsPoint } from '../../../services/analytics/analytics.types'
 import { dayjsLocal } from '../../../utils/date'
@@ -67,15 +68,14 @@ const createDataset = (
 export const SalesExpensesChart = ({ series }: Props) => {
   if (series.length === 0) {
     return (
-      <div className="flex flex-col gap-3 rounded-card bg-card p-4 shadow-card">
-        <h3 className="text-text-heading text-sm font-medium">
-          Sales &amp; Expenses
-        </h3>
-
+      <ContentSection
+        label="Sales & Expenses"
+        className="rounded-card bg-card p-4 shadow-card"
+      >
         <div className="flex h-64 items-center justify-center text-sm text-slate-400">
           No activity in this period.
         </div>
-      </div>
+      </ContentSection>
     )
   }
 
@@ -96,14 +96,13 @@ export const SalesExpensesChart = ({ series }: Props) => {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-card bg-card p-4 shadow-card">
-      <h3 className="text-text-heading text-sm font-medium">
-        Sales &amp; Expenses
-      </h3>
-
+    <ContentSection
+      label="Sales & Expenses"
+      className="rounded-card bg-card p-4 shadow-card"
+    >
       <div className="h-64">
         <Line options={options} data={data} />
       </div>
-    </div>
+    </ContentSection>
   )
 }

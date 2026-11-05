@@ -1,14 +1,15 @@
 import { TopProduct } from '../../../services/analytics/analytics.types'
+import { ContentSection } from '../../../components'
 
 interface Props {
   products: TopProduct[]
 }
 
 export const TopProducts = ({ products }: Props) => (
-  <div className="flex flex-col gap-3 rounded-card bg-card p-4 shadow-card">
-    <h3 className="text-text-heading text-sm font-medium">
-      Top Selling Products
-    </h3>
+  <ContentSection
+    label="Top selling products"
+    className="rounded-card bg-card p-4 shadow-card"
+  >
     {products.length === 0 ? (
       <div className="flex h-32 items-center justify-center text-sm text-slate-400">
         No sales in this period.
@@ -35,5 +36,5 @@ export const TopProducts = ({ products }: Props) => (
         ))}
       </ol>
     )}
-  </div>
+  </ContentSection>
 )

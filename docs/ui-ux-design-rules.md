@@ -101,7 +101,7 @@ Page headers contain a page title, optional description, and optional action.
 Recommended structure:
 
 ```tsx
-<div className="flex items-start justify-between gap-3">
+<div className="flex items-start justify-between gap-4">
   <div className="flex min-w-0 flex-col gap-0.5">
     <h1 className="text-page-title font-semibold">Activity</h1>
     <p className="text-text-secondary text-sm text-balance">
@@ -123,17 +123,12 @@ This is the default way to introduce cards, lists, tables, and stat groups.
 - Optional control aligns to the right.
 - There is **no artificial gap** between the header row and its content (`gap-0`).
 - Space belongs between complete sections, not between a section header and its card.
+- Use the shared `ContentSection` component instead of rebuilding this structure.
 
 ```tsx
-<section className="flex flex-col gap-0" aria-labelledby="section-title">
-  <div className="flex min-h-10 items-center justify-between gap-3">
-    <h2 id="section-title" className="text-card-title font-medium">
-      Transactions
-    </h2>
-    <SectionControl />
-  </div>
+<ContentSection label="Transactions" rightContent={<SectionControl />}>
   <ContentCard />
-</section>
+</ContentSection>
 ```
 
 Examples:
@@ -142,6 +137,8 @@ Examples:
 - Reports: **Generated reports** + Sort toggle → report list.
 - Activity: **Transactions** + Period/date control → transaction list.
 - Overview: **Summary** + Period control → statistic cards.
+- Account: **Tenant**, **Manage**, and **Device** → associated cards or lists.
+- Catalog and POS: category label + optional count → product content.
 
 ## 7. Buttons
 

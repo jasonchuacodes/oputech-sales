@@ -1,3 +1,4 @@
+import { ContentSection } from '../../../components'
 import { DataTable, DataTableColumn } from '../../../components/ui/data-table'
 import { cn } from '../../../utils/cn'
 import { formatCurrency } from '../../../utils/number'
@@ -143,10 +144,7 @@ export const ReportDisplay = ({ report, onDelete }: Props) => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3">
-          <h3 className="text-text-heading text-sm font-medium">
-            Products Sold
-          </h3>
+        <ContentSection label="Products sold">
           <DataTable
             collection={DataTable.collection({
               items: report.products,
@@ -156,10 +154,9 @@ export const ReportDisplay = ({ report, onDelete }: Props) => {
             columns={productColumns}
             emptyMessage="No transactions found in this date range."
           />
-        </div>
+        </ContentSection>
 
-        <div className="flex flex-col gap-3">
-          <h3 className="text-text-heading text-sm font-medium">Expenses</h3>
+        <ContentSection label="Expenses">
           <DataTable
             collection={DataTable.collection({
               items: report.expenses,
@@ -169,7 +166,7 @@ export const ReportDisplay = ({ report, onDelete }: Props) => {
             columns={expenseColumns}
             emptyMessage="No expenses logged in this date range."
           />
-        </div>
+        </ContentSection>
       </div>
     </div>
   )

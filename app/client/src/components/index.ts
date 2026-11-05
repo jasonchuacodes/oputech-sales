@@ -1,5 +1,6 @@
 export { Button } from './ui/button'
 export { PageHeader } from './ui/page-header'
+export { ContentSection } from './ui/content-section'
 export { CustomModal } from './ui/custom-modal'
 export { ConfirmationDialog } from './ui/confirmation-dialog'
 export { Input } from './ui/input'
