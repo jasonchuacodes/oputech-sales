@@ -1,6 +1,10 @@
 import { InvalidInputException } from '../../common/exceptions'
 import { describe, expect, it, vi } from 'vitest'
-import { ReportService } from './report.service'
+import {
+  AnalyticsRange,
+  getAnalyticsDateRange,
+  ReportService,
+} from './report.service'
 import { ReportSortOrder } from './report.types'
 
 vi.mock('./schemas/report.schema', () => ({
@@ -164,5 +168,50 @@ describe('ReportService paginated listing', () => {
       })
     ).rejects.toBeInstanceOf(InvalidInputException)
     expect(aggregate).not.toHaveBeenCalled()
+  })
+})
+
+describe('analytics date ranges', () => {
+  const reference = new Date('2026-11-05T04:00:00.000Z')
+
+  it.each([
+    [
+      AnalyticsRange.TODAY,
+      '2026-11-04T16:00:00.000Z',
+      '2026-11-05T15:59:59.999Z',
+    ],
+    [
+      AnalyticsRange.THIS_WEEK,
+      '2026-11-01T16:00:00.000Z',
+      '2026-11-05T15:59:59.999Z',
+    ],
+    [
+      AnalyticsRange.THIS_MONTH,
+      '2026-10-31T16:00:00.000Z',
+      '2026-11-05T15:59:59.999Z',
+    ],
+    [
+      AnalyticsRange.LAST_MONTH,
+      '2026-09-30T16:00:00.000Z',
+      '2026-10-31T15:59:59.999Z',
+    ],
+  ])(
+    'calculates the %s calendar boundaries',
+    (range, expectedStart, expectedEnd) => {
+      const result = getAnalyticsDateRange(range, reference)
+
+      expect(result.start.toISOString()).toBe(expectedStart)
+      expect(result.end.toISOString()).toBe(expectedEnd)
+    }
+  )
+
+  it('handles the previous month across a year boundary', () => {
+    const result = getAnalyticsDateRange(
+      AnalyticsRange.LAST_MONTH,
+      new Date('2026-01-15T04:00:00.000Z')
+    )
+
+    expect(result.start.toISOString()).toBe('2025-11-30T16:00:00.000Z')
+    expect(result.end.toISOString()).toBe('2025-12-31T15:59:59.999Z')
   })
 })

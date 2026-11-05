@@ -24,18 +24,49 @@ import {
 
 export enum AnalyticsRange {
   TODAY = 'TODAY',
-  LAST_7_DAYS = 'LAST_7_DAYS',
-  LAST_15_DAYS = 'LAST_15_DAYS',
+  THIS_WEEK = 'THIS_WEEK',
+  THIS_MONTH = 'THIS_MONTH',
   LAST_MONTH = 'LAST_MONTH',
-  LAST_6_MONTHS = 'LAST_6_MONTHS',
 }
 
-const RANGE_DAYS: Record<AnalyticsRange, number> = {
-  [AnalyticsRange.TODAY]: 1,
-  [AnalyticsRange.LAST_7_DAYS]: 7,
-  [AnalyticsRange.LAST_15_DAYS]: 15,
-  [AnalyticsRange.LAST_MONTH]: 30,
-  [AnalyticsRange.LAST_6_MONTHS]: 180,
+interface AnalyticsDateRange {
+  start: Date
+  end: Date
+}
+
+export const getAnalyticsDateRange = (
+  range: AnalyticsRange,
+  reference: Date = new Date()
+): AnalyticsDateRange => {
+  const today = dayjsLocal(reference).startOf('day')
+
+  if (range === AnalyticsRange.THIS_WEEK) {
+    const daysSinceMonday = (today.day() + 6) % 7
+    return {
+      start: today.subtract(daysSinceMonday, 'day').toDate(),
+      end: today.endOf('day').toDate(),
+    }
+  }
+
+  if (range === AnalyticsRange.THIS_MONTH) {
+    return {
+      start: today.startOf('month').toDate(),
+      end: today.endOf('day').toDate(),
+    }
+  }
+
+  if (range === AnalyticsRange.LAST_MONTH) {
+    const previousMonth = today.subtract(1, 'month')
+    return {
+      start: previousMonth.startOf('month').toDate(),
+      end: previousMonth.endOf('month').toDate(),
+    }
+  }
+
+  return {
+    start: today.toDate(),
+    end: today.endOf('day').toDate(),
+  }
 }
 
 export interface AnalyticsPoint {
@@ -404,27 +435,18 @@ export class ReportService {
   }
 
   async getAnalytics(tenantId: string, range: AnalyticsRange) {
-    const now = new Date()
-    const end = this.endOfDay(now)
-    const start = dayjsLocal(now)
-      .startOf('day')
-      .subtract(RANGE_DAYS[range] - 1, 'day')
-      .toDate()
+    const { start, end } = getAnalyticsDateRange(range)
 
     const aggregates = await this.aggregateModel
       .find({ tenantId, date: { $gte: start, $lte: end } })
       .sort({ date: 1 })
       .exec()
 
-    let series: AnalyticsPoint[] = aggregates.map((a) => ({
+    const series: AnalyticsPoint[] = aggregates.map((a) => ({
       date: a.date.toISOString(),
       totalSales: a.totalSales,
       totalExpenses: a.totalExpenses,
     }))
-
-    if (range === AnalyticsRange.LAST_6_MONTHS) {
-      series = this.bucketWeekly(aggregates)
-    }
 
     const topProducts = await this.getTopProducts(tenantId, start, end)
 
@@ -451,26 +473,6 @@ export class ReportService {
       { $limit: 10 },
     ])
     return rows.map((r) => ({ productId: r._id, name: r.name, quantitySold: r.quantitySold }))
-  }
-
-  private bucketWeekly(aggregates: AggregateDocument[]): AnalyticsPoint[] {
-    const buckets = new Map<string, AnalyticsPoint>()
-    for (const a of aggregates) {
-      const weekStart = this.startOfWeek(a.date)
-      const key = weekStart.toISOString()
-      const existing = buckets.get(key)
-      if (existing) {
-        existing.totalSales += a.totalSales
-        existing.totalExpenses += a.totalExpenses
-      } else {
-        buckets.set(key, {
-          date: key,
-          totalSales: a.totalSales,
-          totalExpenses: a.totalExpenses,
-        })
-      }
-    }
-    return Array.from(buckets.values())
   }
 
   private async aggregate(tenantId: string, date: Date, sales: number, expenses: number): Promise<void> {
@@ -501,17 +503,5 @@ export class ReportService {
   // Truncate to APP_TZ midnight. Sales are attributed to the report's toDate day.
   private startOfDay(d: Date): Date {
     return dayjsLocal(d).startOf('day').toDate()
-  }
-
-  // End of the APP_TZ day containing d (23:59:59.999 local).
-  private endOfDay(d: Date): Date {
-    return dayjsLocal(d).endOf('day').toDate()
-  }
-
-  // Monday-anchored start of the week containing d (APP_TZ).
-  private startOfWeek(d: Date): Date {
-    const day = dayjsLocal(d).startOf('day')
-    const offset = (day.day() + 6) % 7
-    return day.subtract(offset, 'day').toDate()
   }
 }

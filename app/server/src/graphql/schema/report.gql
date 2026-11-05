@@ -79,10 +79,9 @@ type ReportPage {
 
 enum AnalyticsRange {
   TODAY
-  LAST_7_DAYS
-  LAST_15_DAYS
+  THIS_WEEK
+  THIS_MONTH
   LAST_MONTH
-  LAST_6_MONTHS
 }
 
 type AnalyticsPoint {

@@ -10,11 +10,10 @@ import { SalesExpensesChart } from './components/SalesExpensesChart'
 import { TopProducts } from './components/TopProducts'
 
 const RANGE_OPTIONS: { value: AnalyticsRange; label: string }[] = [
-  { value: 'TODAY', label: 'Today'},
-  { value: 'LAST_7_DAYS', label: 'Last 7 days' },
-  { value: 'LAST_15_DAYS', label: 'Last 15 days' },
+  { value: 'TODAY', label: 'Today' },
+  { value: 'THIS_WEEK', label: 'This week' },
+  { value: 'THIS_MONTH', label: 'This month' },
   { value: 'LAST_MONTH', label: 'Last month' },
-  { value: 'LAST_6_MONTHS', label: 'Last 6 months' },
 ]
 
 const DashboardPage = () => {

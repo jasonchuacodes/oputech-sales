@@ -1,9 +1,4 @@
-export type AnalyticsRange =
-  | 'TODAY'
-  | 'LAST_7_DAYS'
-  | 'LAST_15_DAYS'
-  | 'LAST_MONTH'
-  | 'LAST_6_MONTHS'
+export type AnalyticsRange = 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'LAST_MONTH'
 
 export interface AnalyticsPoint {
   date: string
