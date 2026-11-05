@@ -49,7 +49,7 @@ export const TransactionConfirmationModal = ({
               className="flex items-start justify-between gap-4 rounded-md border px-3 py-2"
             >
               <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="truncate text-sm font-medium text-slate-800">
+                <span className="text-text-heading truncate text-sm font-medium">
                   {item.name}
                 </span>
                 <span className="text-xs text-slate-500">

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, Plus, Receipt, ShoppingBag } from 'lucide-react'
-import { Button, PageHeader, Spinner } from '../../components'
+import { Button, Spinner } from '../../components'
 import { DataTable, type DataTableColumn } from '../../components/ui/data-table'
 import { DatePicker } from '../../components/ui/date-picker'
 import { useTransactions } from '../../services/transaction/transaction.queries'
@@ -12,7 +12,7 @@ import {
   type Transaction,
   TransactionType,
 } from '../../services/transaction/transaction.types'
-import { dayjsLocal, formatDate, formatTime } from '../../utils/date'
+import { dayjsLocal, formatTime } from '../../utils/date'
 import { formatCurrency } from '../../utils/number'
 import { cn } from '../../utils/cn'
 import { DeleteConfirmModal } from './components/DeleteConfirmModal'
@@ -88,7 +88,6 @@ const TransactionsPage = () => {
     deleteTransaction.onOpen()
   }
 
-  const transactionCountLabel = `${transactions.length} ${transactions.length === 1 ? 'transaction' : 'transactions'}`
   const columns: DataTableColumn<Transaction>[] = [
     {
       id: 'occurredAt',
@@ -161,76 +160,47 @@ const TransactionsPage = () => {
   ]
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-2 py-5 md:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <PageHeader
-          title="Activity"
-          description="Review sales and expenses by transaction date."
-        />
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-5 md:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h1 className="text-page-title font-semibold">Activity</h1>
+          <p className="text-text-secondary text-sm text-balance">
+            Review sales and expenses by transaction date.
+          </p>
+        </div>
         <Button
           variant="outline"
-          className="w-full gap-2 sm:w-auto"
+          className="shrink-0 gap-1.5 px-3"
           onClick={logExpense.onOpen}
         >
           <Plus className="size-4" />
-          Log Expense
+          Log expense
         </Button>
       </div>
 
       <section
-        className="flex flex-col gap-3"
-        aria-labelledby="activity-filter"
+        className="flex flex-col gap-0"
+        aria-labelledby="activity-transactions"
       >
-        <h2
-          id="activity-filter"
-          className="text-text-secondary text-xs font-semibold tracking-[0.16em] uppercase"
-        >
-          Filter
-        </h2>
-        <div className="rounded-card bg-card shadow-card flex flex-col gap-3 p-4 sm:flex-row sm:items-end">
-          <DatePicker
-            value={dayjsLocal(date).toDate()}
-            onChange={(next) =>
-              next && setDate(dayjsLocal(next).format('YYYY-MM-DD'))
-            }
-            disableFuture
-            className="w-full sm:w-64"
-          />
-          {!isLoading && pendingReportTransactions.length > 0 && (
-            <Button
-              className="w-full sm:w-auto"
-              onClick={handleGenerateReport}
-              disabled={createReport.isPending || !canGenerateReport}
-              title={
-                canGenerateReport
-                  ? undefined
-                  : 'Connect and sync pending transactions first'
-              }
-            >
-              {createReport.isPending ? 'Generating…' : 'Generate report'}
-            </Button>
-          )}
-        </div>
-        {!isLoading &&
-          pendingReportTransactions.length > 0 &&
-          !canGenerateReport && (
-            <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-              Connect and finish syncing pending activity before generating this
-              report.
-            </p>
-          )}
-      </section>
-
-      <section className="flex flex-col gap-3" aria-labelledby="activity-date">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 id="activity-date" className="text-lg font-semibold">
-            {formatDate(date)}
+        <div className="flex min-h-10 items-center justify-between gap-3">
+          <h2
+            id="activity-transactions"
+            className="text-card-title font-medium"
+          >
+            Transactions
           </h2>
-          {!isLoading && (
-            <span className="text-text-tertiary shrink-0 text-sm">
-              {transactionCountLabel}
-            </span>
-          )}
+          <div className="flex min-w-0 items-center justify-end gap-1.5">
+            <span className="text-text-tertiary shrink-0 text-xs">Period</span>
+            <DatePicker
+              value={dayjsLocal(date).toDate()}
+              onChange={(next) =>
+                next && setDate(dayjsLocal(next).format('YYYY-MM-DD'))
+              }
+              disableFuture
+              triggerIcon="chevron"
+              className="text-text-secondary h-10 w-auto min-w-0 border-0 bg-transparent px-1 text-sm font-medium shadow-none [&_svg]:size-4"
+            />
+          </div>
         </div>
 
         {isLoading ? (
@@ -238,12 +208,12 @@ const TransactionsPage = () => {
             <Spinner />
           </div>
         ) : transactions.length === 0 ? (
-          <div className="rounded-card bg-card shadow-card flex min-h-52 flex-col items-center justify-center gap-3 p-6 text-center">
+          <div className="rounded-card bg-card shadow-card flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center">
             <span className="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-full">
               <Receipt className="size-6" aria-hidden="true" />
             </span>
             <div className="flex flex-col gap-1">
-              <p className="font-semibold">No transactions found</p>
+              <p className="text-text-heading font-medium">No transactions found</p>
               <p className="text-text-secondary text-sm">
                 Sales and expenses recorded on this date will appear here.
               </p>
@@ -266,12 +236,12 @@ const TransactionsPage = () => {
                     <button
                       type="button"
                       onClick={() => openActions(transaction)}
-                      className="hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:ring-ring/30 grid min-h-28 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-inset sm:px-4"
+                      className="hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:ring-ring/30 grid min-h-24 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-inset sm:px-4"
                       aria-label={`Open actions for ${title}`}
                     >
                       <span
                         className={cn(
-                          'flex size-11 shrink-0 items-center justify-center rounded-full',
+                          'flex size-10 shrink-0 items-center justify-center rounded-full',
                           isExpense
                             ? 'bg-destructive/10 text-destructive'
                             : 'bg-primary/10 text-primary'
@@ -281,8 +251,8 @@ const TransactionsPage = () => {
                       </span>
 
                       <span className="flex min-w-0 flex-col gap-1">
-                        <span className="truncate font-semibold">{title}</span>
-                        <span className="text-text-secondary truncate text-sm">
+                        <span className="text-text-heading truncate font-medium">{title}</span>
+                        <span className="text-text-tertiary truncate text-sm">
                           {isExpense ? 'Expense' : 'Sale'} ·{' '}
                           {transaction.paymentType === PaymentType.Cash
                             ? 'Cash'
@@ -334,6 +304,29 @@ const TransactionsPage = () => {
               />
             </div>
           </>
+        )}
+
+        {!isLoading && pendingReportTransactions.length > 0 && (
+          <div className="flex flex-col items-end gap-2 pt-2">
+            {!canGenerateReport && (
+              <p className="w-full rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                Connect and finish syncing pending activity before generating
+                this report.
+              </p>
+            )}
+            <Button
+              className="h-10 px-2.5"
+              onClick={handleGenerateReport}
+              disabled={createReport.isPending || !canGenerateReport}
+              title={
+                canGenerateReport
+                  ? undefined
+                  : 'Connect and sync pending transactions first'
+              }
+            >
+              {createReport.isPending ? 'Generating…' : 'Generate report'}
+            </Button>
+          </div>
         )}
       </section>
 

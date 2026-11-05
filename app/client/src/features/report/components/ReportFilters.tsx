@@ -14,7 +14,7 @@ import {
   SheetTitle,
 } from '../../../components/ui/sheet'
 import { useDisclosure } from '../../../hooks/useDisclosure'
-import { APP_TZ } from '../../../utils/date'
+import { APP_TZ, appCalendarDate } from '../../../utils/date'
 import {
   type ReportCalendarRange,
   type ReportFilterPreset,
@@ -38,6 +38,7 @@ interface Props {
 export const ReportFilters = ({ preset, range, onApply }: Props) => {
   const customRange = useDisclosure()
   const [draft, setDraft] = useState<DateRange>()
+  const customRangeLabel = `${appCalendarDate(range.from).format('MM/DD/YYYY')} - ${appCalendarDate(range.to).format('MM/DD/YYYY')}`
 
   const openCustom = () => {
     setDraft({ from: toCalendarDate(range.from), to: toCalendarDate(range.to) })
@@ -64,13 +65,15 @@ export const ReportFilters = ({ preset, range, onApply }: Props) => {
 
   return (
     <>
-      <div className="min-w-0 flex-1">
+      <div className="flex items-center gap-1.5">
+        <span className="text-text-tertiary text-xs">Period</span>
         <SheetSelect
           value={preset}
           onValueChange={handlePreset}
           options={options}
-          title="Filter reports"
-          className="sm:w-64"
+          title="Filter reports by period"
+          displayValue={preset === 'custom' ? customRangeLabel : undefined}
+          className="text-text-secondary h-10 w-auto border-0 bg-transparent px-1 text-sm font-medium shadow-none [&_svg]:size-4"
         />
       </div>
 

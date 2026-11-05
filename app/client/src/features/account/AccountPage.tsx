@@ -1,17 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import {
-  AlertTriangle,
-  BarChart3,
-  ChevronRight,
-  Cloud,
-  LogOut,
-  Package,
-  RefreshCw,
-  Users,
-  WifiOff,
-} from 'lucide-react'
+import { ChevronRight, LogOut } from 'lucide-react'
 import { Button } from '@/components'
 import { useAuthContext } from '@/context/auth/useAuthContext'
 import { useSyncContext } from '@/context/sync/useSyncContext'
@@ -22,25 +12,20 @@ import { TenantSelector } from './components/TenantSelector'
 
 const ManagementLink = ({
   href,
-  icon: Icon,
   title,
   description,
 }: {
   href: string
-  icon: typeof Package
   title: string
   description: string
 }) => (
   <Link
     href={href}
-    className="border-border/60 flex min-h-18 items-center gap-4 border-b px-4 py-3 last:border-b-0"
+    className="border-border/60 flex min-h-14 items-center gap-3 border-b px-3 py-2.5 last:border-b-0"
   >
-    <span className="bg-primary/10 text-primary flex size-11 shrink-0 items-center justify-center rounded-full">
-      <Icon className="size-5" />
-    </span>
     <span className="min-w-0 flex-1">
-      <span className="block font-semibold">{title}</span>
-      <span className="text-text-secondary block text-sm">{description}</span>
+      <span className="text-text-heading block font-medium">{title}</span>
+      <span className="text-text-tertiary block text-sm">{description}</span>
     </span>
     <ChevronRight className="text-text-tertiary size-5" />
   </Link>
@@ -52,14 +37,6 @@ export const AccountPage = () => {
   const isSuperAdmin = auth?.role === UserRole.SUPERADMIN
   const isAdmin = auth?.role === UserRole.ADMIN || isSuperAdmin
 
-  const SyncIcon =
-    sync.blockedCount > 0
-      ? AlertTriangle
-      : sync.reachability === 'reachable' && !sync.isSyncing
-        ? Cloud
-        : sync.isSyncing
-          ? RefreshCw
-          : WifiOff
   const syncBusy = sync.isSyncing
   const syncTitle =
     sync.blockedCount > 0
@@ -75,18 +52,18 @@ export const AccountPage = () => {
               : 'No pending changes'
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-2 py-5 md:p-6">
-      <section className="rounded-card bg-card shadow-card flex items-center gap-4 p-4">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-5 py-5 md:p-6">
+      <section className="rounded-card bg-card shadow-card flex items-center gap-3 p-3">
         <AccountAvatar
           username={auth?.username}
-          className="size-14 text-xl"
+          className="size-12 text-base"
           iconClassName="size-6"
         />
         <div className="min-w-0">
-          <h2 className="truncate text-lg font-semibold">
+          <h2 className="text-text-heading text-card-title truncate font-medium">
             {auth?.username || 'Account'}
           </h2>
-          <p className="text-text-secondary text-sm">
+          <p className="text-text-tertiary text-sm">
             {isSuperAdmin
               ? 'Super administrator'
               : isAdmin
@@ -97,7 +74,7 @@ export const AccountPage = () => {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-xs font-semibold tracking-[0.16em] uppercase">
+        <h2 className="text-xs font-medium tracking-[0.1em] uppercase">
           Tenant
         </h2>
         <TenantSelector />
@@ -105,27 +82,24 @@ export const AccountPage = () => {
 
       {isAdmin && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-xs font-semibold tracking-[0.16em] uppercase">
+          <h2 className="text-xs font-medium tracking-[0.1em] uppercase">
             Manage
           </h2>
           <div className="rounded-card bg-card shadow-card overflow-hidden">
             <ManagementLink
               href="/catalog"
-              icon={Package}
               title="Product catalog"
               description="Manage products, pricing, and images"
             />
             {isSuperAdmin && (
               <ManagementLink
                 href="/users"
-                icon={Users}
                 title="Users"
                 description="Manage access, roles, and tenant assignments"
               />
             )}
             <ManagementLink
               href="/dashboard"
-              icon={BarChart3}
               title="Analytics"
               description="Review sales and expense performance"
             />
@@ -134,32 +108,21 @@ export const AccountPage = () => {
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-xs font-semibold tracking-[0.16em] uppercase">
+        <h2 className="text-xs font-medium tracking-[0.1em] uppercase">
           Device
         </h2>
-        <div className="rounded-card bg-card shadow-card flex flex-col gap-4 p-4">
-          <div className="flex items-center gap-3">
-            <SyncIcon
-              className={
-                syncBusy
-                  ? 'text-primary animate-spin'
-                  : sync.blockedCount > 0
-                    ? 'text-status-error'
-                    : 'text-primary'
-              }
-            />
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold">{syncTitle}</p>
-              <p className="text-text-secondary truncate text-sm">
-                {sync.lastError ??
-                  (sync.lastSyncAt
-                    ? `Last refreshed ${formatTime(sync.lastSyncAt)}`
-                    : 'Not refreshed on this device yet')}
-              </p>
-            </div>
+        <div className="rounded-card bg-card shadow-card flex flex-col gap-3 p-3">
+          <div className="min-w-0">
+            <p className="text-text-heading font-medium">{syncTitle}</p>
+            <p className="text-text-tertiary truncate text-sm">
+              {sync.lastError ??
+                (sync.lastSyncAt
+                  ? `Last refreshed ${formatTime(sync.lastSyncAt)}`
+                  : 'Not refreshed on this device yet')}
+            </p>
           </div>
           <Button
-            className="h-12 w-full md:h-10"
+            className="w-full"
             variant="outline"
             disabled={syncBusy || sync.authRequired}
             onClick={() =>
@@ -175,7 +138,7 @@ export const AccountPage = () => {
       </section>
 
       <Button
-        className="h-12 w-full gap-2 md:h-10"
+        className="w-full gap-2"
         variant="outline"
         onClick={logout}
       >

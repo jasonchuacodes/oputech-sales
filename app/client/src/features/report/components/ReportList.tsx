@@ -139,27 +139,27 @@ export const ReportList = ({
           <Spinner />
         </div>
       ) : unavailable ? (
-        <div className="rounded-card bg-card flex min-h-52 flex-col items-center justify-center gap-3 p-6 text-center shadow-card">
-          <p className="font-semibold">Reports are unavailable</p>
+        <div className="rounded-card bg-card flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center shadow-card">
+          <p className="text-text-heading font-medium">Reports are unavailable</p>
           <p className="text-text-secondary text-sm">
             Reports are not stored for offline access. Connect and try again.
           </p>
         </div>
       ) : error ? (
-        <div className="rounded-card bg-card flex min-h-52 flex-col items-center justify-center gap-3 p-6 text-center shadow-card">
-          <p className="font-semibold">Reports could not be loaded</p>
+        <div className="rounded-card bg-card flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center shadow-card">
+          <p className="text-text-heading font-medium">Reports could not be loaded</p>
           <p className="text-text-secondary text-sm">Check your connection and try again.</p>
           <Button type="button" variant="outline" size="sm" onClick={onRetry}>
             Retry
           </Button>
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-card bg-card flex min-h-52 flex-col items-center justify-center gap-3 p-6 text-center shadow-card">
+        <div className="rounded-card bg-card flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center shadow-card">
           <span className="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-full">
             <FileText className="size-6" aria-hidden="true" />
           </span>
           <div className="flex flex-col gap-1">
-            <p className="font-semibold">No reports found</p>
+            <p className="text-text-heading font-medium">No reports found</p>
             <p className="text-text-secondary text-sm">
               Generated reports in this period will appear here.
             </p>
@@ -175,15 +175,15 @@ export const ReportList = ({
                 <button
                   type="button"
                   onClick={() => setMobileActionId(item.id)}
-                  className="hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:ring-ring/30 flex min-h-24 w-full items-stretch text-left outline-none focus-visible:ring-3 focus-visible:ring-inset sm:min-h-32"
+                  className="hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:ring-ring/30 flex min-h-24 w-full items-stretch text-left outline-none focus-visible:ring-3 focus-visible:ring-inset"
                   aria-label={`Open actions for report dated ${formatDate(item.toDate)}`}
                 >
-                  <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-4 text-left sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:px-4">
+                  <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 text-left sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:px-4">
                     <span className="bg-primary/10 text-primary hidden size-11 shrink-0 items-center justify-center rounded-full sm:flex">
                       <FileText className="size-5" aria-hidden="true" />
                     </span>
                     <span className="flex min-w-0 flex-col gap-1">
-                      <span className="font-semibold">{formatDate(item.toDate)}</span>
+                      <span className="text-text-heading font-medium">{formatDate(item.toDate)}</span>
                       <span className="text-text-tertiary text-xs">
                         prints: {item.totalPrintCount.toLocaleString()}
                       </span>
@@ -191,7 +191,7 @@ export const ReportList = ({
                         dayjsLocal(item.toDate),
                         'day'
                       ) && (
-                        <span className="text-text-secondary truncate text-sm">
+                        <span className="text-text-tertiary truncate text-sm">
                           {formatRange(dayjsLocal(item.fromDate), dayjsLocal(item.toDate))}
                         </span>
                       )}
@@ -245,7 +245,7 @@ export const ReportList = ({
         </>
       )}
 
-      {!loading && !error && totalCount > 0 && (
+      {!loading && !error && pageCount > 1 && (
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="text-text-secondary text-sm">
             {firstItem}–{lastItem} of {totalCount} reports · Page {page} of {pageCount}

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { CalendarIcon } from 'lucide-react'
+import { CalendarIcon, ChevronDown } from 'lucide-react'
 import { Popover } from 'radix-ui'
 import {
   Controller,
@@ -36,6 +36,7 @@ interface DatePickerProps {
   disabled?: boolean
   error?: boolean
   className?: string
+  triggerIcon?: 'calendar' | 'chevron'
 }
 
 export const DatePicker = ({
@@ -49,6 +50,7 @@ export const DatePicker = ({
   disabled = false,
   error = false,
   className,
+  triggerIcon = 'calendar',
 }: DatePickerProps) => {
   const isDesktop = useIsDesktop()
   const datePicker = useDisclosure()
@@ -71,13 +73,16 @@ export const DatePicker = ({
       disabled={disabled}
       aria-invalid={error}
       className={cn(
-        'w-full justify-start font-normal',
+        'w-full justify-start text-sm font-normal',
         !value && 'text-muted-foreground',
         className
       )}
     >
-      <CalendarIcon className="opacity-60" />
+      {triggerIcon === 'calendar' && <CalendarIcon className="opacity-60" />}
       {value ? formatDate(value, 'MMM D, YYYY') : placeholder}
+      {triggerIcon === 'chevron' && (
+        <ChevronDown className="text-text-secondary opacity-80" />
+      )}
     </Button>
   )
 

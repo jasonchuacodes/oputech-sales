@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useState } from 'react'
-import { Plus, ImageOff } from 'lucide-react'
+import { ImageOff, Plus, Search } from 'lucide-react'
 import { Button, Input, PageHeader } from '../../components'
 import { DataTable, DataTableColumn } from '../../components/ui/data-table'
 import { useProducts } from '../../services/product/product.queries'
@@ -112,7 +112,7 @@ const ProductPage = () => {
 
     if (items.length === 0) {
       return (
-        <div className="rounded-card bg-card p-6 text-center text-sm text-text-secondary shadow-card">
+        <div className="rounded-card bg-card p-4 text-center text-sm text-text-secondary shadow-card">
           No items found
         </div>
       )
@@ -123,22 +123,22 @@ const ProductPage = () => {
         {items.map((item) => (
           <li
             key={item.id}
-            className="border-border/60 flex min-h-24 items-center gap-3 border-b p-4 last:border-b-0"
+            className="border-border/60 flex min-h-20 items-center gap-3 border-b p-3 last:border-b-0"
           >
             {item.imageUrl ? (
               <img
                 src={item.imageUrl}
                 alt=""
-                className="size-12 shrink-0 rounded-md object-cover"
+                className="size-10 shrink-0 rounded-md object-cover"
               />
             ) : (
-              <span className="bg-muted text-text-secondary flex size-12 shrink-0 items-center justify-center rounded-md">
+              <span className="bg-muted text-text-secondary flex size-10 shrink-0 items-center justify-center rounded-md">
                 <ImageOff className="size-5" aria-hidden="true" />
               </span>
             )}
             <span className="flex min-w-0 flex-1 flex-col gap-1">
-              <span className="truncate font-semibold">{item.name}</span>
-              <span className="text-text-secondary text-sm">
+              <span className="text-text-heading truncate font-medium">{item.name}</span>
+              <span className="text-text-tertiary text-sm">
                 {(item.printCount ?? 0).toLocaleString()}{' '}
                 {item.printCount === 1 ? 'print' : 'prints'}
               </span>
@@ -163,7 +163,7 @@ const ProductPage = () => {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-2 py-5 md:p-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-5 md:p-6">
       <PageHeader
         title="Product catalog"
         description="Manage products, pricing, and images"
@@ -187,16 +187,22 @@ const ProductPage = () => {
         </p>
       )}
 
-      <Input
-        placeholder="Search by name…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full md:max-w-sm"
-      />
+      <div className="relative w-full md:max-w-sm">
+        <Search
+          aria-hidden="true"
+          className="text-text-tertiary pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+        />
+        <Input
+          placeholder="Search by name"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
 
       <div className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-lg font-semibold">Main</h2>
+          <h2 className="text-card-title font-medium">Main</h2>
           {!isLoading && (
             <span className="text-text-tertiary text-sm">
               {mainProducts.length} {mainProducts.length === 1 ? 'item' : 'items'}
@@ -216,7 +222,7 @@ const ProductPage = () => {
 
       <div className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-lg font-semibold">Add-ons</h2>
+          <h2 className="text-card-title font-medium">Add-ons</h2>
           {!isLoading && (
             <span className="text-text-tertiary text-sm">
               {addOnProducts.length} {addOnProducts.length === 1 ? 'item' : 'items'}

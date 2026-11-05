@@ -26,51 +26,65 @@ const DashboardPage = () => {
     !data && (analytics.isError || analytics.fetchStatus === 'paused')
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-2 py-5 md:p-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-5 md:p-6">
       <PageHeader
         title="Overview"
         description="Sales and expense performance"
-        action={
-          <SheetSelect
-            value={range}
-            onValueChange={(v) => setRange(v as AnalyticsRange)}
-            options={RANGE_OPTIONS}
-            title="Choose a reporting period"
-            className="w-44"
-          />
-        }
       />
 
-      {initialLoading ? (
-        <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-24 animate-pulse rounded-card bg-card shadow-card"
-              />
-            ))}
+      <section className="flex flex-col gap-0" aria-labelledby="overview-summary">
+        <div className="flex min-h-10 items-center justify-between gap-3">
+          <h2 id="overview-summary" className="text-card-title font-medium">
+            Summary
+          </h2>
+          <div className="flex items-center gap-1.5">
+            <span className="text-text-tertiary text-xs">Period</span>
+            <SheetSelect
+              value={range}
+              onValueChange={(value) => setRange(value as AnalyticsRange)}
+              options={RANGE_OPTIONS}
+              title="Choose a reporting period"
+              className="text-text-secondary h-10 w-auto border-0 bg-transparent px-1 text-sm font-medium shadow-none [&_svg]:size-4"
+            />
           </div>
-          <div className="h-80 animate-pulse rounded-card bg-card shadow-card" />
         </div>
-      ) : unavailable ? (
-        <div className="rounded-card bg-card flex min-h-52 flex-col items-center justify-center gap-3 p-6 text-center shadow-card">
-          <p className="font-semibold">Analytics could not be loaded</p>
-          <p className="text-text-secondary text-sm">
-            Analytics are not stored for offline access on this device.
-          </p>
-          <Button variant="outline" size="sm" onClick={() => void analytics.refetch()}>
-            Retry
-          </Button>
-        </div>
-      ) : data ? (
-        <>
+
+        {initialLoading ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
+            <div className="col-span-2 h-28 animate-pulse rounded-card bg-card shadow-card sm:col-span-1" />
+            <div className="h-24 animate-pulse rounded-card bg-card shadow-card" />
+            <div className="h-24 animate-pulse rounded-card bg-card shadow-card" />
+          </div>
+        ) : unavailable ? (
+          <div className="rounded-card bg-card flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center shadow-card">
+            <p className="text-text-heading font-medium">
+              Analytics could not be loaded
+            </p>
+            <p className="text-text-secondary text-sm">
+              Analytics are not stored for offline access on this device.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void analytics.refetch()}
+            >
+              Retry
+            </Button>
+          </div>
+        ) : data ? (
           <SummaryCards
             totalSales={data.totalSales}
             totalExpenses={data.totalExpenses}
           />
+        ) : null}
+      </section>
+
+      {initialLoading ? (
+        <div className="h-80 animate-pulse rounded-card bg-card shadow-card" />
+      ) : data ? (
+        <>
           <SalesExpensesChart series={data.series} />
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <TopProducts products={data.topProducts} />
           </div>
         </>

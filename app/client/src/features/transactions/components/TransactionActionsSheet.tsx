@@ -66,7 +66,7 @@ export const TransactionActionsSheet = ({
 
         {item && (
           <SheetBody className="flex flex-col gap-4">
-            <dl className="rounded-card bg-background grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-4 text-sm">
+            <dl className="rounded-card bg-background grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 p-3 text-sm">
               <dt className="text-text-secondary">Type</dt>
               <dd className="text-right font-medium">
                 {isExpense ? 'Expense' : 'Sale'}
@@ -98,13 +98,13 @@ export const TransactionActionsSheet = ({
             >
               <h3
                 id="transaction-items"
-                className="text-text-secondary text-xs font-semibold tracking-[0.12em] uppercase"
+                className="text-text-secondary text-xs font-medium tracking-[0.1em] uppercase"
               >
                 {isExpense || item.items.length === 1 ? 'Item' : 'Items'}
               </h3>
 
               {isExpense ? (
-                <div className="rounded-card bg-background flex items-start justify-between gap-4 p-4 text-sm">
+                <div className="rounded-card bg-background flex items-start justify-between gap-4 p-3 text-sm">
                   <span className="min-w-0 font-medium break-words">
                     {item.label || 'Expense'}
                   </span>
@@ -117,7 +117,7 @@ export const TransactionActionsSheet = ({
                   {item.items.map((transactionItem) => (
                     <li
                       key={transactionItem.productId}
-                      className="flex items-start justify-between gap-4 p-4 text-sm"
+                      className="flex items-start justify-between gap-4 p-3 text-sm"
                     >
                       <span className="min-w-0 font-medium break-words">
                         {transactionItem.name}
@@ -129,13 +129,13 @@ export const TransactionActionsSheet = ({
                   ))}
                 </ul>
               ) : (
-                <p className="rounded-card bg-background text-text-secondary p-4 text-sm">
+                <p className="rounded-card bg-background text-text-secondary p-3 text-sm">
                   No items recorded.
                 </p>
               )}
             </section>
 
-            <div className="rounded-card bg-background flex items-center justify-between gap-4 p-4">
+            <div className="rounded-card bg-background flex items-center justify-between gap-4 p-3">
               <span className="font-semibold">Total</span>
               <span
                 className={cn(

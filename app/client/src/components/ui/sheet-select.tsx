@@ -32,6 +32,7 @@ type SheetSelectProps = {
   options: SheetSelectOption[]
   title?: string
   placeholder?: string
+  displayValue?: string
   disabled?: boolean
   className?: string
 }
@@ -42,6 +43,7 @@ export const SheetSelect = ({
   options,
   title = 'Choose an option',
   placeholder = 'Select an option',
+  displayValue,
   disabled,
   className,
 }: SheetSelectProps) => {
@@ -65,13 +67,14 @@ export const SheetSelect = ({
     <button
       type="button"
       disabled={disabled}
+      aria-label={title}
       className={cn(
-        'rounded-input border-input bg-card focus-visible:border-ring focus-visible:ring-ring/20 flex h-12 w-full items-center justify-between gap-3 border px-4 text-left text-base outline-none focus-visible:ring-3 disabled:opacity-50 md:h-10 md:gap-2 md:px-3 md:text-sm',
+        'rounded-input border-input bg-card focus-visible:border-ring focus-visible:ring-ring/20 flex h-11 w-full items-center justify-between gap-2 border px-3 text-left text-base outline-none focus-visible:ring-3 disabled:opacity-50 xl:h-10 xl:text-sm',
         className
       )}
     >
       <span className={cn('truncate', !selected && 'text-text-tertiary')}>
-        {selected?.label ?? placeholder}
+        {displayValue ?? selected?.label ?? placeholder}
       </span>
       <ChevronDown className="text-text-secondary size-5 shrink-0" />
     </button>
@@ -116,7 +119,7 @@ export const SheetSelect = ({
               <RadioGroup.Item
                 key={option.value}
                 value={option.value}
-                className="group border-border/60 focus-visible:bg-background flex min-h-16 w-full items-center justify-between gap-4 border-b px-5 text-left text-base outline-none last:border-b-0"
+                className="group border-border/60 focus-visible:bg-background flex min-h-14 w-full items-center justify-between gap-4 border-b px-5 text-left text-base outline-none last:border-b-0"
               >
                 <span>{option.label}</span>
                 <span className="border-border text-primary group-data-[state=checked]:border-primary flex size-6 shrink-0 items-center justify-center rounded-full border-2">

@@ -64,25 +64,25 @@ export default function LoginPage() {
       <main className="flex h-full min-h-full flex-col px-5 py-6">
         <div className="flex flex-1 flex-col items-center justify-center">
           <div className="w-full max-w-sm">
-            <div className="rounded-card bg-card shadow-card p-6 sm:p-8">
-              <div className="mb-6 flex justify-center">
+            <div className="rounded-card bg-card shadow-card p-5 sm:p-6">
+              <div className="mb-5 flex justify-center">
                 <div
-                  className="rounded-card bg-primary text-primary-foreground flex size-14 items-center justify-center text-lg font-bold"
+                  className="rounded-card bg-primary text-primary-foreground flex size-12 items-center justify-center text-base font-bold"
                   aria-label="Oputech Sales"
                 >
                   OS
                 </div>
               </div>
-              <div className="mb-8 text-center">
-                <h1 className="text-foreground text-2xl font-bold">
+              <div className="mb-6 text-center">
+                <h1 className="text-foreground text-xl font-semibold">
                   Oputech Sales
                 </h1>
-                <p className="text-md mt-1 text-gray-500">
+                <p className="text-text-secondary mt-1 text-sm">
                   Sign in to manage today&apos;s business.
                 </p>
               </div>
               <form
-                className="flex flex-col gap-5"
+                className="flex flex-col gap-4"
                 onSubmit={handleSubmit((data) => onSubmit(data))}
               >
                 <div className="flex flex-col gap-1.5">

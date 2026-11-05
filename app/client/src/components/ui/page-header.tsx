@@ -5,11 +5,9 @@ interface PageHeaderProps {
 }
 
 export const PageHeader = ({ title, description, action }: PageHeaderProps) => (
-  <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+  <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
     <div className="flex min-w-0 flex-col gap-0.5">
-      <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-        {title}
-      </h1>
+      <h1 className="text-page-title font-semibold">{title}</h1>
       {description && (
         <p className="text-text-secondary text-sm">{description}</p>
       )}

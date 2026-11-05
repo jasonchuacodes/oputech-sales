@@ -94,7 +94,7 @@ function NumberInputField({
   return (
     <div
       className={cn(
-        'border-input focus-within:border-brand focus-within:ring-brand/10 rounded-input bg-card flex h-12 overflow-hidden border focus-within:ring-3 md:h-10',
+        'border-input focus-within:border-brand focus-within:ring-brand/10 rounded-input bg-card flex h-11 overflow-hidden border focus-within:ring-3 xl:h-10',
         fieldState.error && 'border-danger ring-danger/20',
         className
       )}
@@ -124,7 +124,7 @@ function NumberInputField({
           setLastValue(value)
           field.onChange(value)
         }}
-        className="flex-1 [appearance:textfield] bg-transparent px-4 text-base outline-none md:px-3 md:text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="flex-1 [appearance:textfield] bg-transparent px-3 text-base outline-none xl:text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
 
       {!hideControls && (

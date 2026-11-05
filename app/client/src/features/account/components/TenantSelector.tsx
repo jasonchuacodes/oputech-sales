@@ -1,21 +1,18 @@
 'use client'
 
 import Link from 'next/link'
-import { Building2, ChevronRight } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { useTenantContext } from '@/context/tenant/useTenantContext'
 
 export const TenantSelector = () => {
   const tenant = useTenantContext()
   const content = (
     <>
-      <span className="bg-primary/10 text-primary flex size-11 items-center justify-center rounded-full">
-        <Building2 className="size-5" aria-hidden="true" />
-      </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-semibold">
+        <span className="text-text-heading block truncate font-medium">
           {tenant.currentTenant?.name ?? 'No tenant'}
         </span>
-        <span className="text-text-secondary block text-sm">
+        <span className="text-text-tertiary block text-sm">
           {tenant.canSwitch
             ? tenant.canEdit
               ? 'View and manage your tenants'
@@ -34,7 +31,7 @@ export const TenantSelector = () => {
 
   if (!tenant.canSwitch) {
     return (
-      <div className="rounded-card bg-card shadow-card flex items-center gap-4 p-4">
+      <div className="rounded-card bg-card shadow-card flex items-center gap-3 p-3">
         {content}
       </div>
     )
@@ -43,7 +40,7 @@ export const TenantSelector = () => {
   return (
     <Link
       href="/tenants"
-      className="rounded-card bg-card hover:bg-surface-hover focus-visible:ring-ring/30 shadow-card flex min-h-18 items-center gap-4 p-4 text-left outline-none focus-visible:ring-3"
+      className="rounded-card bg-card hover:bg-surface-hover focus-visible:ring-ring/30 shadow-card flex min-h-16 items-center gap-3 p-3 text-left outline-none focus-visible:ring-3"
     >
       {content}
     </Link>

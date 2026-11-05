@@ -18,6 +18,7 @@
   /* ─── Base tokens (used by shadcn components) ─── */
   --background: #f5f5f5;
   --foreground: #101010;
+  --text-heading: #303030;
 
   --card: #ffffff;
   --card-foreground: #101010;
@@ -64,6 +65,21 @@
 @theme inline {
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-sans);
+
+  /* ─── Product typography ────────────────────────────────────────────────────
+     Page titles scale gently from 20px to 24px. Component titles remain 16px,
+     controls 13px, and inputs 16px for mobile browser zoom protection.        */
+  --text-page-title: clamp(1.25rem, 1.17rem + 0.32vw, 1.5rem);
+  --text-page-title--line-height: clamp(1.75rem, 1.67rem + 0.32vw, 2rem);
+  --text-page-title--letter-spacing: -0.015em;
+  --text-card-title: 1rem;
+  --text-card-title--line-height: 1.5rem;
+  --text-control: 0.8125rem;
+  --text-control--line-height: 1.125rem;
+  --text-metric-lg: 1.5rem;
+  --text-metric-lg--line-height: 2rem;
+  --text-metric-md: 1.125rem;
+  --text-metric-md--line-height: 1.5rem;
 
   /* ─── shadcn color mappings ─── */
   --color-background: var(--background);
@@ -116,6 +132,7 @@
   --color-danger: #b64e4a;
   --color-info: #47769b;
   --color-text-primary: #101010;
+  --color-text-heading: var(--text-heading);
   --color-text-secondary: rgb(16 16 16 / 70%);
   --color-text-tertiary: rgb(16 16 16 / 50%);
   --color-status-success: #32765a;
@@ -164,6 +181,7 @@
 .dark {
   --background: #0f172a;
   --foreground: #f8fafc;
+  --text-heading: #e2e8f0;
   --card: #1e293b;
   --card-foreground: #f8fafc;
   --popover: #1e293b;

@@ -35,10 +35,18 @@ Status must never be communicated by color alone.
 
 Use **Manrope** at weights 400, 500, 600, and 700. Use tabular numerals for financial values. Inputs remain at least 16px on touch layouts to prevent mobile browser zoom.
 
+- Page titles scale from `1.25rem` to a maximum of `1.5rem`; persistent page headings must not use display-size typography.
+- Card and row titles use `1rem`; standard component copy uses `0.875rem` and button labels use `0.8125rem`.
+- Reserve `0.75rem` for short badges and non-critical captions, not validation or instructions.
+- Primary metrics use `1.5rem`; secondary metrics use `1.125rem`.
+- Keep text roles stable across breakpoints. Create desktop density through spacing rather than globally shrinking inherited text.
+
 ## Components
 
-- Primary controls are at least `48px` high.
+- Standard touch controls are `44px` high; reserve `48px` for checkout and other high-priority actions.
+- Inputs use `16px` text on touch layouts and remain at least `44px` high.
 - Secondary icon actions have at least a `44 × 44px` target.
+- Default card padding is `16px`; compact cards and list rows may use `12px` while preserving touch targets.
 - Input radius: `8px`; card radius: `12px`; sheet radius: `20px`.
 - Default cards use a white background and `shadow-xs`, not a visible outline.
 - Borders are reserved for inputs, separators, selected states, and semantic emphasis.

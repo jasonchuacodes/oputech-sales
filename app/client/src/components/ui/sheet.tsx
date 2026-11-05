@@ -31,7 +31,7 @@ const SheetContent = ({
       {showClose && (
         <Dialog.Close
           aria-label="Close"
-          className="text-text-secondary hover:bg-background focus-visible:ring-ring/30 absolute top-5 right-4 flex size-11 items-center justify-center rounded-md focus-visible:ring-3 md:size-10"
+          className="text-text-secondary hover:bg-background focus-visible:ring-ring/30 absolute top-5 right-4 flex size-11 items-center justify-center rounded-md focus-visible:ring-3 xl:size-10"
         >
           <X className="size-5" />
         </Dialog.Close>
@@ -53,7 +53,7 @@ const SheetTitle = ({
   ...props
 }: ComponentProps<typeof Dialog.Title>) => (
   <Dialog.Title
-    className={cn('text-xl font-semibold md:text-lg', className)}
+    className={cn('text-lg font-semibold', className)}
     {...props}
   />
 )
@@ -63,7 +63,7 @@ const SheetDescription = ({
   ...props
 }: ComponentProps<typeof Dialog.Description>) => (
   <Dialog.Description
-    className={cn('text-text-secondary text-base md:text-sm', className)}
+    className={cn('text-text-secondary text-sm', className)}
     {...props}
   />
 )

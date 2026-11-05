@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
+import { Search } from 'lucide-react'
 import { Input, Spinner } from '../../components'
 import { PageHeader } from '../../components/ui/page-header'
 import { PaymentType, TransactionItem } from '../../services/transaction/transaction.types'
@@ -110,7 +111,7 @@ const POSPage = () => {
   }
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-5 px-2 py-5 md:p-6">
+    <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-5 px-5 py-5 md:p-6">
       <PageHeader
         title="New sale"
         description="Choose products to build the order"
@@ -118,12 +119,18 @@ const POSPage = () => {
 
       <div className="flex min-h-0 flex-1 gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <Input
-            placeholder="Search products…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full md:max-w-md"
-          />
+          <div className="relative w-full md:max-w-md">
+            <Search
+              aria-hidden="true"
+              className="text-text-tertiary pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+            />
+            <Input
+              placeholder="Search products"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
 
           <div className="flex flex-col gap-6 overflow-y-auto">
             {isLoading && (
@@ -140,7 +147,7 @@ const POSPage = () => {
             )}
             {!isLoading && mainProducts.length > 0 && (
               <div className="flex flex-col gap-3 px-1">
-                <h2 className="text-sm font-semibold text-slate-700">Main</h2>
+                <h2 className="text-text-heading text-sm font-medium">Main</h2>
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
                   {mainProducts.map((product) => (
                     <ProductCard
@@ -155,7 +162,7 @@ const POSPage = () => {
             )}
             {!isLoading && addOnProducts.length > 0 && (
               <div className="flex flex-col gap-3 px-1">
-                <h2 className="text-sm font-semibold text-slate-700">
+                <h2 className="text-text-heading text-sm font-medium">
                   Add-ons
                 </h2>
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">

@@ -188,7 +188,7 @@ function DataTableComponent<T>({
                           minWidth: column.id === 'actions' ? 64 : undefined,
                         }}
                         className={cn(
-                          'border-border/50 before:text-text-tertiary flex min-h-11 items-center justify-between gap-4 border-b px-4 py-3 text-right font-normal before:text-left before:text-xs before:font-medium before:tracking-wide before:uppercase before:content-[attr(data-label)] last:border-b-0 md:table-cell md:border-b-0 md:whitespace-nowrap md:before:hidden',
+                          'border-border/50 before:text-text-tertiary flex min-h-11 items-center justify-between gap-4 border-b px-3 py-2.5 text-right font-normal before:text-left before:text-xs before:font-medium before:tracking-wide before:uppercase before:content-[attr(data-label)] last:border-b-0 md:table-cell md:border-b-0 md:px-4 md:py-3 md:whitespace-nowrap md:before:hidden',
                           alignClass[column.align ?? 'left'],
                           colIdx === 0 && !column.width && 'md:truncate',
                           !column.heading && 'justify-end before:hidden',

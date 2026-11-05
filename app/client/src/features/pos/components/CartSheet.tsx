@@ -50,7 +50,7 @@ export const CartSheet = ({
         <div {...bind()} onClick={onClose} className="flex touch-none justify-center pt-3 pb-1 select-none">
           <div className="h-1 w-10 rounded-full bg-slate-200" />
         </div>
-        <div className="flex min-h-0 flex-1 flex-col p-4">
+        <div className="flex min-h-0 flex-1 flex-col p-3">
           {children}
         </div>
       </div>

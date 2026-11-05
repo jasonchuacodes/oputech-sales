@@ -28,7 +28,7 @@ export const SidebarTenantSwitcher = ({
         </span>
         <span
           className={cn(
-            'min-w-0 flex-1 truncate text-sm font-semibold',
+            'min-w-0 flex-1 truncate text-sm font-medium',
             collapsed && 'sr-only'
           )}
         >
@@ -49,7 +49,7 @@ export const SidebarTenantSwitcher = ({
       </span>
       <span
         className={cn(
-          'min-w-0 flex-1 truncate text-sm font-semibold',
+          'min-w-0 flex-1 truncate text-sm font-medium',
           collapsed && 'sr-only'
         )}
       >

@@ -90,7 +90,7 @@ export const ReportDetailActions = ({ reportId, isRemitted, onDelete }: Props) =
           </SheetDescription>
         </SheetHeader>
         <SheetBody>
-          <dl className="rounded-card bg-background grid grid-cols-2 gap-3 p-4 text-sm">
+          <dl className="rounded-card bg-background grid grid-cols-2 gap-3 p-3 text-sm">
             <dt className="text-text-secondary">Status</dt>
             <dd className="text-right font-medium">
               {isRemitted ? 'Remitted' : 'Not remitted'}

@@ -5,8 +5,8 @@ interface Props {
 }
 
 export const TopProducts = ({ products }: Props) => (
-  <div className="flex flex-col gap-3 rounded-card bg-card p-5 shadow-card">
-    <h3 className="text-sm font-semibold text-slate-700">
+  <div className="flex flex-col gap-3 rounded-card bg-card p-4 shadow-card">
+    <h3 className="text-text-heading text-sm font-medium">
       Top Selling Products
     </h3>
     {products.length === 0 ? (
@@ -24,7 +24,7 @@ export const TopProducts = ({ products }: Props) => (
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs text-slate-600">
                 {i + 1}
               </span>
-              <span className="text-sm font-medium text-slate-800">
+              <span className="text-text-heading text-sm font-medium">
                 {p.name}
               </span>
             </div>

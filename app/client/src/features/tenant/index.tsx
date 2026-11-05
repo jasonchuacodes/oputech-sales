@@ -114,7 +114,7 @@ const TenantsPage = () => {
   const unchanged = tenantToEdit?.name === name.trim()
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-2 py-5 md:p-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-5 md:p-6">
       <PageHeader
         title="Tenants"
         description="Manage workspaces and choose where sales are recorded."
@@ -131,9 +131,9 @@ const TenantsPage = () => {
       {tenant.loading ? (
         <div className="rounded-card bg-card shadow-card h-32 animate-pulse" />
       ) : tenant.tenants.length === 0 ? (
-        <div className="rounded-card bg-card shadow-card p-8 text-center">
+        <div className="rounded-card bg-card shadow-card p-5 text-center">
           <Building2 className="text-text-tertiary mx-auto mb-3 size-8" />
-          <p className="font-semibold">No tenants found</p>
+          <p className="text-text-heading font-medium">No tenants found</p>
         </div>
       ) : (
         <ul className="rounded-card bg-card shadow-card overflow-hidden">
@@ -148,7 +148,7 @@ const TenantsPage = () => {
             return (
               <li
                 key={item.id}
-                className="border-border/60 flex min-h-20 items-center gap-3 border-b p-4 last:border-b-0"
+                className="border-border/60 flex min-h-18 items-center gap-3 border-b p-3 last:border-b-0"
               >
                 <Button
                   type="button"
@@ -169,10 +169,10 @@ const TenantsPage = () => {
                   )}
                 </Button>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-semibold">
+                  <span className="text-text-heading block truncate font-medium">
                     {item.name}
                   </span>
-                  <span className="text-text-secondary mt-1 flex items-center gap-1 text-sm">
+                  <span className="text-text-tertiary mt-1 flex items-center gap-1 text-sm">
                     {active ? (
                       <>
                         <Check className="size-4" aria-hidden="true" />

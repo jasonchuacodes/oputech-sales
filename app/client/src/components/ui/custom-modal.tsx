@@ -80,7 +80,7 @@ export function CustomModal({
             </div>
           )}
           <div className="flex-1 overflow-hidden">
-            <p className="text-foreground text-lg font-bold md:text-base">
+            <p className="text-foreground text-lg font-semibold xl:text-base">
               {title}
             </p>
             {subheader && (
@@ -92,7 +92,7 @@ export function CustomModal({
           <button
             aria-label="close"
             onClick={onClose}
-            className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-11 shrink-0 items-center justify-center rounded-md transition-colors md:size-10"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-11 shrink-0 items-center justify-center rounded-md transition-colors xl:size-10"
           >
             <X className="size-5" />
           </button>

@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ArrowDown, ArrowUp } from 'lucide-react'
+import { Button } from '../../components'
 import { PageHeader } from '../../components/ui/page-header'
-import { SheetSelect } from '../../components/ui/sheet-select'
 import { useRemit, useReportsPage } from '../../services/report/report.queries'
 import type {
   ReportDeleteTarget,
@@ -26,6 +27,12 @@ import {
 } from './report-list-state'
 
 const PAGE_SIZE = 10
+const EMPTY_REPORT_TOTALS = {
+  totalCash: 0,
+  totalOnline: 0,
+  totalExpenses: 0,
+  netIncome: 0,
+}
 
 const ReportPage = () => {
   const router = useRouter()
@@ -75,49 +82,69 @@ const ReportPage = () => {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-2 py-5 md:p-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-5 md:p-6">
       <PageHeader
         title="Reports"
         description="Review generated reports, totals, and remittance status."
       />
 
-      {reportsQuery.data && reportsQuery.data.totalCount > 0 && (
-        <ReportSummary totals={reportsQuery.data.totals} />
-      )}
+      <ReportSummary
+        totals={reportsQuery.data?.totals ?? EMPTY_REPORT_TOTALS}
+        action={
+          <ReportFilters
+            preset={preset}
+            range={range}
+            onApply={applyFilter}
+          />
+        }
+      />
 
-      <div className="flex items-center gap-3">
-        <ReportFilters preset={preset} range={range} onApply={applyFilter} />
-        <SheetSelect
-          value={sort}
-          onValueChange={(value) => {
-            setSort(value as ReportSortOrder)
-            setPage(1)
-          }}
-          options={[
-            { value: 'DATE_DESC', label: 'Newest first' },
-            { value: 'DATE_ASC', label: 'Oldest first' },
-          ]}
-          title="Sort reports"
-          className="min-w-0 flex-1 sm:w-48 sm:flex-none"
+      <div className="flex flex-col gap-0">
+        <div className="flex items-center justify-between gap-3">
+        <h2 className="text-card-title font-medium">Generated reports</h2>
+        <div className="flex items-center gap-1.5">
+          <span className="text-text-tertiary text-xs">Sort</span>
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-10 gap-1 px-1.5 text-sm text-text-secondary"
+            aria-label={
+              sort === 'DATE_DESC'
+                ? 'Sort reports oldest first'
+                : 'Sort reports newest first'
+            }
+            onClick={() => {
+              setSort(sort === 'DATE_DESC' ? 'DATE_ASC' : 'DATE_DESC')
+              setPage(1)
+            }}
+          >
+            {sort === 'DATE_DESC' ? 'Newest' : 'Oldest'}
+            {sort === 'DATE_DESC' ? (
+              <ArrowDown aria-hidden="true" />
+            ) : (
+              <ArrowUp aria-hidden="true" />
+            )}
+          </Button>
+        </div>
+        </div>
+
+        <ReportList
+          data={reportsQuery.data}
+          loading={reportsQuery.isLoading}
+          fetching={reportsQuery.isFetching}
+          error={reportsQuery.isError && !reportsQuery.data}
+          unavailable={
+            reportsQuery.fetchStatus === 'paused' && !reportsQuery.data
+          }
+          isAdmin={isAdmin}
+          actionsDisabled={remitReport.isPending}
+          onPageChange={setPage}
+          onRetry={() => void reportsQuery.refetch()}
+          onView={(item) => router.push(reportDetailPath(item.id))}
+          onRemit={handleRemit}
+          onDelete={handleDelete}
         />
       </div>
-
-      <ReportList
-        data={reportsQuery.data}
-        loading={reportsQuery.isLoading}
-        fetching={reportsQuery.isFetching}
-        error={reportsQuery.isError && !reportsQuery.data}
-        unavailable={
-          reportsQuery.fetchStatus === 'paused' && !reportsQuery.data
-        }
-        isAdmin={isAdmin}
-        actionsDisabled={remitReport.isPending}
-        onPageChange={setPage}
-        onRetry={() => void reportsQuery.refetch()}
-        onView={(item) => router.push(reportDetailPath(item.id))}
-        onRemit={handleRemit}
-        onDelete={handleDelete}
-      />
 
       <DeleteConfirmModal
         item={selectedReport}

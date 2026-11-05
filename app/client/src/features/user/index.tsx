@@ -86,7 +86,7 @@ const UsersPage = () => {
   })
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-2 py-5 md:p-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-5 md:p-6">
       <PageHeader
         title="Users"
         description="Manage access, roles, and activity"
@@ -120,7 +120,7 @@ const UsersPage = () => {
         {isLoading ? (
           <div className="rounded-card bg-card h-28 animate-pulse shadow-card" />
         ) : unavailable ? null : (data?.length ?? 0) === 0 ? (
-          <div className="rounded-card bg-card p-6 text-center text-sm text-text-secondary shadow-card">
+          <div className="rounded-card bg-card p-4 text-center text-sm text-text-secondary shadow-card">
             No users found
           </div>
         ) : (
@@ -129,16 +129,16 @@ const UsersPage = () => {
               return (
                 <li
                   key={user.id}
-                  className="border-border/60 flex min-h-24 items-center gap-3 border-b p-4 last:border-b-0"
+                  className="border-border/60 flex min-h-20 items-center gap-3 border-b p-3 last:border-b-0"
                 >
-                  <span className="bg-primary/10 text-primary flex size-11 shrink-0 items-center justify-center rounded-full">
+                  <span className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-full">
                     <UserRound className="size-5" aria-hidden="true" />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="truncate font-semibold">
+                    <span className="text-text-heading truncate font-medium">
                       {user.fullName || user.username}
                     </span>
-                    <span className="text-text-secondary truncate text-sm">
+                    <span className="text-text-tertiary truncate text-sm">
                       @{user.username} · {user.role === 'ADMIN' ? 'Administrator' : 'Staff'}
                     </span>
                   </span>

@@ -159,11 +159,8 @@ const NavigationLink = ({
       >
         <Icon
           aria-hidden="true"
-          className={cn(
-            bottom ? 'size-6' : 'size-5',
-            active && 'stroke-[2.5]',
-            active && item.href === '/dashboard' && 'fill-primary'
-          )}
+          strokeWidth={bottom ? (active ? 2 : 1.75) : 2}
+          className={bottom ? 'size-6' : 'size-5'}
         />
       </span>
       <span className={cn(collapsed && !bottom && 'sr-only')}>
@@ -212,7 +209,7 @@ const AccountProfileLink = ({
         iconClassName="size-5"
       />
       <span className={cn('min-w-0 flex-1', collapsed && 'sr-only')}>
-        <span className="block truncate text-sm font-semibold">
+        <span className="block truncate text-sm font-medium">
           {username || 'Account'}
         </span>
         <span className="text-text-tertiary block truncate text-xs">
@@ -321,7 +318,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                 OS
               </div>
               <div className="min-w-0">
-                <p className="truncate font-semibold">Oputech Sales</p>
+                <p className="truncate font-medium">Oputech Sales</p>
                 <p className="text-text-secondary truncate text-xs">
                   Business operations
                 </p>
@@ -366,7 +363,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
               <div className="border-border/70 mt-2 flex flex-col gap-0 border-t pt-2">
                 <p
                   className={cn(
-                    'text-text-tertiary px-1.5 py-1 text-xs font-semibold tracking-wider uppercase',
+                    'text-text-tertiary px-1.5 py-1 text-xs font-medium tracking-wide uppercase',
                     isSidebarCollapsed && 'sr-only'
                   )}
                 >
@@ -400,7 +397,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
               <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md text-xs font-bold">
                 OS
               </span>
-              <h1 className="max-w-[13rem] truncate text-lg font-semibold">
+              <h1 className="max-w-[13rem] truncate text-base font-medium">
                 {tenant.currentTenant?.name ?? 'Oputech Sales'}
               </h1>
             </div>

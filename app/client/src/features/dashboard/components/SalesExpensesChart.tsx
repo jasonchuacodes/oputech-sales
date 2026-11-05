@@ -67,8 +67,8 @@ const createDataset = (
 export const SalesExpensesChart = ({ series }: Props) => {
   if (series.length === 0) {
     return (
-      <div className="flex flex-col gap-3 rounded-card bg-card p-5 shadow-card">
-        <h3 className="text-sm font-semibold text-slate-700">
+      <div className="flex flex-col gap-3 rounded-card bg-card p-4 shadow-card">
+        <h3 className="text-text-heading text-sm font-medium">
           Sales &amp; Expenses
         </h3>
 
@@ -96,8 +96,8 @@ export const SalesExpensesChart = ({ series }: Props) => {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-card bg-card p-5 shadow-card">
-      <h3 className="text-sm font-semibold text-slate-700">
+    <div className="flex flex-col gap-3 rounded-card bg-card p-4 shadow-card">
+      <h3 className="text-text-heading text-sm font-medium">
         Sales &amp; Expenses
       </h3>
 

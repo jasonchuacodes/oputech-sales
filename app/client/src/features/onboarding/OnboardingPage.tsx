@@ -78,16 +78,16 @@ export default function OnboardingPage() {
     <div className="app-canvas min-h-dvh px-5 py-8 sm:px-6">
       <main className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-lg flex-col justify-center">
         <div className="mb-6 text-center">
-          <div className="bg-primary text-primary-foreground rounded-card mx-auto mb-5 flex size-14 items-center justify-center text-lg font-bold">
+          <div className="bg-primary text-primary-foreground rounded-card mx-auto mb-4 flex size-12 items-center justify-center text-base font-bold">
             OS
           </div>
-          <h1 className="text-2xl font-bold">Set up your workspace</h1>
+          <h1 className="text-xl font-semibold">Set up your workspace</h1>
           <p className="text-text-secondary mt-2">
             Select where you&apos;ll manage sales, inventory, and reports.
           </p>
         </div>
 
-        <div className="rounded-card bg-card shadow-card p-5 sm:p-7">
+        <div className="rounded-card bg-card shadow-card p-4 sm:p-5">
           {canSelect && tenant.tenants.length > 0 && (
             <section aria-labelledby="available-tenants-heading">
               <div className="mb-4 flex items-start gap-3">
@@ -97,7 +97,7 @@ export default function OnboardingPage() {
                 <div>
                   <h2
                     id="available-tenants-heading"
-                    className="text-text-heading font-semibold"
+                    className="text-text-heading font-medium"
                   >
                     Choose a tenant
                   </h2>
@@ -115,7 +115,7 @@ export default function OnboardingPage() {
                       <Button
                         type="button"
                         variant="outline"
-                        className="h-auto min-h-12 w-full justify-start px-4 py-3 text-left"
+                        className="h-auto min-h-11 w-full justify-start px-3 py-2.5 text-left"
                         disabled={busy}
                         onClick={() => void selectTenant(item)}
                       >
@@ -145,7 +145,7 @@ export default function OnboardingPage() {
           {isSuperAdmin && tenant.tenants.length > 0 && (
             <div className="my-6 flex items-center gap-3" aria-hidden="true">
               <span className="bg-border h-px flex-1" />
-              <span className="text-text-tertiary text-xs font-semibold uppercase">
+              <span className="text-text-tertiary text-xs font-medium tracking-wide uppercase">
                 Or create new
               </span>
               <span className="bg-border h-px flex-1" />
@@ -161,7 +161,7 @@ export default function OnboardingPage() {
                 <div>
                   <h2
                     id="create-tenant-heading"
-                    className="text-text-heading font-semibold"
+                    className="text-text-heading font-medium"
                   >
                     {tenant.tenants.length > 0
                       ? 'Create another tenant'
@@ -215,7 +215,7 @@ export default function OnboardingPage() {
               <span className="bg-primary/10 text-primary mx-auto flex size-12 items-center justify-center rounded-full">
                 <Users className="size-6" aria-hidden="true" />
               </span>
-              <h2 id="setup-needed-heading" className="mt-4 font-semibold">
+              <h2 id="setup-needed-heading" className="mt-4 font-medium">
                 Tenant access required
               </h2>
               <p className="text-text-secondary mt-2 text-sm">

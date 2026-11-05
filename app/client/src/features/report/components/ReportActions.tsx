@@ -109,7 +109,7 @@ export const ReportActions = ({
                 </SheetDescription>
               </SheetHeader>
               <SheetBody>
-                <dl className="rounded-card bg-background grid grid-cols-2 gap-3 p-4 text-sm">
+                <dl className="rounded-card bg-background grid grid-cols-2 gap-3 p-3 text-sm">
                   <dt className="text-text-secondary">Status</dt>
                   <dd className="text-right font-medium">
                     {item.isRemitted ? 'Remitted' : 'Pending'}

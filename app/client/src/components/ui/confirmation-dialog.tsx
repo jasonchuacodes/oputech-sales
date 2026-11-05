@@ -56,7 +56,7 @@ export const ConfirmationDialog = ({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <Dialog.Title className="text-lg font-bold md:text-base">
+            <Dialog.Title className="text-lg font-semibold xl:text-base">
               {title}
             </Dialog.Title>
             {description && (
