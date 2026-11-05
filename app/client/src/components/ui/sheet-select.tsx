@@ -66,7 +66,7 @@ export const SheetSelect = ({
       type="button"
       disabled={disabled}
       className={cn(
-        'rounded-input border-input bg-card focus-visible:border-ring focus-visible:ring-ring/20 flex h-12 w-full items-center justify-between gap-3 border px-4 text-left text-base shadow-xs outline-none focus-visible:ring-3 disabled:opacity-50 md:h-10 md:gap-2 md:px-3 md:text-sm',
+        'rounded-input border-input bg-card focus-visible:border-ring focus-visible:ring-ring/20 flex h-12 w-full items-center justify-between gap-3 border px-4 text-left text-base outline-none focus-visible:ring-3 disabled:opacity-50 md:h-10 md:gap-2 md:px-3 md:text-sm',
         className
       )}
     >

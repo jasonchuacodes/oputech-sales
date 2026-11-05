@@ -144,7 +144,7 @@ export const SaleCheckout = ({
           <div className="fixed right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 md:bottom-4">
             <button
               onClick={openCart}
-              className="surface-tonal relative flex min-h-12 items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg"
+              className="relative flex min-h-12 items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
             >
               <ShoppingCart size={18} />
               Cart

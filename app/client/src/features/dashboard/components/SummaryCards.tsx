@@ -10,7 +10,7 @@ export const SummaryCards = ({ totalSales, totalExpenses }: Props) => {
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
-      <div className="surface-tonal col-span-2 flex min-h-32 flex-col justify-between gap-3 rounded-card bg-primary p-5 text-primary-foreground shadow-card sm:col-span-1">
+      <div className="col-span-2 flex min-h-32 flex-col justify-between gap-3 rounded-card bg-primary p-5 text-primary-foreground shadow-card sm:col-span-1">
         <span className="text-sm font-medium text-primary-foreground/70">Net income</span>
         <span className="text-3xl font-semibold tracking-tight tabular-nums">
           {formatCurrency(net)}

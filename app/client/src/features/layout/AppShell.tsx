@@ -391,9 +391,9 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         </nav>
       </aside>
 
-      <div className="app-canvas flex min-w-0 flex-1 flex-col">
+      <div className="bg-background flex min-w-0 flex-1 flex-col">
         {!isRouteActive(pathname, accountNavigation.href) && (
-          <header className="surface-tonal border-border/60 bg-background/95 flex h-16 shrink-0 items-center justify-between border-b px-5 backdrop-blur md:hidden">
+          <header className="border-border/60 bg-background/95 flex h-16 shrink-0 items-center justify-between border-b px-5 backdrop-blur md:hidden">
             <div className="flex items-center gap-3">
               <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md text-xs font-bold">
                 OS

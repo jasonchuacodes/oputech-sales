@@ -84,7 +84,7 @@ export const CurrentSale = ({
                   <button
                     type="button"
                     onClick={() => onDecrementItem(item.productId)}
-                    className="flex size-10 items-center justify-center rounded-md bg-card text-primary shadow-xs"
+                    className="flex size-10 items-center justify-center rounded-md bg-card text-primary"
                     aria-label={`Decrease ${item.name}`}
                   >
                     <Minus className="size-4" />
@@ -93,7 +93,7 @@ export const CurrentSale = ({
                   <button
                     type="button"
                     onClick={() => onIncrementItem(item.productId)}
-                    className="flex size-10 items-center justify-center rounded-md bg-card text-primary shadow-xs"
+                    className="flex size-10 items-center justify-center rounded-md bg-card text-primary"
                     aria-label={`Increase ${item.name}`}
                   >
                     <Plus className="size-4" />

@@ -94,7 +94,7 @@ function NumberInputField({
   return (
     <div
       className={cn(
-        'border-input focus-within:border-brand focus-within:ring-brand/10 rounded-input bg-card flex h-12 overflow-hidden border shadow-xs focus-within:ring-3 md:h-10',
+        'border-input focus-within:border-brand focus-within:ring-brand/10 rounded-input bg-card flex h-12 overflow-hidden border focus-within:ring-3 md:h-10',
         fieldState.error && 'border-danger ring-danger/20',
         className
       )}

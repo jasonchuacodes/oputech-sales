@@ -11,7 +11,7 @@ function PasswordInput({
   return (
     <div
       className={cn(
-        'border-input focus-within:border-brand focus-within:ring-brand/10 has-[[aria-invalid=true]]:border-danger has-[[aria-invalid=true]]:ring-danger/20 rounded-input bg-card flex h-12 w-full overflow-hidden border shadow-xs transition-colors focus-within:ring-3 md:h-10',
+        'border-input focus-within:border-brand focus-within:ring-brand/10 has-[[aria-invalid=true]]:border-danger has-[[aria-invalid=true]]:ring-danger/20 rounded-input bg-card flex h-12 w-full overflow-hidden border transition-colors focus-within:ring-3 md:h-10',
         className
       )}
     >

@@ -22,7 +22,7 @@ export const ProductCard = ({ product, quantity = 0, onClick }: ProductCardProps
       )}
     >
       {quantity > 0 && (
-        <span className="absolute top-2 right-2 z-10 flex size-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-sm">
+        <span className="absolute top-2 right-2 z-10 flex size-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
           {quantity}
         </span>
       )}
