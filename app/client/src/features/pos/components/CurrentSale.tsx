@@ -133,25 +133,25 @@ export const CurrentSale = ({
                 variant={paymentType === type ? 'default' : 'outline'}
                 size="lg"
                 disabled={!hasItems}
-                onClick={() => onPaymentTypeChange(type)}
+                onClick={() => {
+                  if (type === PaymentType.Cash && paymentType === PaymentType.Cash) {
+                    onExactAmount(totalInCents / 100)
+                    return
+                  }
+
+                  onPaymentTypeChange(type)
+                }}
                 className="flex-1"
               >
-                {toTitleCase(type)}
+                {type === PaymentType.Cash && paymentType === PaymentType.Cash
+                  ? 'Exact Amount'
+                  : toTitleCase(type)}
               </Button>
             ))}
           </div>
 
           {paymentType === PaymentType.Cash && hasItems && (
             <div className="mt-2 flex flex-col gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onExactAmount(totalInCents / 100)}
-                className="w-full"
-              >
-                Exact Amount
-              </Button>
-
               <div className="flex flex-col gap-1">
                 <label htmlFor={cashAmountId} className="text-xs font-medium text-slate-500">
                   Cash Amount
@@ -159,7 +159,7 @@ export const CurrentSale = ({
                 <NumberInput
                   control={cashPaymentControl}
                   name="cashAmount"
-                  min={totalInCents / 100}
+                  min={0}
                   step={0.01}
                   hideControls
                   placeholder={total.toFixed(2)}

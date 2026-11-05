@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ChevronRight, Receipt, ShoppingBag } from 'lucide-react'
+import { ChevronRight, Plus, Receipt, ShoppingBag } from 'lucide-react'
 import { Button, PageHeader, Spinner } from '../../components'
 import { DataTable, type DataTableColumn } from '../../components/ui/data-table'
 import { DatePicker } from '../../components/ui/date-picker'
@@ -161,7 +161,7 @@ const TransactionsPage = () => {
           className="w-full gap-2 sm:w-auto"
           onClick={logExpense.onOpen}
         >
-          <Receipt className="size-4" />
+          <Plus className="size-4" />
           Log Expense
         </Button>
       </div>

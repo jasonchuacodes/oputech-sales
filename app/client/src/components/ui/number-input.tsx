@@ -110,7 +110,15 @@ function NumberInputField({
         max={max}
         step={step}
         onChange={(e) => {
-          setText(e.target.value)
+          const nextText = e.target.value
+          setText(nextText)
+
+          if (nextText === '') {
+            setLastValue(undefined)
+            field.onChange(undefined)
+            return
+          }
+
           const parsed = e.target.valueAsNumber
           const value = Number.isNaN(parsed) ? undefined : round(parsed)
           setLastValue(value)
