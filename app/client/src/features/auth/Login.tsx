@@ -11,8 +11,8 @@ import { useLoginMutation } from '../../services/auth/auth.queries'
 import { useAuthContext } from '../../context/auth/useAuthContext'
 import { LoginInput } from '../../services/auth/auth.types'
 import { loginSchema } from './schemas/login.schema'
-import { UserRole } from '../../types'
 import { getApiErrorMessage } from '../../lib/api-error'
+import { UserRoutes, userHomePath } from '../../routes/paths'
 
 export default function LoginPage() {
   const { auth, loading, refetch: refetchAuth } = useAuthContext()
@@ -36,10 +36,14 @@ export default function LoginPage() {
       onSuccess: async ({ user }) => {
         await refetchAuth()
         setError(null)
-        router.replace(user.role === UserRole.STAFF ? '/sell' : '/dashboard')
+        router.replace(
+          user.currentTenantId ? userHomePath(user.role) : UserRoutes.Onboarding
+        )
       },
       onError: (err) => {
-        setError(getApiErrorMessage(err, 'Unable to sign in. Please try again.'))
+        setError(
+          getApiErrorMessage(err, 'Unable to sign in. Please try again.')
+        )
       },
       onSettled: () => {
         reset()
@@ -49,7 +53,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!loading && auth) {
-      router.replace(auth.role === UserRole.STAFF ? '/sell' : '/dashboard')
+      router.replace(
+        auth.currentTenantId ? userHomePath(auth.role) : UserRoutes.Onboarding
+      )
     }
   }, [auth, loading, router])
 
@@ -58,10 +64,10 @@ export default function LoginPage() {
       <main className="flex h-full min-h-full flex-col px-5 py-6">
         <div className="flex flex-1 flex-col items-center justify-center">
           <div className="w-full max-w-sm">
-            <div className="rounded-card bg-card p-6 shadow-card sm:p-8">
+            <div className="rounded-card bg-card shadow-card p-6 sm:p-8">
               <div className="mb-6 flex justify-center">
                 <div
-                  className="flex size-14 items-center justify-center rounded-card bg-primary text-lg font-bold text-primary-foreground"
+                  className="rounded-card bg-primary text-primary-foreground flex size-14 items-center justify-center text-lg font-bold"
                   aria-label="Oputech Sales"
                 >
                   OS

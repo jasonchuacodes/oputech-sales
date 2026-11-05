@@ -36,6 +36,7 @@ import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
 import { SidebarTenantSwitcher } from './components/SidebarTenantSwitcher'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
 import { useTenantContext } from '@/context/tenant/useTenantContext'
+import { PublicRoutes, UserRoutes } from '@/routes/paths'
 
 type NavItem = {
   label: string
@@ -241,7 +242,11 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (loading) return
     if (!auth) {
-      router.replace('/login')
+      router.replace(PublicRoutes.Login)
+      return
+    }
+    if (!auth.currentTenantId) {
+      router.replace(UserRoutes.Onboarding)
       return
     }
     if (
@@ -252,13 +257,10 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     ) {
       router.replace('/sell')
     }
-  }, [auth, isAdmin, loading, pathname, router])
-
-  useEffect(() => {
-    if (!loading && auth && !isSuperAdmin && pathname.startsWith('/users')) {
+    if (!isSuperAdmin && pathname.startsWith('/users')) {
       router.replace('/sell')
     }
-  }, [auth, isSuperAdmin, loading, pathname, router])
+  }, [auth, isAdmin, isSuperAdmin, loading, pathname, router])
 
   const handleRefresh = useCallback(async () => {
     await Promise.allSettled([
@@ -291,7 +293,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     setSidebarCollapsedPreference(!isSidebarCollapsed)
   }, [isSidebarCollapsed])
 
-  if (loading || !auth) {
+  if (loading || !auth || !auth.currentTenantId) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <Spinner size="lg" />
