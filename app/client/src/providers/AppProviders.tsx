@@ -27,7 +27,7 @@ export const AppProviders = ({ children }: { children: ReactNode }) => {
           <SyncProvider>
             {children}
             <PWAReloadPrompt />
-            <Toaster position={isDesktop ? 'bottom-right' : 'top-center'} />
+            <Toaster position={isDesktop ? 'bottom-right' : 'top-right'} />
           </SyncProvider>
         </TenantProvider>
       </AuthProvider>
