@@ -109,6 +109,7 @@ function NumberInputField({
         min={min}
         max={max}
         step={step}
+        autoCapitalize="none"
         onChange={(e) => {
           const nextText = e.target.value
           setText(nextText)

@@ -5,6 +5,7 @@ import {
   CustomModal,
   Input,
   Label,
+  PasswordInput,
   SheetSelect,
 } from '../../../components'
 import { useCreateUser } from '../../../services/users/users.queries'
@@ -78,10 +79,10 @@ export const AddUserModal = ({ open, onClose }: Props) => {
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="password">Password *</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             placeholder="Enter a password"
+            autoComplete="new-password"
             aria-invalid={!!errors.password}
             {...register('password')}
           />

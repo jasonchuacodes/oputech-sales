@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { KeyRound } from 'lucide-react'
-import { CustomModal, Input, Label } from '../../../components'
+import { CustomModal, Label, PasswordInput } from '../../../components'
 import { useResetPassword } from '../../../services/users/users.queries'
 import { User } from '../../../services/users/users.types'
 import { resetPasswordSchema, ResetPasswordFormValues } from '../schemas/reset-password.schema'
@@ -49,10 +49,10 @@ export const ResetPasswordModal = ({ user, open, onClose }: Props) => {
     >
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="reset-password">New Password *</Label>
-        <Input
+        <PasswordInput
           id="reset-password"
-          type="password"
           placeholder="Enter a new password"
+          autoComplete="new-password"
           aria-invalid={!!errors.password}
           {...register('password')}
         />

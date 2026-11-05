@@ -20,6 +20,7 @@ function PasswordInput({
         data-slot="input"
         className="placeholder:text-text-tertiary min-w-0 flex-1 bg-transparent px-3 text-base outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 xl:text-sm [&:-webkit-autofill]:bg-white"
         {...props}
+        autoCapitalize="none"
       />
       <button
         type="button"
