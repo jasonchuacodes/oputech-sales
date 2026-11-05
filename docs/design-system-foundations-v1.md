@@ -18,16 +18,16 @@ Oputech Sales should feel fast, calm, and dependable during daily sales work. Th
 
 ## Color tokens
 
-| Token | Value | Purpose |
-|---|---:|---|
-| Canvas | `#F5F5F5` | Application background |
-| Surface | `#FFFFFF` | Cards, sheets, inputs |
-| Text | `#101010` | Primary content |
+| Token   |     Value | Purpose                         |
+| ------- | --------: | ------------------------------- |
+| Canvas  | `#F5F5F5` | Application background          |
+| Surface | `#FFFFFF` | Cards, sheets, inputs           |
+| Text    | `#101010` | Primary content                 |
 | Primary | `#17434D` | Actions and selected navigation |
-| Success | `#32765A` | Synced, complete, active |
-| Warning | `#B47B31` | Pending and attention |
-| Error | `#B64E4A` | Destructive and failed |
-| Info | `#47769B` | Informational state |
+| Success | `#32765A` | Synced, complete, active        |
+| Warning | `#B47B31` | Pending and attention           |
+| Error   | `#B64E4A` | Destructive and failed          |
+| Info    | `#47769B` | Informational state             |
 
 Status must never be communicated by color alone.
 
@@ -55,8 +55,8 @@ Sales-user navigation: Sell, Activity, Reports, More.
 ## Core workflows
 
 1. **Sell:** search products → add quantities → review cart → choose payment → confirm.
-2. **Activity:** choose date → review sales/expenses → log expense or manage unprocessed entries.
-3. **Reports:** preview daily totals → generate → admin review/remittance.
+2. **Activity:** choose date → review sales/expenses → log expenses, manage unprocessed entries, or generate a report for pending activity.
+3. **Reports:** review generated reports → admin review/remittance.
 4. **Catalog:** search/filter → add/edit product → confirm destructive actions.
 5. **Users:** review status/roles → add/edit/reset password.
 

@@ -1,40 +1,20 @@
-import { DataTable, DataTableColumn } from '../../../components/ui/data-table';
-import { cn } from '../../../utils/cn';
-import { formatCurrency } from '../../../utils/number';
-import { dayjsLocal, formatDate, formatTime } from '../../../utils/date';
+import { DataTable, DataTableColumn } from '../../../components/ui/data-table'
+import { cn } from '../../../utils/cn'
+import { formatCurrency } from '../../../utils/number'
+import { dayjsLocal, formatDate, formatTime } from '../../../utils/date'
 import {
   ProductSale,
   Report,
   ReportExpense,
-  ReportUser,
-} from '../../../services/report/report.types';
-import { PaymentType } from '../../../services/transaction/transaction.types';
-import { UserRole } from '../../../types';
-import { useAuthContext } from '../../../context/auth/useAuthContext';
-import { ReportDetailActions } from './ReportDetailActions';
-
-type PreviewReport = Pick<
-  Report,
-  | 'products'
-  | 'totalCash'
-  | 'totalOnline'
-  | 'totalIncome'
-  | 'totalExpenses'
-  | 'totalPrintCount'
-> & {
-  id?: string;
-  createdBy?: ReportUser;
-  fromDate?: string;
-  toDate?: string;
-  createdAt?: string;
-  expenses?: ReportExpense[];
-  isRemitted?: boolean;
-};
+} from '../../../services/report/report.types'
+import { PaymentType } from '../../../services/transaction/transaction.types'
+import { UserRole } from '../../../types'
+import { useAuthContext } from '../../../context/auth/useAuthContext'
+import { ReportDetailActions } from './ReportDetailActions'
 
 interface Props {
-  report: PreviewReport;
-  isPreview?: boolean;
-  onDelete?: (id: string) => void;
+  report: Report
+  onDelete?: (id: string) => void
 }
 
 const productColumns: DataTableColumn<ProductSale>[] = [
@@ -59,7 +39,7 @@ const productColumns: DataTableColumn<ProductSale>[] = [
     heading: 'Total',
     cell: (p) => <span className="font-medium">{formatCurrency(p.total)}</span>,
   },
-];
+]
 
 const expenseColumns: DataTableColumn<ReportExpense>[] = [
   {
@@ -77,24 +57,16 @@ const expenseColumns: DataTableColumn<ReportExpense>[] = [
     heading: 'Amount',
     cell: (e) => <span className="font-medium">{formatCurrency(e.total)}</span>,
   },
-];
+]
 
-export const ReportDisplay = ({ report, isPreview, onDelete }: Props) => {
-  const { auth } = useAuthContext();
-  const isAdmin = auth?.role !== UserRole.STAFF;
+export const ReportDisplay = ({ report, onDelete }: Props) => {
+  const { auth } = useAuthContext()
+  const isAdmin = auth?.role !== UserRole.STAFF
 
   return (
     <div className="flex flex-col gap-4">
-      <div
-        className={`flex flex-col gap-6 rounded-card bg-card p-4 shadow-card md:p-6 ${isPreview ? 'ring-1 ring-dashed ring-border opacity-80' : ''}`}
-      >
-        {isPreview && (
-          <div className="rounded-md bg-background px-3 py-2 text-center text-xs font-medium text-text-secondary">
-            Preview — report not yet generated
-          </div>
-        )}
-
-        {!isPreview && (report.createdBy || report.createdAt) && (
+      <div className="rounded-card bg-card shadow-card flex flex-col gap-6 p-4 md:p-6">
+        {(report.createdBy || report.createdAt) && (
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex flex-col gap-1">
               {report.createdBy && report.createdAt && (
@@ -103,19 +75,20 @@ export const ReportDisplay = ({ report, isPreview, onDelete }: Props) => {
                   <span className="font-medium text-slate-800">
                     {report.createdBy.username}
                   </span>{' '}
-                  · {formatDate(report.createdAt)} at {formatTime(report.createdAt)}
+                  · {formatDate(report.createdAt)} at{' '}
+                  {formatTime(report.createdAt)}
                 </p>
               )}
               {report.fromDate &&
                 report.toDate &&
                 !dayjsLocal(report.fromDate).isSame(
                   dayjsLocal(report.toDate),
-                  'day',
+                  'day'
                 ) && (
-                <p className="text-sm text-slate-500">
-                  Period: {formatDate(report.fromDate)} —{' '}
-                  {formatDate(report.toDate)}
-                </p>
+                  <p className="text-sm text-slate-500">
+                    Period: {formatDate(report.fromDate)} —{' '}
+                    {formatDate(report.toDate)}
+                  </p>
                 )}
             </div>
             <div className="flex items-center justify-between gap-2 sm:justify-end">
@@ -124,7 +97,7 @@ export const ReportDisplay = ({ report, isPreview, onDelete }: Props) => {
                   <span
                     className={cn(
                       'h-2 w-2 shrink-0 rounded-full',
-                      report.isRemitted ? 'bg-green-500' : 'bg-gray-400',
+                      report.isRemitted ? 'bg-green-500' : 'bg-gray-400'
                     )}
                   />
                   {report.isRemitted ? 'Remitted' : 'Not remitted'}
@@ -142,33 +115,33 @@ export const ReportDisplay = ({ report, isPreview, onDelete }: Props) => {
         )}
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
-          <div className="flex flex-col gap-1 rounded-md bg-background p-3 sm:p-4">
+          <div className="bg-background flex flex-col gap-1 rounded-md p-3 sm:p-4">
             <span className="text-xs font-medium text-slate-500">Cash</span>
             <span className="text-foreground text-xl font-bold">
               {formatCurrency(report.totalCash)}
             </span>
           </div>
-          <div className="flex flex-col gap-1 rounded-md bg-background p-3 sm:p-4">
+          <div className="bg-background flex flex-col gap-1 rounded-md p-3 sm:p-4">
             <span className="text-xs font-medium text-slate-500">Online</span>
             <span className="text-foreground text-xl font-bold">
               {formatCurrency(report.totalOnline)}
             </span>
           </div>
-          <div className="flex flex-col gap-1 rounded-md bg-background p-3 sm:p-4">
+          <div className="bg-background flex flex-col gap-1 rounded-md p-3 sm:p-4">
             <span className="text-xs font-medium text-slate-500">Expenses</span>
             <span className="text-foreground text-xl font-bold">
               {formatCurrency(report.totalExpenses)}
             </span>
           </div>
-          <div className="order-first col-span-2 flex flex-col gap-1 rounded-md bg-primary p-4 text-primary-foreground sm:order-none sm:col-span-1">
-            <span className="text-xs font-medium text-primary-foreground/70">
+          <div className="bg-primary text-primary-foreground order-first col-span-2 flex flex-col gap-1 rounded-md p-4 sm:order-none sm:col-span-1">
+            <span className="text-primary-foreground/70 text-xs font-medium">
               Total Income
             </span>
             <span className="text-xl font-bold">
               {formatCurrency(report.totalIncome)}
             </span>
           </div>
-          <div className="flex flex-col gap-1 rounded-md bg-background p-3 sm:p-4">
+          <div className="bg-background flex flex-col gap-1 rounded-md p-3 sm:p-4">
             <span className="text-xs font-medium text-slate-500">
               Total Prints
             </span>
@@ -193,7 +166,7 @@ export const ReportDisplay = ({ report, isPreview, onDelete }: Props) => {
           />
         </div>
 
-        {!isPreview && report.id && (
+        {report.id && (
           <div className="flex flex-col gap-3">
             <h3 className="text-sm font-semibold text-slate-700">Expenses</h3>
             <DataTable
@@ -209,5 +182,5 @@ export const ReportDisplay = ({ report, isPreview, onDelete }: Props) => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}

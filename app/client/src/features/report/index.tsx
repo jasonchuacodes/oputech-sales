@@ -2,22 +2,10 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '../../components'
 import { PageHeader } from '../../components/ui/page-header'
-import { DatePicker } from '../../components/ui/date-picker'
 import { SheetSelect } from '../../components/ui/sheet-select'
-import {
-  useCreateReport,
-  useRemit,
-  useReportsPage,
-} from '../../services/report/report.queries'
-import { useTransactions } from '../../services/transaction/transaction.queries'
-import {
-  PaymentType,
-  TransactionType,
-} from '../../services/transaction/transaction.types'
+import { useRemit, useReportsPage } from '../../services/report/report.queries'
 import type {
-  Report,
   ReportDeleteTarget,
   ReportListItem,
   ReportSortOrder,
@@ -25,10 +13,7 @@ import type {
 import { reportDetailPath } from '../../routes/paths'
 import { useAuthContext } from '../../context/auth/useAuthContext'
 import { UserRole } from '../../types'
-import { useSyncContext } from '../../context/sync/useSyncContext'
-import { dayjsLocal } from '../../utils/date'
 import { useDisclosure } from '../../hooks/useDisclosure'
-import { ReportDisplay } from './components/ReportDisplay'
 import { DeleteConfirmModal } from './components/DeleteConfirmModal'
 import { ReportFilters } from './components/ReportFilters'
 import { ReportList } from './components/ReportList'
@@ -46,15 +31,14 @@ const ReportPage = () => {
   const router = useRouter()
   const { auth } = useAuthContext()
   const isAdmin = auth?.role !== UserRole.STAFF
-  const { canGenerateReport, pendingCount, blockedCount } = useSyncContext()
-  const [reportDate, setReportDate] = useState(dayjsLocal().format('YYYY-MM-DD'))
   const [preset, setPreset] = useState<ReportFilterPreset>('this_month')
   const [range, setRange] = useState<ReportCalendarRange>(() =>
     getReportPresetRange('this_month')
   )
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<ReportSortOrder>('DATE_DESC')
-  const [selectedReport, setSelectedReport] = useState<ReportDeleteTarget | null>(null)
+  const [selectedReport, setSelectedReport] =
+    useState<ReportDeleteTarget | null>(null)
   const deleteReport = useDisclosure()
 
   const queryParams = useMemo(
@@ -66,66 +50,7 @@ const ReportPage = () => {
     [page, range, sort]
   )
   const reportsQuery = useReportsPage(queryParams)
-
-  const { data: transactions, isLoading: txLoading } = useTransactions({
-    from: dayjsLocal(reportDate).startOf('day').toISOString(),
-    to: dayjsLocal(reportDate).endOf('day').toISOString(),
-    processed: false,
-  })
-  const createReport = useCreateReport()
   const remitReport = useRemit()
-
-  const previewReport = useMemo(() => {
-    if (!transactions?.length) return null
-
-    const productMap = new Map<
-      string,
-      {
-        name: string
-        pricePerUnit: number
-        printCount: number
-        quantitySold: number
-      }
-    >()
-    let totalCash = 0
-    let totalOnline = 0
-    let totalExpenses = 0
-
-    for (const tx of transactions) {
-      if (tx.type === TransactionType.Expense) totalExpenses += tx.total
-      else if (tx.paymentType === PaymentType.Cash) totalCash += tx.total
-      else totalOnline += tx.total
-
-      for (const item of tx.items) {
-        const existing = productMap.get(item.productId)
-        if (existing) existing.quantitySold += item.quantity
-        else {
-          productMap.set(item.productId, {
-            name: item.name,
-            pricePerUnit: item.price,
-            printCount: item.printCount,
-            quantitySold: item.quantity,
-          })
-        }
-      }
-    }
-
-    return {
-      products: Array.from(productMap.entries()).map(([productId, value]) => ({
-        productId,
-        total: value.pricePerUnit * value.quantitySold,
-        ...value,
-      })),
-      totalCash,
-      totalOnline,
-      totalIncome: totalCash + totalOnline,
-      totalExpenses,
-      totalPrintCount: Array.from(productMap.values()).reduce(
-        (sum, product) => sum + product.printCount * product.quantitySold,
-        0
-      ),
-    }
-  }, [transactions])
 
   const applyFilter = (
     nextPreset: ReportFilterPreset,
@@ -134,22 +59,10 @@ const ReportPage = () => {
     setPreset(nextPreset)
     setRange(
       nextPreset === 'custom'
-        ? customRange ?? range
+        ? (customRange ?? range)
         : getReportPresetRange(nextPreset)
     )
     setPage(1)
-  }
-
-  const handleGenerate = () => {
-    createReport.mutate(
-      {
-        fromDate: dayjsLocal(reportDate).startOf('day').toISOString(),
-        toDate: dayjsLocal(reportDate).isSame(dayjsLocal(), 'day')
-          ? dayjsLocal().toISOString()
-          : dayjsLocal(reportDate).endOf('day').toISOString(),
-      },
-      { onSuccess: () => setPage(1) }
-    )
   }
 
   const handleRemit = (item: ReportListItem) => {
@@ -161,8 +74,6 @@ const ReportPage = () => {
     deleteReport.onOpen()
   }
 
-  const hasTransactions = (transactions?.length ?? 0) > 0
-
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-5 md:p-6">
       <PageHeader
@@ -170,67 +81,12 @@ const ReportPage = () => {
         description="Review generated reports, totals, and remittance status."
       />
 
-      <section className="flex flex-col gap-3" aria-labelledby="generate-report">
-        <h2
-          id="generate-report"
-          className="text-text-secondary text-xs font-semibold tracking-[0.16em] uppercase"
-        >
-          Generate daily report
-        </h2>
-        <div className="rounded-card bg-card flex flex-col gap-3 p-4 shadow-card sm:flex-row sm:items-end">
-          <DatePicker
-            label="Report date"
-            value={dayjsLocal(reportDate).toDate()}
-            onChange={(next) =>
-              next && setReportDate(dayjsLocal(next).format('YYYY-MM-DD'))
-            }
-            disableFuture
-            className="w-full sm:w-64"
-          />
-          <Button
-            className="w-full sm:w-auto"
-            onClick={handleGenerate}
-            disabled={
-              createReport.isPending || !hasTransactions || !canGenerateReport
-            }
-            title={
-              canGenerateReport
-                ? undefined
-                : 'Connect and sync pending transactions first'
-            }
-          >
-            {createReport.isPending ? 'Generating…' : 'Generate report'}
-          </Button>
-        </div>
-
-        {txLoading ? (
-          <div className="rounded-card bg-card h-32 animate-pulse shadow-card" />
-        ) : previewReport ? (
-          <ReportDisplay report={previewReport as Report} isPreview />
-        ) : (
-          <p className="text-text-secondary rounded-card bg-card p-4 text-sm shadow-card">
-            No unprocessed activity is available for this date.
-          </p>
-        )}
-      </section>
-
-      {!canGenerateReport && (pendingCount > 0 || blockedCount > 0) && (
-        <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          Report generation is available after this user&apos;s pending transactions
-          are synced. Existing reports remain available.
-        </p>
-      )}
-
       {reportsQuery.data && reportsQuery.data.totalCount > 0 && (
         <ReportSummary totals={reportsQuery.data.totals} />
       )}
 
       <div className="flex items-center gap-3">
-        <ReportFilters
-          preset={preset}
-          range={range}
-          onApply={applyFilter}
-        />
+        <ReportFilters preset={preset} range={range} onApply={applyFilter} />
         <SheetSelect
           value={sort}
           onValueChange={(value) => {
