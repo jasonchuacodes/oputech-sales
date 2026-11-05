@@ -18,6 +18,7 @@ import {
 import { dayjsLocal } from '../../common/utils/date'
 import {
   BadRequestException,
+  ForbiddenException,
   InvalidInputException,
   NotFoundException,
 } from '../../common/exceptions'
@@ -156,12 +157,21 @@ export class ReportService {
     })
   }
 
-  async delete(tenantId: string, reportId: string): Promise<boolean> {
+  async delete(
+    tenantId: string,
+    reportId: string,
+    canDeleteRemitted = false,
+  ): Promise<boolean> {
     this.assertValidReportId(reportId)
     const report = await this.reportModel.findOne({ _id: reportId, tenantId }).exec()
     if (!report) {
       throw new NotFoundException(
         'The requested report was not found.',
+      )
+    }
+    if (report.isRemitted && !canDeleteRemitted) {
+      throw new ForbiddenException(
+        'Administrator access is required to delete a remitted report.',
       )
     }
 

@@ -29,6 +29,8 @@ pnpm test
 
 ## UI rules
 
+- Treat `docs/ui-ux-design-rules.md` as the active implementation guide for UI/UX decisions.
+
 - Design mobile-first for a 390px reference width.
 - Use bottom navigation on phones, a compact rail on tablets, and a sidebar on wide desktops.
 - Inputs and primary buttons are 48px high with 16px input text.

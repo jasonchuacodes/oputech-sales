@@ -11,6 +11,7 @@ import { ReportSortOrder } from './report.types'
 import { AdminGuard } from '../auth/guards/admin.guard'
 import { TenantAccessGuard } from '../tenant/guards/tenant-access.guard'
 import { TenantId } from '../tenant/decorators/tenant-id.decorator'
+import { UserRole } from '../users/schemas/user.schema'
 
 @UseGuards(JwtAuthGuard, TenantAccessGuard)
 @Resolver('Report')
@@ -56,9 +57,15 @@ export class ReportResolver {
   }
 
   @Mutation()
-  @UseGuards(AdminGuard)
-  deleteReport(@TenantId() tenantId: string, @Args('id') id: string): Promise<boolean> {
-    return this.reportService.delete(tenantId, id)
+  deleteReport(
+    @TenantId() tenantId: string,
+    @Args('id') id: string,
+    @Context() context: any,
+  ): Promise<boolean> {
+    const canDeleteRemitted = [UserRole.SuperAdmin, UserRole.Admin].includes(
+      context.req.user?.role,
+    )
+    return this.reportService.delete(tenantId, id, canDeleteRemitted)
   }
 
   @Mutation()

@@ -124,7 +124,8 @@ export const ReportList = ({
           onView={closeAndView}
           onRemit={closeAndRemit}
           onDelete={closeAndDelete}
-          canManage={isAdmin}
+          canRemit={isAdmin}
+          canDelete={isAdmin || !item.isRemitted}
           disabled={actionsDisabled}
           mobile={false}
         />
@@ -223,7 +224,8 @@ export const ReportList = ({
                   onView={closeAndView}
                   onRemit={closeAndRemit}
                   onDelete={closeAndDelete}
-                  canManage={isAdmin}
+                  canRemit={isAdmin}
+                  canDelete={isAdmin || !item.isRemitted}
                   disabled={actionsDisabled}
                   showMobileTrigger={false}
                 />

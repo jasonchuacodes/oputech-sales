@@ -83,10 +83,10 @@ function DataTableComponent<T>({
   const empty = !loading && collection.items.length === 0
 
   return (
-    <div className="rounded-card bg-card shadow-card overflow-hidden md:overflow-x-auto">
+    <div className="rounded-card bg-card shadow-card ring-border/60 overflow-hidden ring-1 md:overflow-x-auto">
       <table id={id} className="block w-full text-sm md:table md:min-w-162.5">
         <thead className="hidden md:table-header-group">
-          <tr className="border-b border-gray-200 bg-slate-50">
+          <tr className="border-border bg-card border-b">
             {columns.map((column, colIdx) => (
               <th
                 key={column.id}
@@ -97,7 +97,7 @@ function DataTableComponent<T>({
                   maxWidth: colIdx === 0 && !column.width ? 360 : undefined,
                 }}
                 className={cn(
-                  'bg-surface h-10 px-4 text-sm font-medium whitespace-nowrap text-slate-600',
+                  'bg-card text-text-secondary h-11 px-4 text-xs font-medium whitespace-nowrap',
                   alignClass[column.align ?? 'left'],
                   column.orderable && 'cursor-pointer select-none',
                   column.id === 'actions' &&

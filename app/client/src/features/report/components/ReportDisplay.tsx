@@ -95,10 +95,11 @@ export const ReportDisplay = ({ report, onDelete }: Props) => {
               />
               {report.isRemitted ? 'Remitted' : 'Not remitted'}
             </span>
-            {isAdmin && (
+            {(isAdmin || onDelete) && (
               <ReportDetailActions
                 reportId={report.id}
                 isRemitted={report.isRemitted}
+                canRemit={isAdmin}
                 onDelete={onDelete ? () => onDelete(report.id) : undefined}
               />
             )}

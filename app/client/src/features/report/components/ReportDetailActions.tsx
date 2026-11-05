@@ -25,10 +25,16 @@ import { useRemit } from '../../../services/report/report.queries'
 interface Props {
   reportId: string
   isRemitted: boolean
+  canRemit?: boolean
   onDelete?: () => void
 }
 
-export const ReportDetailActions = ({ reportId, isRemitted, onDelete }: Props) => {
+export const ReportDetailActions = ({
+  reportId,
+  isRemitted,
+  canRemit = false,
+  onDelete,
+}: Props) => {
   const isDesktop = useIsDesktop()
   const actions = useDisclosure()
   const remit = useRemit()
@@ -61,17 +67,19 @@ export const ReportDetailActions = ({ reportId, isRemitted, onDelete }: Props) =
       <DropdownMenu open={actions.open} onOpenChange={actions.setOpen}>
         <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem disabled={disabled} onSelect={handleRemit}>
-            <RemitIcon />
-            {remitLabel}
-          </DropdownMenuItem>
+          {canRemit && (
+            <DropdownMenuItem disabled={disabled} onSelect={handleRemit}>
+              <RemitIcon />
+              {remitLabel}
+            </DropdownMenuItem>
+          )}
           {onDelete && (
             <DropdownMenuItem
               variant="destructive"
               onSelect={handleDelete}
             >
               <Trash2 />
-              Delete
+              Delete report
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
@@ -98,16 +106,18 @@ export const ReportDetailActions = ({ reportId, isRemitted, onDelete }: Props) =
           </dl>
         </SheetBody>
         <SheetFooter className="flex-col">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            disabled={disabled}
-            onClick={handleRemit}
-          >
-            <RemitIcon />
-            {remitLabel}
-          </Button>
+          {canRemit && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={disabled}
+              onClick={handleRemit}
+            >
+              <RemitIcon />
+              {remitLabel}
+            </Button>
+          )}
           {onDelete && (
             <Button
               type="button"
@@ -116,7 +126,7 @@ export const ReportDetailActions = ({ reportId, isRemitted, onDelete }: Props) =
               onClick={handleDelete}
             >
               <Trash2 />
-              Delete
+              Delete report
             </Button>
           )}
         </SheetFooter>

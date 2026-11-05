@@ -66,7 +66,9 @@ const ReportDetailPage = () => {
       ) : (
         <ReportDisplay
           report={report}
-          onDelete={isAdmin ? deleteReport.onOpen : undefined}
+          onDelete={
+            isAdmin || !report.isRemitted ? deleteReport.onOpen : undefined
+          }
         />
       )}
 

@@ -1,4 +1,4 @@
-import { InvalidInputException } from '../../common/exceptions'
+import { ForbiddenException, InvalidInputException } from '../../common/exceptions'
 import { describe, expect, it, vi } from 'vitest'
 import {
   AnalyticsRange,
@@ -168,6 +168,64 @@ describe('ReportService paginated listing', () => {
       })
     ).rejects.toBeInstanceOf(InvalidInputException)
     expect(aggregate).not.toHaveBeenCalled()
+  })
+})
+
+describe('ReportService deletion permissions', () => {
+  const reportId = '507f1f77bcf86cd799439011'
+
+  it('allows an unremitted report to be deleted without admin access', async () => {
+    const report = {
+      isRemitted: false,
+      transactionIds: [],
+      toDate: new Date('2026-11-05T04:00:00.000Z'),
+      deleteOne: vi.fn().mockResolvedValue(undefined),
+    }
+    const reportModel = {
+      findOne: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(report),
+      }),
+    }
+    const transactionModel = {
+      find: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue([]),
+      }),
+      updateMany: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(undefined),
+      }),
+    }
+    const aggregateModel = {
+      updateOne: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(undefined),
+      }),
+    }
+    const service = new ReportService(
+      reportModel as never,
+      aggregateModel as never,
+      transactionModel as never
+    )
+
+    await expect(service.delete('tenant-1', reportId)).resolves.toBe(true)
+    expect(report.deleteOne).toHaveBeenCalledOnce()
+  })
+
+  it('requires admin access to delete a remitted report', async () => {
+    const reportModel = {
+      findOne: vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue({ isRemitted: true }),
+      }),
+    }
+    const transactionModel = { find: vi.fn() }
+    const service = new ReportService(
+      reportModel as never,
+      {} as never,
+      transactionModel as never
+    )
+
+    await expect(service.delete('tenant-1', reportId)).rejects.toBeInstanceOf(
+      ForbiddenException
+    )
+    expect(transactionModel.find).not.toHaveBeenCalled()
   })
 })
 

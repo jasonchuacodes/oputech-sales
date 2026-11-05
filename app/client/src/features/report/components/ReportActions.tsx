@@ -28,7 +28,8 @@ interface Props {
   onView: (item: ReportListItem) => void
   onRemit: (item: ReportListItem) => void
   onDelete: (item: ReportListItem) => void
-  canManage?: boolean
+  canRemit?: boolean
+  canDelete?: boolean
   disabled?: boolean
   mobile?: boolean
   showMobileTrigger?: boolean
@@ -41,7 +42,8 @@ export const ReportActions = ({
   onView,
   onRemit,
   onDelete,
-  canManage = false,
+  canRemit = false,
+  canDelete = false,
   disabled,
   mobile = true,
   showMobileTrigger = true,
@@ -64,21 +66,21 @@ export const ReportActions = ({
               <Eye />
               View report
             </DropdownMenuItem>
-            {canManage && (
-              <>
-                <DropdownMenuItem disabled={disabled} onSelect={() => onRemit(item)}>
-                  <RemitIcon />
-                  {remitLabel}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={disabled}
-                  variant="destructive"
-                  onSelect={() => onDelete(item)}
-                >
-                  <Trash2 />
-                  Delete
-                </DropdownMenuItem>
-              </>
+            {canRemit && (
+              <DropdownMenuItem disabled={disabled} onSelect={() => onRemit(item)}>
+                <RemitIcon />
+                {remitLabel}
+              </DropdownMenuItem>
+            )}
+            {canDelete && (
+              <DropdownMenuItem
+                disabled={disabled}
+                variant="destructive"
+                onSelect={() => onDelete(item)}
+              >
+                <Trash2 />
+                Delete report
+              </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -130,29 +132,29 @@ export const ReportActions = ({
                   <Eye />
                   View report
                 </Button>
-                {canManage && (
-                  <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full sm:w-auto sm:flex-1"
-                      disabled={disabled}
-                      onClick={() => onRemit(item)}
-                    >
-                      <RemitIcon />
-                      {remitLabel}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      className="w-full sm:w-auto sm:flex-1"
-                      disabled={disabled}
-                      onClick={() => onDelete(item)}
-                    >
-                      <Trash2 />
-                      Delete
-                    </Button>
-                  </>
+                {canRemit && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto sm:flex-1"
+                    disabled={disabled}
+                    onClick={() => onRemit(item)}
+                  >
+                    <RemitIcon />
+                    {remitLabel}
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="w-full sm:w-auto sm:flex-1"
+                    disabled={disabled}
+                    onClick={() => onDelete(item)}
+                  >
+                    <Trash2 />
+                    Delete report
+                  </Button>
                 )}
               </SheetFooter>
             </SheetContent>

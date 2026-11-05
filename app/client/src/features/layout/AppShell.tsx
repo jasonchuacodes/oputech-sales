@@ -15,10 +15,10 @@ import {
   BarChart3,
   Bell,
   Building2,
+  ChevronLeft,
+  ChevronRight,
   House,
   Package,
-  PanelLeftClose,
-  PanelLeftOpen,
   ReceiptText,
   ShoppingBag,
   UserRound,
@@ -140,7 +140,7 @@ const NavigationLink = ({
         'focus-visible:ring-ring/30 flex items-center rounded-sm text-sm font-medium transition-colors outline-none focus-visible:ring-3',
         bottom
           ? 'min-h-16 flex-col justify-center gap-1 rounded-none px-1 py-2 text-xs'
-          : 'min-h-10 gap-2 px-1.5 py-1',
+          : 'min-h-10 gap-2 px-2.5 py-1',
         collapsed && !bottom && 'justify-center gap-0 px-0',
         active
           ? bottom
@@ -154,13 +154,13 @@ const NavigationLink = ({
       <span
         className={cn(
           'flex shrink-0 items-center justify-center',
-          bottom ? 'size-6' : 'size-7'
+          bottom ? 'size-6' : 'size-8'
         )}
       >
         <Icon
           aria-hidden="true"
           strokeWidth={bottom ? (active ? 2 : 1.75) : 2}
-          className={bottom ? 'size-6' : 'size-5'}
+          className={bottom ? 'size-6' : 'size-4'}
         />
       </span>
       <span className={cn(collapsed && !bottom && 'sr-only')}>
@@ -339,9 +339,9 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isSidebarCollapsed ? (
-              <PanelLeftOpen className="size-5" aria-hidden="true" />
+              <ChevronRight className="size-5" aria-hidden="true" />
             ) : (
-              <PanelLeftClose className="size-5" aria-hidden="true" />
+              <ChevronLeft className="size-5" aria-hidden="true" />
             )}
           </Button>
         </div>

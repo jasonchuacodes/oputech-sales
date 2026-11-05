@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeftRight, Building2, Star } from 'lucide-react'
+import { ArrowLeftRight, Building2, ChevronRight, Star } from 'lucide-react'
 import { useTenantContext } from '@/context/tenant/useTenantContext'
 import { cn } from '@/utils/cn'
 
@@ -19,20 +19,25 @@ export const SidebarTenantSwitcher = ({
         aria-label="Active tenant"
         title={collapsed ? tenantName : undefined}
         className={cn(
-          'border-primary/25 bg-primary/5 text-primary flex min-h-10 w-full items-center gap-2 rounded-sm border border-dashed px-2',
-          collapsed && 'justify-center px-1'
+          'border-border/60 bg-background flex min-h-14 w-full items-center gap-2 rounded-sm border px-2.5 py-2',
+          collapsed && 'min-h-11 justify-center px-0 py-0'
         )}
       >
-        <span className="flex size-5 shrink-0 items-center justify-center">
+        <span className="text-text-secondary flex size-8 shrink-0 items-center justify-center">
           <Star className="size-4" aria-hidden="true" />
         </span>
         <span
           className={cn(
-            'min-w-0 flex-1 truncate text-sm font-medium',
+            'min-w-0 flex-1',
             collapsed && 'sr-only'
           )}
         >
-          {tenantName}
+          <span className="text-text-tertiary block text-xs leading-4">
+            Current property
+          </span>
+          <span className="text-text-heading block truncate text-sm leading-5 font-medium">
+            {tenantName}
+          </span>
         </span>
       </div>
     )
@@ -40,22 +45,27 @@ export const SidebarTenantSwitcher = ({
 
   const content = (
     <>
-      <span className="flex size-8 shrink-0 items-center justify-center">
+      <span className="text-text-secondary flex size-8 shrink-0 items-center justify-center">
         {collapsed ? (
-          <ArrowLeftRight className="size-5" aria-hidden="true" />
+          <ArrowLeftRight className="size-4" aria-hidden="true" />
         ) : (
-          <Building2 className="size-5" aria-hidden="true" />
+          <Building2 className="size-4" aria-hidden="true" />
         )}
       </span>
       <span
         className={cn(
-          'min-w-0 flex-1 truncate text-sm font-medium',
+          'min-w-0 flex-1',
           collapsed && 'sr-only'
         )}
       >
-        {tenantName}
+        <span className="text-text-tertiary block text-xs leading-4">
+          Current property
+        </span>
+        <span className="text-text-heading block truncate text-sm leading-5 font-medium">
+          {tenantName}
+        </span>
       </span>
-      <ArrowLeftRight
+      <ChevronRight
         className={cn(
           'text-text-secondary size-4 shrink-0',
           collapsed && 'hidden'
@@ -66,9 +76,8 @@ export const SidebarTenantSwitcher = ({
   )
 
   const className = cn(
-    'bg-primary/5 text-primary focus-visible:ring-ring/30 flex min-h-10 w-full items-center gap-2 rounded-sm px-1.5 text-left text-sm outline-none focus-visible:ring-3',
-    'hover:bg-primary/10',
-    collapsed && 'justify-center px-0'
+    'border-border/60 bg-background hover:bg-surface-hover focus-visible:ring-ring/30 flex min-h-14 w-full items-center gap-2 rounded-sm border px-2.5 py-2 text-left outline-none focus-visible:ring-3',
+    collapsed && 'min-h-11 justify-center px-0 py-0'
   )
 
   return (

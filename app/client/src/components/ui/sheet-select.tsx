@@ -88,14 +88,14 @@ export const SheetSelect = ({
           align="start"
           sideOffset={6}
           aria-label={title}
-          className="p-1.5"
+          className="w-max max-w-[calc(100vw-2rem)] min-w-(--radix-dropdown-menu-trigger-width) p-1.5"
         >
           <DropdownMenuRadioGroup value={value} onValueChange={onValueChange}>
             {options.map((option) => (
               <DropdownMenuRadioItem
                 key={option.value}
                 value={option.value}
-                className="min-h-10 px-3 py-2 pr-9 text-sm"
+                className="min-h-10 px-3 py-2 pr-9 text-sm whitespace-nowrap"
               >
                 {option.label}
               </DropdownMenuRadioItem>
@@ -119,9 +119,9 @@ export const SheetSelect = ({
               <RadioGroup.Item
                 key={option.value}
                 value={option.value}
-                className="group border-border/60 focus-visible:bg-background flex min-h-14 w-full items-center justify-between gap-4 border-b px-5 text-left text-base outline-none last:border-b-0"
+                className="group border-border/60 focus-visible:bg-background flex min-h-14 w-full items-center justify-between gap-4 border-b px-5 text-left text-base whitespace-nowrap outline-none last:border-b-0"
               >
-                <span>{option.label}</span>
+                <span className="min-w-0 flex-1 truncate">{option.label}</span>
                 <span className="border-border text-primary group-data-[state=checked]:border-primary flex size-6 shrink-0 items-center justify-center rounded-full border-2">
                   <RadioGroup.Indicator>
                     <Check className="size-4 stroke-3" />

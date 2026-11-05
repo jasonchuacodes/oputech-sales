@@ -4,6 +4,8 @@
 **Platform:** Mobile-first POS and business operations PWA
 **Reference:** Screenshots under `/assets`
 
+Detailed implementation rules: [`ui-ux-design-rules.md`](./ui-ux-design-rules.md)
+
 ## Product intent
 
 Oputech Sales should feel fast, calm, and dependable during daily sales work. The interface prioritizes touch interaction, clear financial information, offline confidence, and low-friction transaction entry.
