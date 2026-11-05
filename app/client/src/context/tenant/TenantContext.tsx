@@ -7,15 +7,15 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuthContext } from '../auth/useAuthContext'
 import {
-  createTenant,
-  deleteTenant,
-  getTenants,
-  selectTenant,
-  updateTenant,
-} from '../../services/tenant/tenant.api'
+  useCreateTenant,
+  useDeleteTenant,
+  useSelectTenant,
+  useTenants,
+  useUpdateTenant,
+} from '../../services/tenant/tenant.queries'
 import { Tenant } from '../../services/tenant/tenant.types'
 import { setActiveTenantId } from '../../lib/tenant-scope'
 import { UserRole } from '../../types'
@@ -49,11 +49,7 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
     userId: string
     tenantId?: string
   }>()
-  const tenantQuery = useQuery({
-    queryKey: ['tenants', auth?.id],
-    queryFn: getTenants,
-    enabled: !!auth,
-  })
+  const tenantQuery = useTenants(auth?.id)
 
   const activeId = auth
     ? localSelection?.userId === auth.id
@@ -66,45 +62,12 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
     return () => setActiveTenantId(undefined)
   }, [activeId])
 
-  const selectionMutation = useMutation({
-    mutationFn: (tenantId: string) =>
-      selectTenant(tenantId, auth?.tenantSelectionVersion ?? 0),
-    onSuccess: async (user) => {
-      setLocalSelection({ userId: user.id, tenantId: user.currentTenantId })
-      await queryClient.cancelQueries()
-      queryClient.removeQueries({
-        predicate: (query) =>
-          !['auth', 'tenants'].includes(String(query.queryKey[0])),
-      })
-      await refetch()
-    },
-  })
-  const creation = useMutation({
-    mutationFn: createTenant,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['tenants', auth?.id] })
-      await refetch()
-    },
-  })
-  const update = useMutation({
-    mutationFn: updateTenant,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['tenants', auth?.id] })
-    },
-  })
-  const deletion = useMutation({
-    mutationFn: deleteTenant,
-    onSuccess: async (_, tenantId) => {
-      if (activeId === tenantId) setLocalSelection(undefined)
-      await queryClient.cancelQueries()
-      queryClient.removeQueries({
-        predicate: (query) =>
-          !['auth', 'tenants'].includes(String(query.queryKey[0])),
-      })
-      await queryClient.invalidateQueries({ queryKey: ['tenants', auth?.id] })
-      await refetch()
-    },
-  })
+  const selectionMutation = useSelectTenant(
+    auth?.tenantSelectionVersion ?? 0
+  )
+  const creation = useCreateTenant(auth?.id)
+  const update = useUpdateTenant(auth?.id)
+  const deletion = useDeleteTenant(auth?.id)
 
   const tenants = useMemo(() => tenantQuery.data ?? [], [tenantQuery.data])
   const currentTenant = tenants.find((tenant) => tenant.id === activeId)
@@ -122,18 +85,41 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
       creating: creation.isPending,
       updating: update.isPending,
       deleting: deletion.isPending,
-      switchTenant: async (tenantId) =>
-        selectionMutation.mutateAsync(tenantId).then(() => undefined),
-      create: creation.mutateAsync,
+      switchTenant: async (tenantId) => {
+        const user = await selectionMutation.mutateAsync(tenantId)
+        setLocalSelection({ userId: user.id, tenantId: user.currentTenantId })
+        await queryClient.cancelQueries()
+        queryClient.removeQueries({
+          predicate: (query) =>
+            !['auth', 'tenants'].includes(String(query.queryKey[0])),
+        })
+        await refetch()
+      },
+      create: async (name) => {
+        const tenant = await creation.mutateAsync(name)
+        await refetch()
+        return tenant
+      },
       update: (tenantId, name) => update.mutateAsync({ tenantId, name }),
-      remove: async (tenantId) =>
-        deletion.mutateAsync(tenantId).then(() => undefined),
+      remove: async (tenantId) => {
+        await deletion.mutateAsync(tenantId)
+        if (activeId === tenantId) setLocalSelection(undefined)
+        await queryClient.cancelQueries()
+        queryClient.removeQueries({
+          predicate: (query) =>
+            !['auth', 'tenants'].includes(String(query.queryKey[0])),
+        })
+        await refetch()
+      },
     }),
     [
       auth,
+      activeId,
       creation,
       currentTenant,
       deletion,
+      queryClient,
+      refetch,
       selectionMutation,
       tenantQuery.isLoading,
       tenants,
