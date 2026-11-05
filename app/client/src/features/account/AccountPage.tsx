@@ -75,7 +75,7 @@ export const AccountPage = () => {
               : 'No pending changes'
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-5 md:p-6">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-2 py-5 md:p-6">
       <section className="rounded-card bg-card shadow-card flex items-center gap-4 p-4">
         <AccountAvatar
           username={auth?.username}

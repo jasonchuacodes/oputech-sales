@@ -13,7 +13,7 @@ export function LoginLayout({
     <div className="relative flex h-dvh flex-col overflow-hidden">
       <div
         className={cn(
-          'bg-background relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto',
+          'app-canvas relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto',
           className
         )}
         {...props}

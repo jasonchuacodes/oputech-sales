@@ -59,6 +59,24 @@
   --sidebar-accent-foreground: #17434d;
   --sidebar-border: rgb(16 16 16 / 12%);
   --sidebar-ring: #17434d;
+
+  /* Shared light direction for the app canvas and raised surfaces. */
+  --canvas-wash: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--primary) 5%, var(--background)) 0,
+    var(--background) 38rem
+  );
+  --surface-tone: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 10%) 0%,
+    transparent 45%,
+    color-mix(in srgb, var(--foreground) 2.5%, transparent) 100%
+  );
+  --surface-tone-pressed: linear-gradient(
+    180deg,
+    rgb(16 16 16 / 1.5%) 0%,
+    rgb(16 16 16 / 5.5%) 100%
+  );
 }
 
 @theme inline {

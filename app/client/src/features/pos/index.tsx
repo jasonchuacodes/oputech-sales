@@ -110,7 +110,7 @@ const POSPage = () => {
   }
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-5 p-5 md:p-6">
+    <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-5 px-2 py-5 md:p-6">
       <PageHeader
         title="New sale"
         description="Choose products to build the order"

@@ -13,10 +13,11 @@ interface ProductCardProps {
 export const ProductCard = ({ product, quantity = 0, onClick }: ProductCardProps) => {
   return (
     <button
+      type="button"
       onClick={() => onClick(product)}
       className={cn(
-        'relative flex min-h-44 min-w-[120px] flex-col gap-3 rounded-card border-2 border-transparent bg-card p-3 text-left shadow-card transition-all',
-        'cursor-pointer hover:shadow-card-hover active:scale-[0.98]',
+        'relative flex min-h-44 min-w-[120px] flex-col gap-3 rounded-card border-2 border-transparent bg-card p-3 text-left shadow-card transition-[border-color,box-shadow,transform] outline-none',
+        'cursor-pointer hover:shadow-card-hover focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.98] motion-reduce:transform-none motion-reduce:transition-none',
         quantity > 0 && 'border-primary/50'
       )}
     >
@@ -41,7 +42,7 @@ export const ProductCard = ({ product, quantity = 0, onClick }: ProductCardProps
         <span className="line-clamp-2 text-sm leading-snug font-medium text-text-secondary">
           {product.name}
         </span>
-        <span className="text-base font-semibold text-foreground">
+        <span className="text-base font-semibold text-foreground tabular-nums">
           {formatCurrency(product.price)}
         </span>
       </div>

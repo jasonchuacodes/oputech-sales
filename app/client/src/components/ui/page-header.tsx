@@ -5,8 +5,8 @@ interface PageHeaderProps {
 }
 
 export const PageHeader = ({ title, description, action }: PageHeaderProps) => (
-  <div className="flex items-start justify-between gap-4">
-    <div className="flex flex-col gap-0.5">
+  <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+    <div className="flex min-w-0 flex-col gap-0.5">
       <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
         {title}
       </h1>
@@ -14,6 +14,6 @@ export const PageHeader = ({ title, description, action }: PageHeaderProps) => (
         <p className="text-text-secondary text-sm">{description}</p>
       )}
     </div>
-    {action && <div>{action}</div>}
+    {action && <div className="shrink-0">{action}</div>}
   </div>
 )

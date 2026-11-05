@@ -32,6 +32,30 @@
   }
 }
 
+@layer components {
+  .app-canvas {
+    background-color: var(--background);
+    background-image: var(--canvas-wash);
+  }
+
+  /* Extend the existing card utility so every raised surface shares one tone. */
+  .bg-card,
+  .surface-tonal,
+  [data-slot='button']:not(
+      [data-variant='ghost'],
+      [data-variant='link']
+    ) {
+    background-image: var(--surface-tone);
+  }
+
+  [data-slot='button']:not(
+      [data-variant='ghost'],
+      [data-variant='link']
+    ):active {
+    background-image: var(--surface-tone-pressed);
+  }
+}
+
 @keyframes sync-status-dismiss {
   0%,
   75% {

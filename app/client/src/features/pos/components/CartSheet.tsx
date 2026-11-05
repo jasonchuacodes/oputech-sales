@@ -38,10 +38,10 @@ export const CartSheet = ({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 md:hidden" onPointerDown={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50" onPointerDown={(e) => e.stopPropagation()}>
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div
-        className="absolute right-0 bottom-0 left-0 flex max-h-[90vh] flex-col rounded-t-2xl bg-white shadow-xl"
+        className="absolute right-0 bottom-0 left-0 flex max-h-[90vh] flex-col rounded-t-2xl bg-card shadow-xl"
         style={{
           transform: `translateY(${dragOffset}px)`,
           transition: isDragging ? 'none' : 'transform 200ms ease-out',
