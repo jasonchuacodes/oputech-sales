@@ -85,7 +85,7 @@ export const SheetSelect = ({
       <DropdownMenu open={selection.open} onOpenChange={selection.setOpen}>
         <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
         <DropdownMenuContent
-          align="start"
+          align="end"
           sideOffset={6}
           aria-label={title}
           className="w-max max-w-[calc(100vw-2rem)] min-w-(--radix-dropdown-menu-trigger-width) p-1.5"
