@@ -1,18 +1,17 @@
-import cors, { CorsOptions } from 'cors';
+import cors, { CorsOptions } from 'cors'
 
 export const corsMiddleware = () => {
-  const whitelist = [process.env.CLIENT_URL as string];
+  const whitelist: (string | RegExp)[] =
+    process.env.NODE_ENV === 'production'
+      ? process.env.CLIENT_URL
+        ? [process.env.CLIENT_URL]
+        : []
+      : [/^https?:\/\/localhost(?::\d+)?$/]
 
   const corsOptions: CorsOptions = {
-    origin: (origin, callback) => {
-      if (!origin || whitelist.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: whitelist,
     credentials: true,
-  };
+  }
 
-  return cors(corsOptions);
-};
+  return cors(corsOptions)
+}
