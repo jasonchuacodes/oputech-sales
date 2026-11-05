@@ -19,39 +19,10 @@ import { LogExpenseModal } from './components/LogExpenseModal'
 import { TransactionActionsSheet } from './components/TransactionActionsSheet'
 import { TransactionActions } from './components/TransactionActions'
 import { useDisclosure } from '../../hooks/useDisclosure'
-
-const getTransactionTitle = (transaction: Transaction) => {
-  if (transaction.type === TransactionType.Expense) {
-    return transaction.label || 'Expense'
-  }
-
-  const [firstItem, ...remainingItems] = transaction.items
-  if (!firstItem) return 'Sale'
-
-  const firstItemLabel = `${firstItem.name}${firstItem.quantity > 1 ? ` ×${firstItem.quantity}` : ''}`
-  return remainingItems.length > 0
-    ? `${firstItemLabel} +${remainingItems.length} more`
-    : firstItemLabel
-}
-
-const getStatus = (transaction: Transaction) => {
-  if (transaction.syncState === 'blocked') {
-    return {
-      label: 'Sync blocked',
-      className: 'bg-destructive/10 text-destructive',
-    }
-  }
-  if (transaction.syncState === 'deleting') {
-    return { label: 'Deleting', className: 'bg-info/10 text-info' }
-  }
-  if (transaction.syncState === 'pending') {
-    return { label: 'Unsynced', className: 'bg-info/10 text-info' }
-  }
-  if (transaction.processed) {
-    return { label: 'Processed', className: 'bg-success/10 text-success' }
-  }
-  return { label: 'Pending report', className: 'bg-warning/10 text-warning' }
-}
+import {
+  getTransactionStatus,
+  getTransactionTitle,
+} from './transaction-display'
 
 const TransactionsPage = () => {
   const [date, setDate] = useState(dayjsLocal().format('YYYY-MM-DD'))
@@ -130,7 +101,7 @@ const TransactionsPage = () => {
       id: 'status',
       heading: 'Status',
       cell: (item) => {
-        const status = getStatus(item)
+        const status = getTransactionStatus(item)
         return (
           <span className={cn('rounded-full px-2.5 py-1 text-xs font-medium', status.className)}>
             {status.label}
@@ -222,7 +193,7 @@ const TransactionsPage = () => {
             {transactions.map((transaction) => {
               const isExpense = transaction.type === TransactionType.Expense
               const Icon = isExpense ? Receipt : ShoppingBag
-              const status = getStatus(transaction)
+              const status = getTransactionStatus(transaction)
               const title = getTransactionTitle(transaction)
 
               return (
