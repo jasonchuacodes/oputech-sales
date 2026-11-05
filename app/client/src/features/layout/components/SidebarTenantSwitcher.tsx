@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeftRight, Building2, ChevronRight, Star } from 'lucide-react'
+import { Building2, ChevronsUpDown, Star } from 'lucide-react'
 import { useTenantContext } from '@/context/tenant/useTenantContext'
 import { cn } from '@/utils/cn'
 
@@ -47,7 +47,7 @@ export const SidebarTenantSwitcher = ({
     <>
       <span className="text-text-secondary flex size-8 shrink-0 items-center justify-center">
         {collapsed ? (
-          <ArrowLeftRight className="size-4" aria-hidden="true" />
+          <ChevronsUpDown className="size-4" aria-hidden="true" />
         ) : (
           <Building2 className="size-4" aria-hidden="true" />
         )}
@@ -65,7 +65,7 @@ export const SidebarTenantSwitcher = ({
           {tenantName}
         </span>
       </span>
-      <ChevronRight
+      <ChevronsUpDown
         className={cn(
           'text-text-secondary size-4 shrink-0',
           collapsed && 'hidden'
