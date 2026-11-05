@@ -5,7 +5,6 @@ import {
   ArrowLeftRight,
   Building2,
   Check,
-  MoreVertical,
   Pencil,
   Plus,
   Trash2,
@@ -15,11 +14,6 @@ import {
   Button,
   ConfirmationDialog,
   CustomModal,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
   Input,
   Label,
   PageHeader,
@@ -29,6 +23,7 @@ import { useSyncContext } from '@/context/sync/useSyncContext'
 import { useTenantContext } from '@/context/tenant/useTenantContext'
 import { getApiErrorMessage } from '@/lib/api-error'
 import type { Tenant } from '@/services/tenant/tenant.types'
+import { ActionsDropdown } from './components/ActionsDropdown'
 
 const TenantsPage = () => {
   const tenant = useTenantContext()
@@ -189,47 +184,15 @@ const TenantsPage = () => {
                   </span>
                 </span>
                 {(tenant.canEdit || tenant.canDelete) && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-11"
-                        disabled={busy}
-                        aria-label={`Actions for ${item.name}`}
-                        title="Tenant actions"
-                      >
-                        <MoreVertical className="size-4" aria-hidden="true" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40">
-                      {tenant.canEdit && (
-                        <DropdownMenuItem onSelect={() => openEdit(item)}>
-                          <Pencil className="size-4" aria-hidden="true" />
-                          Edit name
-                        </DropdownMenuItem>
-                      )}
-                      {tenant.canEdit && tenant.canDelete && (
-                        <DropdownMenuSeparator />
-                      )}
-                      {tenant.canDelete && (
-                        <DropdownMenuItem
-                          variant="destructive"
-                          disabled={tenant.tenants.length <= 1}
-                          title={
-                            tenant.tenants.length <= 1
-                              ? 'You must keep at least one tenant'
-                              : `Delete ${item.name}`
-                          }
-                          onSelect={() => setTenantToDelete(item)}
-                        >
-                          <Trash2 className="size-4" aria-hidden="true" />
-                          Delete
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <ActionsDropdown
+                    tenantName={item.name}
+                    canEdit={tenant.canEdit}
+                    canDelete={tenant.canDelete}
+                    deleteDisabled={tenant.tenants.length <= 1}
+                    busy={busy}
+                    onEdit={() => openEdit(item)}
+                    onDelete={() => setTenantToDelete(item)}
+                  />
                 )}
               </li>
             )
