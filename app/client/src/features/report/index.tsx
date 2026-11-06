@@ -38,6 +38,8 @@ const ReportPage = () => {
   const router = useRouter()
   const { auth } = useAuthContext()
   const isAdmin = auth?.role !== UserRole.STAFF
+  const canViewSummary =
+    auth?.role === UserRole.ADMIN || auth?.role === UserRole.SUPERADMIN
   const [preset, setPreset] = useState<ReportFilterPreset>('this_month')
   const [range, setRange] = useState<ReportCalendarRange>(() =>
     getReportPresetRange('this_month')
@@ -88,16 +90,18 @@ const ReportPage = () => {
         description="Review generated reports, totals, and remittance status."
       />
 
-      <ReportSummary
-        totals={reportsQuery.data?.totals ?? EMPTY_REPORT_TOTALS}
-        action={
-          <ReportFilters
-            preset={preset}
-            range={range}
-            onApply={applyFilter}
-          />
-        }
-      />
+      {canViewSummary && (
+        <ReportSummary
+          totals={reportsQuery.data?.totals ?? EMPTY_REPORT_TOTALS}
+          action={
+            <ReportFilters
+              preset={preset}
+              range={range}
+              onApply={applyFilter}
+            />
+          }
+        />
+      )}
 
       <ContentSection
         label="Generated reports"
