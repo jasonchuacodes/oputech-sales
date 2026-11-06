@@ -45,11 +45,11 @@ export const AccountPage = () => {
         ? 'Sign in to sync'
         : sync.reachability === 'unreachable'
           ? 'Working offline'
-          : syncBusy
-            ? 'Syncing changes'
-            : sync.pendingCount > 0
-              ? `${sync.pendingCount} changes pending`
-              : 'No pending changes'
+            : syncBusy
+              ? 'Syncing changes'
+              : sync.pendingCount > 0
+                ? `${sync.pendingCount} changes pending`
+                : 'Device is up to date'
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-5 py-5 md:p-6">
@@ -111,6 +111,23 @@ export const AccountPage = () => {
                   ? `Last refreshed ${formatTime(sync.lastSyncAt)}`
                   : 'Not refreshed on this device yet')}
             </p>
+            {sync.storagePersistent === false && sync.pendingCount > 0 && (
+              <p className="text-status-warning text-sm">
+                Browser storage is not guaranteed. Sync pending changes soon.
+              </p>
+            )}
+            {sync.storagePressure && (
+              <p className="text-status-error text-sm">
+                Browser storage is nearly full.
+              </p>
+            )}
+            {sync.otherUserPendingCount > 0 && (
+              <p className="text-text-tertiary text-sm">
+                {sync.otherUserPendingCount}{' '}
+                {sync.otherUserPendingCount === 1 ? 'change is' : 'changes are'}{' '}
+                waiting for another user.
+              </p>
+            )}
           </div>
           <Button
             className="w-full"

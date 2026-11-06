@@ -33,5 +33,5 @@ export const getTransactionStatus = (transaction: Transaction) => {
   if (transaction.processed) {
     return { label: 'Processed', className: 'bg-success/10 text-success' }
   }
-  return { label: 'Pending report', className: 'bg-warning/10 text-warning' }
+  return { label: 'Pending', className: 'bg-warning/10 text-warning' }
 }

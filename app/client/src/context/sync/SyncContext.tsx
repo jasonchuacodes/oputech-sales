@@ -276,6 +276,11 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
     [runSync]
   )
 
+  const refreshInBackground = useCallback(
+    () => runSync({ source: 'automatic', refreshSnapshot: true }),
+    [runSync]
+  )
+
   const retryBlocked = useCallback(
     () => runSync({ source: 'manual', retryBlocked: true }),
     [runSync]
@@ -439,6 +444,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
       canGenerateReport: canUseQueueSensitiveFeatures,
       canModifyCatalog: canUseQueueSensitiveFeatures,
       syncNow,
+      refreshInBackground,
       retryBlocked,
     }),
     [
@@ -456,6 +462,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
       storagePressure,
       canUseQueueSensitiveFeatures,
       syncNow,
+      refreshInBackground,
       retryBlocked,
     ]
   )

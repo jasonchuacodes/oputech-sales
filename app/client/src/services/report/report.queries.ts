@@ -16,6 +16,8 @@ import {
 import { CreateReportInput, ReportsPageParams } from './report.types'
 import { useSyncContext } from '../../context/sync/useSyncContext'
 import { useTenantContext } from '../../context/tenant/useTenantContext'
+import { useAuthContext } from '../../context/auth/useAuthContext'
+import { countPendingOutboxOperations } from '../../offline/database'
 
 export const useReports = () => {
   const { currentTenant } = useTenantContext()
@@ -53,16 +55,21 @@ export const useReport = (id?: string) => {
 
 export const useCreateReport = () => {
   const queryClient = useQueryClient()
-  const { canGenerateReport, syncNow } = useSyncContext()
+  const { auth } = useAuthContext()
+  const { canGenerateReport, refreshInBackground } = useSyncContext()
   const { currentTenant } = useTenantContext()
   const tenantId = currentTenant?.id
   return useMutation({
     networkMode: 'always',
-    mutationFn: (input: CreateReportInput) => {
+    mutationFn: async (input: CreateReportInput) => {
       if (!canGenerateReport) {
         throw new Error('Sync all transactions before generating a report')
       }
       if (!tenantId) throw new Error('Select a tenant before generating a report')
+      if (!auth?.id) throw new Error('Sign in before generating a report')
+      if ((await countPendingOutboxOperations(auth.id, tenantId)) > 0) {
+        throw new Error('Sync all transactions before generating a report')
+      }
       return createReport(input, tenantId)
     },
     onSuccess: () => {
@@ -70,7 +77,7 @@ export const useCreateReport = () => {
       queryClient.invalidateQueries({ queryKey: ['reports'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['analytics'] })
-      void syncNow()
+      void refreshInBackground()
     },
     onError: (error: Error) => {
       toast.error(error.message)
@@ -80,16 +87,21 @@ export const useCreateReport = () => {
 
 export const useDeleteReport = () => {
   const queryClient = useQueryClient()
-  const { canGenerateReport, syncNow } = useSyncContext()
+  const { auth } = useAuthContext()
+  const { canGenerateReport, refreshInBackground } = useSyncContext()
   const { currentTenant } = useTenantContext()
   const tenantId = currentTenant?.id
   return useMutation({
     networkMode: 'always',
-    mutationFn: (id: string) => {
+    mutationFn: async (id: string) => {
       if (!canGenerateReport) {
         throw new Error('Sync all transactions before deleting a report')
       }
       if (!tenantId) throw new Error('Select a tenant before deleting a report')
+      if (!auth?.id) throw new Error('Sign in before deleting a report')
+      if ((await countPendingOutboxOperations(auth.id, tenantId)) > 0) {
+        throw new Error('Sync all transactions before deleting a report')
+      }
       return deleteReport(id, tenantId)
     },
     onSuccess: (_, id) => {
@@ -98,7 +110,7 @@ export const useDeleteReport = () => {
       queryClient.invalidateQueries({ queryKey: ['reports'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['analytics'] })
-      void syncNow()
+      void refreshInBackground()
     },
     onError: (error: Error) => {
       toast.error(error.message)

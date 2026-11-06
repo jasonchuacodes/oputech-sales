@@ -2,7 +2,14 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Plus, Receipt, ShoppingBag } from 'lucide-react'
+import {
+  ChevronRight,
+  FileText,
+  Plus,
+  Receipt,
+  RefreshCw,
+  ShoppingBag,
+} from 'lucide-react'
 import { Button, ContentSection, PageHeader, Spinner } from '../../components'
 import { DataTable, type DataTableColumn } from '../../components/ui/data-table'
 import { DatePicker } from '../../components/ui/date-picker'
@@ -36,7 +43,7 @@ const TransactionsPage = () => {
   const deleteTransaction = useDisclosure()
   const logExpense = useDisclosure()
   const createReport = useCreateReport()
-  const { canGenerateReport } = useSyncContext()
+  const sync = useSyncContext()
 
   const { data, isLoading } = useTransactions({
     from: dayjsLocal(date).startOf('day').toISOString(),
@@ -55,6 +62,51 @@ const TransactionsPage = () => {
   const pendingReportTransactions = transactions.filter(
     (transaction) => !transaction.processed
   )
+  const showGenerateReport =
+    !isLoading && pendingReportTransactions.length > 0
+  const pendingReportTotal = pendingReportTransactions.reduce(
+    (total, transaction) =>
+      total +
+      (transaction.type === TransactionType.Expense
+        ? -transaction.total
+        : transaction.total),
+    0
+  )
+  const formattedPendingReportTotal =
+    pendingReportTotal < 0
+      ? `-${formatCurrency(Math.abs(pendingReportTotal))}`
+      : formatCurrency(pendingReportTotal)
+  const syncBusy = sync.phase === 'checking' || sync.phase === 'syncing'
+  const changeLabel = `${sync.pendingCount} ${sync.pendingCount === 1 ? 'change' : 'changes'}`
+  const reportSyncMessage = !sync.statsReady
+    ? sync.lastError
+      ? 'Saved changes could not be checked on this device.'
+      : 'Checking saved changes…'
+    : sync.authRequired
+      ? 'Sign in again to sync changes and generate this report.'
+      : sync.phase === 'checking'
+        ? 'Checking connection…'
+        : sync.phase === 'syncing'
+          ? 'Syncing changes before generating this report.'
+          : sync.blockedCount > 0
+            ? `${sync.blockedCount} ${sync.blockedCount === 1 ? 'change needs' : 'changes need'} attention before generating this report.`
+            : sync.reachability === 'unreachable'
+              ? sync.pendingCount > 0
+                ? `Connect to the server and sync ${changeLabel} before generating this report.`
+                : 'Connect to the server before generating this report.'
+              : sync.pendingCount > 0
+                ? sync.phase === 'backoff'
+                  ? `${changeLabel} ${sync.pendingCount === 1 ? 'is' : 'are'} waiting to sync before generating this report.`
+                  : `Sync ${changeLabel} before generating this report.`
+                : 'Finish refreshing activity before generating this report.'
+  const canRequestSync =
+    sync.statsReady && !sync.authRequired && !syncBusy
+  const syncActionLabel =
+    sync.blockedCount > 0
+      ? 'Retry blocked changes'
+      : sync.reachability === 'unreachable'
+        ? 'Check connection and sync'
+        : 'Sync pending changes'
 
   const handleGenerateReport = () => {
     createReport.mutate(
@@ -159,6 +211,28 @@ const TransactionsPage = () => {
     },
   ]
 
+  const reportFooter = showGenerateReport ? (
+    <div className="border-border/60 flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-text-secondary text-sm font-normal">
+        {pendingReportTransactions.length}{' '}
+        {pendingReportTransactions.length === 1
+          ? 'pending transaction'
+          : 'pending transactions'}{' '}
+        - Total: {formattedPendingReportTotal}
+      </p>
+      <Button
+        size="sm"
+        className="w-full sm:w-auto"
+        onClick={handleGenerateReport}
+        disabled={createReport.isPending || !sync.canGenerateReport}
+        title={sync.canGenerateReport ? undefined : reportSyncMessage}
+      >
+        <FileText aria-hidden="true" />
+        {createReport.isPending ? 'Generating…' : 'Generate report'}
+      </Button>
+    </div>
+  ) : null
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-5 md:p-6">
       <PageHeader
@@ -193,6 +267,37 @@ const TransactionsPage = () => {
           </div>
         }
       >
+        {showGenerateReport && !sync.canGenerateReport && (
+          <div className="border-warning/25 bg-warning/10 text-text-secondary mb-2 flex min-h-14 w-full items-center gap-2 rounded-md border py-1.5 pr-1.5 pl-3 text-sm">
+            <p className="min-w-0 flex-1" role="status" aria-live="polite">
+              {reportSyncMessage}
+            </p>
+            {(syncBusy || canRequestSync) && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="text-status-warning hover:bg-warning/10"
+                disabled={syncBusy}
+                aria-label={syncBusy ? 'Syncing changes' : syncActionLabel}
+                title={syncBusy ? 'Syncing changes' : syncActionLabel}
+                onClick={() =>
+                  void (sync.blockedCount > 0
+                    ? sync.retryBlocked()
+                    : sync.syncNow())
+                }
+              >
+                <RefreshCw
+                  className={cn(
+                    syncBusy && 'animate-spin motion-reduce:animate-none'
+                  )}
+                  aria-hidden="true"
+                />
+              </Button>
+            )}
+          </div>
+        )}
+
         {isLoading ? (
           <div className="rounded-card bg-card shadow-card flex min-h-40 items-center justify-center">
             <Spinner />
@@ -211,78 +316,81 @@ const TransactionsPage = () => {
           </div>
         ) : (
           <>
-            <ul className="rounded-card bg-card shadow-card overflow-hidden md:hidden">
-              {transactions.map((transaction) => {
-                const isExpense = transaction.type === TransactionType.Expense
-                const Icon = isExpense ? Receipt : ShoppingBag
-                const status = getTransactionStatus(transaction)
-                const title = getTransactionTitle(transaction)
+            <div className="rounded-card bg-card shadow-card overflow-hidden md:hidden">
+              <ul>
+                {transactions.map((transaction) => {
+                  const isExpense = transaction.type === TransactionType.Expense
+                  const Icon = isExpense ? Receipt : ShoppingBag
+                  const status = getTransactionStatus(transaction)
+                  const title = getTransactionTitle(transaction)
 
-                return (
-                  <li
-                    key={transaction.id}
-                    className="border-border/60 border-b last:border-b-0"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => openActions(transaction)}
-                      className="hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:ring-ring/30 grid min-h-24 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-inset sm:px-4"
-                      aria-label={`Open actions for ${title}`}
+                  return (
+                    <li
+                      key={transaction.id}
+                      className="border-border/60 border-b last:border-b-0"
                     >
-                      <span
-                        className={cn(
-                          'flex size-10 shrink-0 items-center justify-center rounded-full',
-                          isExpense
-                            ? 'bg-destructive/10 text-destructive'
-                            : 'bg-primary/10 text-primary'
-                        )}
+                      <button
+                        type="button"
+                        onClick={() => openActions(transaction)}
+                        className="hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:ring-ring/30 grid min-h-24 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-inset sm:px-4"
+                        aria-label={`Open actions for ${title}`}
                       >
-                        <Icon className="size-5" aria-hidden="true" />
-                      </span>
-
-                      <span className="flex min-w-0 flex-col gap-1">
-                        <span className="text-text-heading truncate font-medium">{title}</span>
-                        <span className="text-text-tertiary truncate text-sm">
-                          {isExpense ? 'Expense' : 'Sale'} ·{' '}
-                          {transaction.paymentType === PaymentType.Cash
-                            ? 'Cash'
-                            : 'Online'}
+                        <span
+                          className={cn(
+                            'flex size-10 shrink-0 items-center justify-center rounded-full',
+                            isExpense
+                              ? 'bg-destructive/10 text-destructive'
+                              : 'bg-primary/10 text-primary'
+                          )}
+                        >
+                          <Icon className="size-5" aria-hidden="true" />
                         </span>
-                        <span className="text-text-tertiary text-sm">
-                          {formatTime(transaction.occurredAt)}
-                        </span>
-                      </span>
 
-                      <span className="flex items-center gap-1">
-                        <span className="flex flex-col items-end gap-2">
-                          <span
-                            className={cn(
-                              'font-semibold whitespace-nowrap',
-                              isExpense && 'text-destructive'
-                            )}
-                          >
-                            {isExpense ? '-' : ''}
-                            {formatCurrency(transaction.total)}
+                        <span className="flex min-w-0 flex-col gap-1">
+                          <span className="text-text-heading truncate font-medium">{title}</span>
+                          <span className="text-text-tertiary truncate text-sm">
+                            {isExpense ? 'Expense' : 'Sale'} ·{' '}
+                            {transaction.paymentType === PaymentType.Cash
+                              ? 'Cash'
+                              : 'Online'}
                           </span>
-                          <span
-                            className={cn(
-                              'rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap',
-                              status.className
-                            )}
-                          >
-                            {status.label}
+                          <span className="text-text-tertiary text-sm">
+                            {formatTime(transaction.occurredAt)}
                           </span>
                         </span>
-                        <ChevronRight
-                          className="text-text-tertiary size-5 shrink-0"
-                          aria-hidden="true"
-                        />
-                      </span>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
+
+                        <span className="flex items-center gap-1">
+                          <span className="flex flex-col items-end gap-2">
+                            <span
+                              className={cn(
+                                'font-semibold whitespace-nowrap',
+                                isExpense && 'text-destructive'
+                              )}
+                            >
+                              {isExpense ? '-' : ''}
+                              {formatCurrency(transaction.total)}
+                            </span>
+                            <span
+                              className={cn(
+                                'rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap',
+                                status.className
+                              )}
+                            >
+                              {status.label}
+                            </span>
+                          </span>
+                          <ChevronRight
+                            className="text-text-tertiary size-5 shrink-0"
+                            aria-hidden="true"
+                          />
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+              {reportFooter}
+            </div>
             <div className="hidden md:block">
               <DataTable
                 collection={DataTable.collection({
@@ -291,32 +399,10 @@ const TransactionsPage = () => {
                   itemToString: (item) => getTransactionTitle(item),
                 })}
                 columns={columns}
+                footer={reportFooter}
               />
             </div>
           </>
-        )}
-
-        {!isLoading && pendingReportTransactions.length > 0 && (
-          <div className="flex flex-col items-end gap-2 pt-2">
-            {!canGenerateReport && (
-              <p className="w-full rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                Connect and finish syncing pending activity before generating
-                this report.
-              </p>
-            )}
-            <Button
-              className="h-10 px-2.5"
-              onClick={handleGenerateReport}
-              disabled={createReport.isPending || !canGenerateReport}
-              title={
-                canGenerateReport
-                  ? undefined
-                  : 'Connect and sync pending transactions first'
-              }
-            >
-              {createReport.isPending ? 'Generating…' : 'Generate report'}
-            </Button>
-          </div>
         )}
       </ContentSection>
 

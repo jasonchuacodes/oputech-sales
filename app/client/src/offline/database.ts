@@ -126,6 +126,15 @@ class OfflineDatabase extends Dexie {
 
 export const offlineDb = new OfflineDatabase()
 
+export const countPendingOutboxOperations = (
+  ownerUserId: string,
+  tenantId: string
+) =>
+  offlineDb.outbox
+    .where('[tenantId+ownerUserId]')
+    .equals([tenantId, ownerUserId])
+    .count()
+
 const AUTH_KEY = 'cached-auth'
 const LAST_SYNC_KEY = 'last-sync-at'
 const SNAPSHOT_REFRESH_NEEDED_KEY = 'snapshot-refresh-needed'

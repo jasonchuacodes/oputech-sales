@@ -20,6 +20,7 @@ export interface SyncContextValue {
   canGenerateReport: boolean
   canModifyCatalog: boolean
   syncNow: () => Promise<void>
+  refreshInBackground: () => Promise<void>
   retryBlocked: () => Promise<void>
 }
 
@@ -35,6 +36,7 @@ const initialValue: SyncContextValue = {
   canGenerateReport: false,
   canModifyCatalog: false,
   syncNow: async () => undefined,
+  refreshInBackground: async () => undefined,
   retryBlocked: async () => undefined,
 }
 

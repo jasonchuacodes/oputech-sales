@@ -30,7 +30,6 @@ import { UserRole } from '@/types'
 import { cn } from '@/utils/cn'
 import { Button, Spinner } from '@/components'
 import { AccountAvatar } from '@/features/account/components/AccountAvatar'
-import { SyncStatus } from './components/SyncStatus'
 import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
 import { SidebarTenantSwitcher } from './components/SidebarTenantSwitcher'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
@@ -424,8 +423,6 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
           </div>
         </nav>
       </div>
-
-      <SyncStatus />
     </div>
   )
 }

@@ -29,6 +29,7 @@ interface DataTableProps<T> {
   onRowClick?: (item: T) => void
   loading?: boolean
   emptyMessage?: string
+  footer?: React.ReactNode
 }
 
 const alignClass = {
@@ -53,6 +54,7 @@ function DataTableComponent<T>({
   onRowClick,
   loading = false,
   emptyMessage = 'No data available',
+  footer,
 }: DataTableProps<T>) {
   const [sortConfig, setSortConfig] = useState<SortConfig>(null)
 
@@ -233,6 +235,7 @@ function DataTableComponent<T>({
             </tfoot>
           )}
       </table>
+      {footer}
     </div>
   )
 }
