@@ -13,7 +13,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   BarChart3,
-  Bell,
   Building2,
   ChevronLeft,
   ChevronRight,
@@ -35,7 +34,6 @@ import { SyncStatus } from './components/SyncStatus'
 import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
 import { SidebarTenantSwitcher } from './components/SidebarTenantSwitcher'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
-import { useTenantContext } from '@/context/tenant/useTenantContext'
 import { PublicRoutes, UserRoutes } from '@/routes/paths'
 
 type NavItem = {
@@ -232,7 +230,6 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
   )
   const { auth, loading } = useAuthContext()
   const { syncNow } = useSyncContext()
-  const tenant = useTenantContext()
   const isSuperAdmin = auth?.role === UserRole.SUPERADMIN
   const isAdmin = auth?.role === UserRole.ADMIN || isSuperAdmin
 
@@ -391,29 +388,6 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
       </aside>
 
       <div className="bg-background flex min-w-0 flex-1 flex-col">
-        {!isRouteActive(pathname, accountNavigation.href) && (
-          <header className="border-border/60 bg-background/95 flex h-16 shrink-0 items-center justify-between border-b px-5 backdrop-blur md:hidden">
-            <div className="flex items-center gap-3">
-              <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md text-xs font-bold">
-                OS
-              </span>
-              <h1 className="max-w-[13rem] truncate text-base font-medium">
-                {tenant.currentTenant?.name ?? 'Oputech Sales'}
-              </h1>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              disabled
-              aria-label="Notifications coming soon"
-              title="Notifications coming soon"
-            >
-              <Bell className="size-5" aria-hidden="true" />
-            </Button>
-          </header>
-        )}
-
         <div className="relative min-h-0 flex-1 overflow-hidden">
           <PullToRefreshIndicator
             pullDistance={pullDistance}
