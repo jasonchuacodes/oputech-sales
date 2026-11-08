@@ -291,17 +291,25 @@ const StockPage = () => {
               retry={() => void movements.refetch()}
             />
           )}
-          <DataTable
-            collection={DataTable.collection({
-              items: movementItems,
-              itemToValue: (movement) => movement.id,
-              itemToString: (movement) =>
-                `${movement.productName} ${movement.reason}`,
-            })}
-            columns={movementColumns}
-            loading={movements.isLoading}
-            emptyMessage="No stock movements found"
-          />
+          <div className="md:hidden">
+            <MobileMovementList
+              items={movementItems}
+              loading={movements.isLoading}
+            />
+          </div>
+          <div className="hidden md:block">
+            <DataTable
+              collection={DataTable.collection({
+                items: movementItems,
+                itemToValue: (movement) => movement.id,
+                itemToString: (movement) =>
+                  `${movement.productName} ${movement.reason}`,
+              })}
+              columns={movementColumns}
+              loading={movements.isLoading}
+              emptyMessage="No stock movements found"
+            />
+          </div>
           <Pagination
             page={movements.data?.page ?? 1}
             hasPrevious={movements.data?.hasPreviousPage ?? false}
@@ -398,6 +406,63 @@ const MobileStockList = ({
             onCount={() => onCount(stock)}
             onReceive={() => onReceive(stock)}
           />
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+const MobileMovementList = ({
+  items,
+  loading,
+}: {
+  items: StockMovement[]
+  loading: boolean
+}) => {
+  if (loading) {
+    return <div className="rounded-card bg-card h-28 animate-pulse shadow-card" />
+  }
+  if (items.length === 0) {
+    return (
+      <div className="rounded-card bg-card p-4 text-center text-sm text-text-secondary shadow-card">
+        No stock movements found
+      </div>
+    )
+  }
+  return (
+    <ul className="rounded-card bg-card overflow-hidden shadow-card">
+      {items.map((movement) => (
+        <li
+          key={movement.id}
+          className="border-border/60 flex min-h-20 items-center gap-3 border-b p-3 last:border-b-0"
+        >
+          <span className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="text-text-heading truncate font-medium">
+              {movement.productName}
+            </span>
+            <span className="text-text-tertiary truncate text-sm">
+              {reasonLabels[movement.reason]} ·{' '}
+              {formatTime(movement.postedAt, 'MMM D, h:mm A')}
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-1">
+            <span className="flex flex-col items-end gap-1">
+              <span
+                className={
+                  Number(movement.delta) < 0
+                    ? 'text-destructive font-semibold whitespace-nowrap'
+                    : 'text-emerald-700 font-semibold whitespace-nowrap'
+                }
+              >
+                {Number(movement.delta) > 0 ? '+' : ''}
+                {quantity(movement.delta)} {stockUnitLabels[movement.unit]}
+              </span>
+              <span className="text-text-tertiary text-xs whitespace-nowrap">
+                Balance {quantity(movement.balanceAfter)}{' '}
+                {stockUnitLabels[movement.unit]}
+              </span>
+            </span>
+          </span>
         </li>
       ))}
     </ul>

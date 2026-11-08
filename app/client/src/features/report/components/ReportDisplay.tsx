@@ -145,15 +145,20 @@ export const ReportDisplay = ({ report, onDelete }: Props) => {
         </div>
 
         <ContentSection label="Products sold">
-          <DataTable
-            collection={DataTable.collection({
-              items: report.products,
-              itemToValue: (p) => p.productId,
-              itemToString: (p) => p.name,
-            })}
-            columns={productColumns}
-            emptyMessage="No transactions found in this date range."
-          />
+          <div className="md:hidden">
+            <MobileProductSales items={report.products} />
+          </div>
+          <div className="hidden md:block">
+            <DataTable
+              collection={DataTable.collection({
+                items: report.products,
+                itemToValue: (p) => p.productId,
+                itemToString: (p) => p.name,
+              })}
+              columns={productColumns}
+              emptyMessage="No transactions found in this date range."
+            />
+          </div>
         </ContentSection>
 
         <ContentSection label="Expenses">
@@ -169,5 +174,43 @@ export const ReportDisplay = ({ report, onDelete }: Props) => {
         </ContentSection>
       </div>
     </div>
+  )
+}
+
+const MobileProductSales = ({ items }: { items: ProductSale[] }) => {
+  if (items.length === 0) {
+    return (
+      <div className="rounded-card bg-card p-4 text-center text-sm text-text-secondary shadow-card">
+        No transactions found in this date range.
+      </div>
+    )
+  }
+
+  return (
+    <ul className="rounded-card bg-card overflow-hidden shadow-card">
+      {items.map((product) => (
+        <li
+          key={product.productId}
+          className="border-border/60 flex min-h-20 items-center gap-3 border-b p-3 last:border-b-0"
+        >
+          <span className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="text-text-heading truncate font-medium">
+              {product.name}
+            </span>
+            <span className="text-text-tertiary text-sm">
+              {product.quantitySold.toLocaleString()} sold ·{' '}
+              {formatCurrency(product.pricePerUnit)} each
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-1">
+            <span className="flex flex-col items-end gap-1">
+              <span className="font-semibold whitespace-nowrap">
+                {formatCurrency(product.total)}
+              </span>
+            </span>
+          </span>
+        </li>
+      ))}
+    </ul>
   )
 }
