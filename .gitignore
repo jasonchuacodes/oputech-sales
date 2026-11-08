@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 .next
+app/client/next-env.d.ts
 out
 *.tsbuildinfo
 *.local
