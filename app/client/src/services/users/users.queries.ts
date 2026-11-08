@@ -1,14 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import toast from 'react-hot-toast'
 import { getUsers, createUser, updateUser, deleteUser, resetPassword } from './users.api'
 import { CreateUserInput, UpdateUserInput } from './users.types'
 import { useTenantContext } from '../../context/tenant/useTenantContext'
-
-const showMutationError = (error: unknown) => {
-  toast.error(
-    error instanceof Error ? error.message : 'The request could not be completed'
-  )
-}
+import { showUserMutationError } from './users.errors'
 
 export function useUsers() {
   const { currentTenant } = useTenantContext()
@@ -28,7 +22,7 @@ export function useCreateUser() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },
-    onError: showMutationError,
+    onError: showUserMutationError,
   })
 }
 
@@ -41,7 +35,7 @@ export function useUpdateUser() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },
-    onError: showMutationError,
+    onError: showUserMutationError,
   })
 }
 
@@ -53,7 +47,7 @@ export function useDeleteUser() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },
-    onError: showMutationError,
+    onError: showUserMutationError,
   })
 }
 
@@ -62,6 +56,6 @@ export function useResetPassword() {
     networkMode: 'always',
     mutationFn: ({ id, password }: { id: string; password: string }) =>
       resetPassword(id, password),
-    onError: showMutationError,
+    onError: showUserMutationError,
   })
 }
