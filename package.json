@@ -6,6 +6,7 @@
     "dev": "node scripts/dev.mjs",
     "dev:client": "pnpm --filter @oputech/sales-client dev",
     "dev:server": "pnpm --filter @oputech/sales-server dev",
+    "clear-database": "pnpm --filter @oputech/sales-server clear-database",
     "register-superadmin": "pnpm --filter @oputech/sales-server register-superadmin",
     "build": "pnpm --filter @oputech/sales-client build && pnpm --filter @oputech/sales-server build",
     "lint": "pnpm --filter @oputech/sales-client lint && pnpm --filter @oputech/sales-server typecheck",
