@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common'
-import { InjectModel } from '@nestjs/mongoose'
-import { isValidObjectId, Model, PipelineStage } from 'mongoose'
+import { InjectConnection, InjectModel } from '@nestjs/mongoose'
+import {
+  ClientSession,
+  Connection,
+  isValidObjectId,
+  Model,
+  PipelineStage,
+} from 'mongoose'
 import { Report, ReportDocument } from './schemas/report.schema'
 import { Aggregate, AggregateDocument } from './schemas/aggregate.schema'
 import {
@@ -8,6 +14,7 @@ import {
   TransactionDocument,
   PaymentType,
   TransactionType,
+  TransactionStatus,
 } from '../transaction/schemas/transaction.schema'
 import {
   CreateReportInput,
@@ -18,6 +25,7 @@ import {
 import { dayjsLocal } from '../../common/utils/date'
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   InvalidInputException,
   NotFoundException,
@@ -88,73 +96,105 @@ export class ReportService {
     @InjectModel(Report.name) private reportModel: Model<ReportDocument>,
     @InjectModel(Aggregate.name) private aggregateModel: Model<AggregateDocument>,
     @InjectModel(Transaction.name) private transactionModel: Model<TransactionDocument>,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   async create(tenantId: string, input: CreateReportInput, userId: string): Promise<ReportDocument> {
     const from = new Date(input.fromDate)
     const to = new Date(input.toDate)
-
-    const transactions = await this.transactionModel
-      .find({
-        tenantId,
-        processed: { $ne: true },
-        $or: [
-          { occurredAt: { $gte: from, $lte: to } },
-          {
-            occurredAt: { $exists: false },
-            createdAt: { $gte: from, $lte: to },
-          },
-        ],
-      })
-      .exec()
-
-    const ids = transactions.map((t) => t._id.toString())
-
-    const productMap = new Map<
-      string,
-      { name: string; pricePerUnit: number; printCount: number; quantitySold: number }
-    >()
-    for (const tx of transactions) {
-      for (const item of tx.items) {
-        const existing = productMap.get(item.productId)
-        if (existing) {
-          existing.quantitySold += item.quantity
-        } else {
-          productMap.set(item.productId, {
-            name: item.name,
-            pricePerUnit: item.price,
-            printCount: item.printCount,
-            quantitySold: item.quantity,
+    const session = await this.connection.startSession()
+    try {
+      let result: ReportDocument | undefined
+      await session.withTransaction(async () => {
+        const transactions = await this.transactionModel
+          .find({
+            tenantId,
+            processed: { $ne: true },
+            status: { $ne: TransactionStatus.VOIDED },
+            $or: [
+              { occurredAt: { $gte: from, $lte: to } },
+              {
+                occurredAt: { $exists: false },
+                createdAt: { $gte: from, $lte: to },
+              },
+            ],
           })
+          .session(session)
+          .exec()
+
+        const ids = transactions.map((transaction) => transaction._id.toString())
+        const productMap = new Map<
+          string,
+          { name: string; pricePerUnit: number; printCount: number; quantitySold: number }
+        >()
+        for (const transaction of transactions) {
+          for (const item of transaction.items) {
+            const existing = productMap.get(item.productId)
+            if (existing) existing.quantitySold += item.quantity
+            else {
+              productMap.set(item.productId, {
+                name: item.name,
+                pricePerUnit: item.price,
+                printCount: item.printCount,
+                quantitySold: item.quantity,
+              })
+            }
+          }
         }
-      }
+        const products = Array.from(productMap.entries()).map(([productId, value]) => ({
+          productId,
+          ...value,
+        }))
+
+        const claimed = await this.transactionModel
+          .updateMany(
+            {
+              _id: { $in: ids },
+              tenantId,
+              processed: { $ne: true },
+              status: { $ne: TransactionStatus.VOIDED },
+            },
+            { processed: true },
+            { session },
+          )
+          .exec()
+        if (claimed.matchedCount !== ids.length) {
+          throw new ConflictException(
+            'Transactions changed while the report was being created. Please try again.',
+          )
+        }
+
+        const totalSales = transactions
+          .filter((transaction) => transaction.type === TransactionType.SALE)
+          .reduce((sum, transaction) => sum + transaction.total, 0)
+        const totalExpenses = transactions
+          .filter((transaction) => transaction.type === TransactionType.EXPENSE)
+          .reduce((sum, transaction) => sum + transaction.total, 0)
+        await this.aggregate(
+          tenantId,
+          this.startOfDay(to),
+          totalSales,
+          totalExpenses,
+          session,
+        )
+
+        const [report] = await this.reportModel.create(
+          [{
+            tenantId,
+            createdBy: userId,
+            fromDate: from,
+            toDate: to,
+            transactionIds: ids,
+            products,
+          }],
+          { session },
+        )
+        result = report
+      })
+      return result!
+    } finally {
+      await session.endSession()
     }
-
-    const products = Array.from(productMap.entries()).map(([productId, v]) => ({
-      productId,
-      ...v,
-    }))
-
-    await this.transactionModel
-      .updateMany({ _id: { $in: ids }, tenantId }, { processed: true })
-      .exec()
-
-    const totalSales = transactions
-      .filter((t) => t.type === TransactionType.SALE)
-      .reduce((sum, t) => sum + t.total, 0)
-    const totalExpenses = transactions
-      .filter((t) => t.type === TransactionType.EXPENSE)
-      .reduce((sum, t) => sum + t.total, 0)
-    await this.aggregate(tenantId, this.startOfDay(to), totalSales, totalExpenses)
-
-    return this.reportModel.create({
-      tenantId,
-      createdBy: userId,
-      fromDate: from,
-      toDate: to,
-      transactionIds: ids,
-      products,
-    })
   }
 
   async delete(
@@ -163,33 +203,51 @@ export class ReportService {
     canDeleteRemitted = false,
   ): Promise<boolean> {
     this.assertValidReportId(reportId)
-    const report = await this.reportModel.findOne({ _id: reportId, tenantId }).exec()
-    if (!report) {
-      throw new NotFoundException(
-        'The requested report was not found.',
-      )
+    const session = await this.connection.startSession()
+    try {
+      await session.withTransaction(async () => {
+        const report = await this.reportModel
+          .findOne({ _id: reportId, tenantId })
+          .session(session)
+          .exec()
+        if (!report) throw new NotFoundException('The requested report was not found.')
+        if (report.isRemitted && !canDeleteRemitted) {
+          throw new ForbiddenException(
+            'Administrator access is required to delete a remitted report.',
+          )
+        }
+
+        const transactions = await this.transactionModel
+          .find({ _id: { $in: report.transactionIds }, tenantId })
+          .session(session)
+          .exec()
+        const totalSales = transactions
+          .filter((transaction) => transaction.type === TransactionType.SALE)
+          .reduce((sum, transaction) => sum + transaction.total, 0)
+        const totalExpenses = transactions
+          .filter((transaction) => transaction.type === TransactionType.EXPENSE)
+          .reduce((sum, transaction) => sum + transaction.total, 0)
+
+        await this.deaggregate(
+          tenantId,
+          this.startOfDay(report.toDate),
+          totalSales,
+          totalExpenses,
+          session,
+        )
+        await this.transactionModel
+          .updateMany(
+            { _id: { $in: report.transactionIds }, tenantId },
+            { processed: false },
+            { session },
+          )
+          .exec()
+        await report.deleteOne({ session })
+      })
+      return true
+    } finally {
+      await session.endSession()
     }
-    if (report.isRemitted && !canDeleteRemitted) {
-      throw new ForbiddenException(
-        'Administrator access is required to delete a remitted report.',
-      )
-    }
-
-    const transactions = await this.transactionModel
-      .find({ _id: { $in: report.transactionIds }, tenantId })
-      .exec()
-    const totalSales = transactions
-      .filter((t) => t.type === TransactionType.SALE)
-      .reduce((sum, t) => sum + t.total, 0)
-    const totalExpenses = await this.getExpenseTotalFromTransactions(tenantId, report.transactionIds)
-
-    await this.deaggregate(tenantId, this.startOfDay(report.toDate), totalSales, totalExpenses)
-    await this.transactionModel
-      .updateMany({ _id: { $in: report.transactionIds }, tenantId }, { processed: false })
-      .exec()
-    await report.deleteOne()
-
-    return true
   }
 
   async remit(tenantId: string, reportId: string, isRemitted: boolean): Promise<ReportDocument> {
@@ -485,7 +543,13 @@ export class ReportService {
     return rows.map((r) => ({ productId: r._id, name: r.name, quantitySold: r.quantitySold }))
   }
 
-  private async aggregate(tenantId: string, date: Date, sales: number, expenses: number): Promise<void> {
+  private async aggregate(
+    tenantId: string,
+    date: Date,
+    sales: number,
+    expenses: number,
+    session?: ClientSession,
+  ): Promise<void> {
     await this.aggregateModel
       .updateOne(
         { tenantId, date },
@@ -493,13 +557,19 @@ export class ReportService {
           $inc: { totalSales: sales, totalExpenses: expenses },
           $setOnInsert: { tenantId, date },
         },
-        { upsert: true },
+        { upsert: true, session },
       )
       .exec()
   }
 
-  private async deaggregate(tenantId: string, date: Date, sales: number, expenses: number): Promise<void> {
-    await this.aggregate(tenantId, date, -sales, -expenses)
+  private async deaggregate(
+    tenantId: string,
+    date: Date,
+    sales: number,
+    expenses: number,
+    session?: ClientSession,
+  ): Promise<void> {
+    await this.aggregate(tenantId, date, -sales, -expenses, session)
   }
 
   private assertValidReportId(id: string): void {

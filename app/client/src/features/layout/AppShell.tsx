@@ -18,6 +18,7 @@ import {
   ChevronRight,
   House,
   Package,
+  Boxes,
   ReceiptText,
   ShoppingBag,
   UserRound,
@@ -51,6 +52,7 @@ const primaryNavigation: NavItem[] = [
 
 const adminNavigation: NavItem[] = [
   { label: 'Catalog', href: '/catalog', icon: Package },
+  { label: 'Stock', href: '/stock', icon: Boxes },
   { label: 'Tenants', href: '/tenants', icon: Building2 },
   { label: 'Users', href: '/users', icon: Users },
 ]
@@ -244,7 +246,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     }
     if (
       !isAdmin &&
-      ['/dashboard', '/catalog', '/tenants'].some((path) =>
+       ['/dashboard', '/catalog', '/stock', '/tenants'].some((path) =>
         pathname.startsWith(path)
       )
     ) {
@@ -261,7 +263,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
       queryClient.refetchQueries({
         type: 'active',
         predicate: (query) =>
-          ['reports', 'report', 'analytics', 'users', 'tenants'].includes(
+          ['reports', 'report', 'analytics', 'users', 'tenants', 'stocks'].includes(
             String(query.queryKey[0])
           ),
       }),

@@ -383,7 +383,10 @@ export const flushOutbox = async ({
       }
 
       await ensureLease()
-      await offlineDb.outbox.update(operation.operationId, { state: 'syncing' })
+      await offlineDb.outbox.update(operation.operationId, {
+        state: 'syncing',
+        dispatchedAt: operation.dispatchedAt ?? new Date().toISOString(),
+      })
 
       try {
         if (operation.kind === 'CREATE_TRANSACTION') {

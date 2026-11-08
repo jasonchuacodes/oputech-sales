@@ -5,6 +5,7 @@ type Product {
   price: Float!
   imageUrl: String
   printCount: Int
+  stockTrackingEnabled: Boolean!
 }
 
 input ProductPaginationInput {

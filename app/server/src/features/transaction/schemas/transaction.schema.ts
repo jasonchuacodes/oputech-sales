@@ -1,5 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument } from 'mongoose'
+import { SchemaTypes, Types } from 'mongoose'
+import { StockUnit } from '../../stock/schemas/stock.schema'
 
 export enum PaymentType {
   CASH = 'CASH',
@@ -9,6 +11,11 @@ export enum PaymentType {
 export enum TransactionType {
   SALE = 'SALE',
   EXPENSE = 'EXPENSE',
+}
+
+export enum TransactionStatus {
+  ACTIVE = 'ACTIVE',
+  VOIDED = 'VOIDED',
 }
 
 export type TransactionDocument = HydratedDocument<Transaction>
@@ -29,6 +36,12 @@ class TransactionItem {
 
   @Prop({ required: true })
   quantity: number
+
+  @Prop({ type: SchemaTypes.Decimal128 })
+  inventoryQuantity?: Types.Decimal128
+
+  @Prop({ enum: Object.values(StockUnit) })
+  inventoryUnit?: StockUnit
 }
 
 const TransactionItemSchema = SchemaFactory.createForClass(TransactionItem)
@@ -65,6 +78,18 @@ export class Transaction {
 
   @Prop({ required: true, default: false })
   processed: boolean
+
+  @Prop({ required: true, enum: Object.values(TransactionStatus), default: TransactionStatus.ACTIVE })
+  status: TransactionStatus
+
+  @Prop()
+  inventoryAppliedAt?: Date
+
+  @Prop()
+  voidedAt?: Date
+
+  @Prop()
+  voidedBy?: string
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction)

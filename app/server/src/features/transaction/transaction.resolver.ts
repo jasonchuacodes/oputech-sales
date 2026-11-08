@@ -1,4 +1,4 @@
-import { Query, Mutation, ResolveField, Resolver, Parent, Args } from '@nestjs/graphql'
+import { Query, Mutation, ResolveField, Resolver, Parent, Args, Context } from '@nestjs/graphql'
 import { UseGuards } from '@nestjs/common'
 import { TransactionService } from './transaction.service'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
@@ -18,14 +18,31 @@ export class TransactionResolver {
   }
 
   @Mutation()
-  createTransaction(@TenantId() tenantId: string, @Args('input') input: CreateTransactionInput) {
-    return this.transaction.createTransaction(tenantId, input)
+  createTransaction(
+    @TenantId() tenantId: string,
+    @Args('input') input: CreateTransactionInput,
+    @Context() context: any,
+  ) {
+    return this.transaction.createTransaction(tenantId, input, context.req.user.userId)
   }
 
   @Mutation()
-  async deleteTransaction(@TenantId() tenantId: string, @Args('id') id: string): Promise<boolean> {
-    const result = await this.transaction.remove(tenantId, id)
+  async deleteTransaction(
+    @TenantId() tenantId: string,
+    @Args('id') id: string,
+    @Context() context: any,
+  ): Promise<boolean> {
+    const result = await this.transaction.remove(tenantId, id, context.req.user.userId)
     return result !== null
+  }
+
+  @Mutation()
+  voidTransaction(
+    @TenantId() tenantId: string,
+    @Args('id') id: string,
+    @Context() context: any,
+  ) {
+    return this.transaction.remove(tenantId, id, context.req.user.userId)
   }
 
   @ResolveField('createdAt')
@@ -36,5 +53,15 @@ export class TransactionResolver {
   @ResolveField('occurredAt')
   occurredAt(@Parent() transaction: TransactionDocument): string {
     return (transaction.occurredAt ?? transaction.createdAt).toISOString()
+  }
+
+  @ResolveField('status')
+  status(@Parent() transaction: TransactionDocument): string {
+    return transaction.status ?? 'ACTIVE'
+  }
+
+  @ResolveField('inventoryAppliedAt')
+  inventoryAppliedAt(@Parent() transaction: TransactionDocument): string | null {
+    return transaction.inventoryAppliedAt?.toISOString() ?? null
   }
 }

@@ -186,7 +186,10 @@ export const queueLocalTransactionDelete = async (
         .filter((operation) => operation.kind === 'CREATE_TRANSACTION')
         .first()
 
-      if (createOperation && createOperation.state !== 'syncing') {
+      if (
+        createOperation &&
+        (!createOperation.dispatchedAt || createOperation.state === 'blocked')
+      ) {
         await offlineDb.outbox.delete(createOperation.operationId)
         await offlineDb.transactions.delete(id)
         return

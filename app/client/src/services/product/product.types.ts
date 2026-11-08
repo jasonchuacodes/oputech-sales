@@ -4,6 +4,7 @@ export interface Product {
   price: number
   imageUrl?: string
   printCount?: number
+  stockTrackingEnabled?: boolean
 }
 
 export interface ProductPagination {

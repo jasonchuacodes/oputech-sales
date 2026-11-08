@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getProducts } from '../services/product/product.api'
+import { getAllProducts } from '../services/product/product.api'
 import {
   createTransaction,
   deleteTransaction,
@@ -20,7 +20,7 @@ import {
 import { flushOutbox } from './sync'
 
 vi.mock('../services/product/product.api', () => ({
-  getProducts: vi.fn(),
+  getAllProducts: vi.fn(),
 }))
 
 vi.mock('../services/transaction/transaction.api', () => ({
@@ -29,7 +29,7 @@ vi.mock('../services/transaction/transaction.api', () => ({
   getTransactions: vi.fn(),
 }))
 
-const mockedGetProducts = vi.mocked(getProducts)
+const mockedGetProducts = vi.mocked(getAllProducts)
 const mockedGetTransactions = vi.mocked(getTransactions)
 const mockedCreateTransaction = vi.mocked(createTransaction)
 const mockedDeleteTransaction = vi.mocked(deleteTransaction)

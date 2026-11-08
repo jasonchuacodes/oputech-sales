@@ -8,12 +8,19 @@ enum TransactionType {
   EXPENSE
 }
 
+enum TransactionStatus {
+  ACTIVE
+  VOIDED
+}
+
 type TransactionItem {
   productId: ID!
   name: String!
   price: Float!
   printCount: Int!
   quantity: Int!
+  inventoryQuantity: Decimal
+  inventoryUnit: StockUnit
 }
 
 type Transaction {
@@ -26,6 +33,8 @@ type Transaction {
   paymentType: PaymentType!
   total: Float!
   processed: Boolean!
+  status: TransactionStatus!
+  inventoryAppliedAt: String
   occurredAt: String!
   createdAt: String!
 }
@@ -61,4 +70,5 @@ extend type Mutation {
 
 extend type Mutation {
   deleteTransaction(id: ID!): Boolean!
+  voidTransaction(id: ID!): Transaction
 }

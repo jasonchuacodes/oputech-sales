@@ -19,7 +19,24 @@ vi.mock('../transaction/schemas/transaction.schema', () => ({
   Transaction: class Transaction {},
   PaymentType: { CASH: 'CASH', ONLINE: 'ONLINE' },
   TransactionType: { SALE: 'SALE', EXPENSE: 'EXPENSE' },
+  TransactionStatus: { ACTIVE: 'ACTIVE', VOIDED: 'VOIDED' },
 }))
+
+const queryResult = <T>(value: T) => {
+  const query = {
+    exec: vi.fn().mockResolvedValue(value),
+    session: vi.fn(),
+  }
+  query.session.mockReturnValue(query)
+  return query
+}
+
+const makeConnection = () => ({
+  startSession: vi.fn().mockResolvedValue({
+    withTransaction: vi.fn(async (operation) => operation()),
+    endSession: vi.fn(),
+  }),
+})
 
 describe('ReportService paginated listing', () => {
   it('returns the selected page and totals for every matching report', async () => {
@@ -49,7 +66,8 @@ describe('ReportService paginated listing', () => {
     const service = new ReportService(
       { aggregate } as never,
       {} as never,
-      { collection: { name: 'transactions' } } as never
+      { collection: { name: 'transactions' } } as never,
+      makeConnection() as never,
     )
 
     const result = await service.findPage('tenant-1', {
@@ -132,7 +150,8 @@ describe('ReportService paginated listing', () => {
     const service = new ReportService(
       { aggregate } as never,
       {} as never,
-      { collection: { name: 'transactions' } } as never
+      { collection: { name: 'transactions' } } as never,
+      makeConnection() as never,
     )
 
     await expect(service.findPage('tenant-1', {})).resolves.toEqual({
@@ -154,7 +173,8 @@ describe('ReportService paginated listing', () => {
     const service = new ReportService(
       { aggregate } as never,
       {} as never,
-      { collection: { name: 'transactions' } } as never
+      { collection: { name: 'transactions' } } as never,
+      makeConnection() as never,
     )
 
     await expect(
@@ -182,14 +202,10 @@ describe('ReportService deletion permissions', () => {
       deleteOne: vi.fn().mockResolvedValue(undefined),
     }
     const reportModel = {
-      findOne: vi.fn().mockReturnValue({
-        exec: vi.fn().mockResolvedValue(report),
-      }),
+      findOne: vi.fn().mockReturnValue(queryResult(report)),
     }
     const transactionModel = {
-      find: vi.fn().mockReturnValue({
-        exec: vi.fn().mockResolvedValue([]),
-      }),
+      find: vi.fn().mockReturnValue(queryResult([])),
       updateMany: vi.fn().mockReturnValue({
         exec: vi.fn().mockResolvedValue(undefined),
       }),
@@ -202,7 +218,8 @@ describe('ReportService deletion permissions', () => {
     const service = new ReportService(
       reportModel as never,
       aggregateModel as never,
-      transactionModel as never
+      transactionModel as never,
+      makeConnection() as never,
     )
 
     await expect(service.delete('tenant-1', reportId)).resolves.toBe(true)
@@ -211,15 +228,14 @@ describe('ReportService deletion permissions', () => {
 
   it('requires admin access to delete a remitted report', async () => {
     const reportModel = {
-      findOne: vi.fn().mockReturnValue({
-        exec: vi.fn().mockResolvedValue({ isRemitted: true }),
-      }),
+      findOne: vi.fn().mockReturnValue(queryResult({ isRemitted: true })),
     }
     const transactionModel = { find: vi.fn() }
     const service = new ReportService(
       reportModel as never,
       {} as never,
-      transactionModel as never
+      transactionModel as never,
+      makeConnection() as never,
     )
 
     await expect(service.delete('tenant-1', reportId)).rejects.toBeInstanceOf(

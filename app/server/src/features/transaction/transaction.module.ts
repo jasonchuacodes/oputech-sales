@@ -5,6 +5,7 @@ import { Product, ProductSchema } from '../product/schemas/product.schema'
 import { TransactionService } from './transaction.service'
 import { TransactionResolver } from './transaction.resolver'
 import { TenantModule } from '../tenant/tenant.module'
+import { StockModule } from '../stock/stock.module'
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { TenantModule } from '../tenant/tenant.module'
       { name: Product.name, schema: ProductSchema },
     ]),
     TenantModule,
+    StockModule,
   ],
   providers: [TransactionService, TransactionResolver],
 })

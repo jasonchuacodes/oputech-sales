@@ -21,7 +21,7 @@ export class ProductService {
   ) {}
 
   list(tenantId: string, pagination?: ProductPagination): Promise<ProductPageResult> {
-    return this.paginate({ tenantId }, pagination)
+    return this.paginate({ tenantId, archivedAt: { $exists: false } }, pagination)
   }
 
   listByName(
@@ -35,7 +35,11 @@ export class ProductService {
     }
 
     return this.paginate(
-      { tenantId, name: { $regex: escapeRegExp(term), $options: 'i' } },
+      {
+        tenantId,
+        archivedAt: { $exists: false },
+        name: { $regex: escapeRegExp(term), $options: 'i' },
+      },
       pagination,
     )
   }
@@ -46,12 +50,22 @@ export class ProductService {
 
   update(tenantId: string, id: string, input: UpdateProductInput): Promise<ProductDocument | null> {
     return this.product
-      .findOneAndUpdate({ _id: id, tenantId }, { $set: input }, { returnDocument: 'after' })
+      .findOneAndUpdate(
+        { _id: id, tenantId, archivedAt: { $exists: false } },
+        { $set: input },
+        { returnDocument: 'after' },
+      )
       .exec()
   }
 
   remove(tenantId: string, id: string): Promise<ProductDocument | null> {
-    return this.product.findOneAndDelete({ _id: id, tenantId }).exec()
+    return this.product
+      .findOneAndUpdate(
+        { _id: id, tenantId, archivedAt: { $exists: false } },
+        { $set: { archivedAt: new Date() } },
+        { returnDocument: 'after' },
+      )
+      .exec()
   }
 
   private async paginate(

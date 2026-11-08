@@ -4,6 +4,8 @@ import mongoose from 'mongoose'
 const dryRun = process.argv.includes('--dry-run')
 const confirmed = process.argv.includes('--confirm-reset')
 const collections = [
+  'stockmovements',
+  'stocks',
   'aggregates',
   'reports',
   'transactions',

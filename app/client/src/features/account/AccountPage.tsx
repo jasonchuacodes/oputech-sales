@@ -85,6 +85,11 @@ export const AccountPage = () => {
               title="Product catalog"
               description="Manage products, pricing, and images"
             />
+            <ManagementLink
+              href="/stock"
+              title="Stock management"
+              description="Receive stock, count inventory, and review history"
+            />
             {isSuperAdmin && (
               <ManagementLink
                 href="/users"

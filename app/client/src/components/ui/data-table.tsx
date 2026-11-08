@@ -30,6 +30,7 @@ interface DataTableProps<T> {
   loading?: boolean
   emptyMessage?: string
   footer?: React.ReactNode
+  compact?: boolean
 }
 
 const alignClass = {
@@ -55,6 +56,7 @@ function DataTableComponent<T>({
   loading = false,
   emptyMessage = 'No data available',
   footer,
+  compact = false,
 }: DataTableProps<T>) {
   const [sortConfig, setSortConfig] = useState<SortConfig>(null)
 
@@ -191,6 +193,7 @@ function DataTableComponent<T>({
                         }}
                         className={cn(
                           'border-border/50 before:text-text-tertiary flex min-h-11 items-center justify-between gap-4 border-b px-3 py-2.5 text-right font-normal before:text-left before:text-xs before:font-medium before:tracking-wide before:uppercase before:content-[attr(data-label)] last:border-b-0 md:table-cell md:border-b-0 md:px-4 md:py-3 md:whitespace-nowrap md:before:hidden',
+                          compact && 'md:py-1.5',
                           alignClass[column.align ?? 'left'],
                           colIdx === 0 && !column.width && 'md:truncate',
                           !column.heading && 'justify-end before:hidden',

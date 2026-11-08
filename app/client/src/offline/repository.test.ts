@@ -82,6 +82,36 @@ describe('offline repository', () => {
     expect(await offlineDb.outbox.count()).toBe(0)
   })
 
+  it('queues a void when a dispatched create has an uncertain outcome', async () => {
+    const transaction = await queueLocalTransaction(
+      {
+        type: TransactionType.Sale,
+        paymentType: PaymentType.Cash,
+        items: [{ productId: product.id, quantity: 1 }],
+      },
+      'user-1',
+      'tenant-1'
+    )
+    const create = await offlineDb.outbox.toCollection().first()
+    await offlineDb.outbox.update(create!.operationId, {
+      state: 'pending',
+      dispatchedAt: new Date().toISOString(),
+    })
+
+    await queueLocalTransactionDelete(transaction.id, 'user-1', 'tenant-1')
+
+    const stored = await offlineDb.transactions.get(transaction.id)
+    const operations = await offlineDb.outbox
+      .where('entityId')
+      .equals(transaction.id)
+      .sortBy('createdAt')
+    expect(stored).toMatchObject({ deleted: true, syncState: 'deleting' })
+    expect(operations.map((operation) => operation.kind)).toEqual([
+      'CREATE_TRANSACTION',
+      'DELETE_TRANSACTION',
+    ])
+  })
+
   it('searches products and filters transaction history locally', async () => {
     await offlineDb.products.add({
       ...product,

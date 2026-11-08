@@ -15,6 +15,7 @@ const PRODUCT_FIELDS = `
   price
   imageUrl
   printCount
+  stockTrackingEnabled
 `
 
 const GET_PRODUCTS = `

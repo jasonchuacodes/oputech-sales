@@ -19,6 +19,12 @@ export class Product {
 
   @Prop()
   printCount?: number
+
+  @Prop({ required: true, default: false })
+  stockTrackingEnabled: boolean
+
+  @Prop()
+  archivedAt?: Date
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product)

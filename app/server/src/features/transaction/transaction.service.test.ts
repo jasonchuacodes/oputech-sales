@@ -6,6 +6,7 @@ vi.mock('./schemas/transaction.schema', () => ({
   Transaction: class Transaction {},
   PaymentType: { CASH: 'CASH', ONLINE: 'ONLINE' },
   TransactionType: { SALE: 'SALE', EXPENSE: 'EXPENSE' },
+  TransactionStatus: { ACTIVE: 'ACTIVE', VOIDED: 'VOIDED' },
 }))
 
 vi.mock('../product/schemas/product.schema', () => ({
@@ -13,6 +14,23 @@ vi.mock('../product/schemas/product.schema', () => ({
 }))
 
 const execResult = <T>(value: T) => ({ exec: vi.fn().mockResolvedValue(value) })
+const sessionResult = <T>(value: T) => ({
+  session: vi.fn().mockReturnValue(execResult(value)),
+})
+const queryResult = <T>(value: T) => {
+  const query = {
+    exec: vi.fn().mockResolvedValue(value),
+    session: vi.fn(),
+  }
+  query.session.mockReturnValue(query)
+  return query
+}
+const makeConnection = () => ({
+  startSession: vi.fn().mockResolvedValue({
+    withTransaction: vi.fn(async (operation) => operation()),
+    endSession: vi.fn(),
+  }),
+})
 
 describe('TransactionService offline synchronization', () => {
   it('returns the existing transaction for a repeated client mutation id', async () => {
@@ -27,6 +45,8 @@ describe('TransactionService offline synchronization', () => {
     }
     const service = new TransactionService(
       transactionModel as never,
+      {} as never,
+      makeConnection() as never,
       {} as never,
     )
 
@@ -50,14 +70,28 @@ describe('TransactionService offline synchronization', () => {
   })
 
   it('stores the supplied occurrence time for a new sale', async () => {
-    const created = { id: 'transaction-2' }
+    const created = {
+      id: 'transaction-2',
+      _id: { toString: () => 'transaction-2' },
+      items: [
+        {
+          productId: 'product-1',
+          name: 'Photo Strip',
+          price: 120,
+          printCount: 1,
+          quantity: 2,
+        },
+      ],
+      markModified: vi.fn(),
+      save: vi.fn(),
+    }
     const transactionModel = {
-      findOne: vi.fn().mockReturnValue(execResult(null)),
-      create: vi.fn().mockResolvedValue(created),
+      findOne: vi.fn().mockReturnValue(queryResult(null)),
+      create: vi.fn().mockResolvedValue([created]),
     }
     const productModel = {
       find: vi.fn().mockReturnValue(
-        execResult([
+        sessionResult([
           {
             _id: { toString: () => 'product-1' },
             name: 'Photo Strip',
@@ -70,6 +104,8 @@ describe('TransactionService offline synchronization', () => {
     const service = new TransactionService(
       transactionModel as never,
       productModel as never,
+      makeConnection() as never,
+      { applySale: vi.fn().mockResolvedValue([]) } as never,
     )
 
     const result = await service.createTransaction('tenant-1', {
@@ -82,15 +118,19 @@ describe('TransactionService offline synchronization', () => {
 
     expect(result).toBe(created)
     expect(transactionModel.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        clientMutationId: 'mutation-2',
-        occurredAt: new Date('2026-08-20T03:00:00.000Z'),
-        total: 240,
-      })
+      [
+        expect.objectContaining({
+          clientMutationId: 'mutation-2',
+          occurredAt: new Date('2026-08-20T03:00:00.000Z'),
+          total: 240,
+        }),
+      ],
+      expect.objectContaining({ session: expect.anything() }),
     )
     expect(productModel.find).toHaveBeenCalledWith({
       _id: { $in: ['product-1'] },
       tenantId: 'tenant-1',
+      archivedAt: { $exists: false },
     })
   })
 
@@ -98,7 +138,12 @@ describe('TransactionService offline synchronization', () => {
     const exec = vi.fn().mockResolvedValue([])
     const sort = vi.fn().mockReturnValue({ exec })
     const find = vi.fn().mockReturnValue({ sort })
-    const service = new TransactionService({ find } as never, {} as never)
+    const service = new TransactionService(
+      { find } as never,
+      {} as never,
+      makeConnection() as never,
+      {} as never,
+    )
 
     await service.getTransactions('tenant-1', {
       from: '2026-08-20T00:00:00.000Z',
@@ -108,6 +153,7 @@ describe('TransactionService offline synchronization', () => {
     expect(find).toHaveBeenCalledWith(
       expect.objectContaining({
         tenantId: 'tenant-1',
+        status: { $ne: 'VOIDED' },
         $or: [
           { occurredAt: expect.any(Object) },
           {

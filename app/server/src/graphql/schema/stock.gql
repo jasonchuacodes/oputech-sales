@@ -1,0 +1,127 @@
+scalar Decimal
+
+enum StockUnit {
+  KG
+  G
+  L
+  ML
+  PC
+  GAL
+  BAG
+}
+
+enum StockMovementReason {
+  OPENING
+  RECEIPT
+  SALE
+  VOID
+  CORRECTION
+}
+
+enum StockMovementSourceType {
+  TRANSACTION
+  STOCK_OPERATION
+}
+
+type Stock {
+  id: ID!
+  tenantId: ID!
+  productId: ID!
+  product: Product!
+  quantity: Decimal!
+  unit: StockUnit!
+  sequence: Int!
+}
+
+type StockMovement {
+  id: ID!
+  productId: ID!
+  product: Product
+  productName: String!
+  unit: StockUnit!
+  delta: Decimal!
+  balanceAfter: Decimal!
+  reason: StockMovementReason!
+  sourceType: StockMovementSourceType!
+  sourceId: ID!
+  actorId: ID
+  occurredAt: String!
+  postedAt: String!
+  note: String
+  packageLabel: String
+  packageCount: Decimal
+  quantityPerPackage: Decimal
+}
+
+input StockPaginationInput {
+  page: Int = 1
+  pageSize: Int = 25
+}
+
+input StockMovementFilterInput {
+  productId: ID
+  reason: StockMovementReason
+  sourceType: StockMovementSourceType
+}
+
+type StockPage {
+  items: [Stock!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+type StockMovementPage {
+  items: [StockMovement!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+input EnableStockTrackingInput {
+  clientMutationId: ID!
+  productId: ID!
+  unit: StockUnit!
+  openingQuantity: Decimal!
+  occurredAt: String
+  note: String
+}
+
+input ReceiveStockInput {
+  clientMutationId: ID!
+  productId: ID!
+  packageCount: Decimal!
+  quantityPerPackage: Decimal!
+  packageLabel: String
+  occurredAt: String
+  note: String
+}
+
+input ReconcileStockInput {
+  clientMutationId: ID!
+  productId: ID!
+  countedQuantity: Decimal!
+  occurredAt: String
+  note: String!
+}
+
+extend type Query {
+  stocks(search: String, pagination: StockPaginationInput): StockPage!
+  stock(productId: ID!): Stock
+  stockMovements(
+    filter: StockMovementFilterInput
+    pagination: StockPaginationInput
+  ): StockMovementPage!
+}
+
+extend type Mutation {
+  enableStockTracking(input: EnableStockTrackingInput!): Stock!
+  receiveStock(input: ReceiveStockInput!): Stock!
+  reconcileStock(input: ReconcileStockInput!): Stock!
+}

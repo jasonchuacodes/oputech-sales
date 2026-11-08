@@ -13,6 +13,11 @@ import { Tenant, TenantSchema } from './schemas/tenant.schema'
 import { TenantAccessGuard } from './guards/tenant-access.guard'
 import { TenantResolver } from './tenant.resolver'
 import { TenantService } from './tenant.service'
+import { Stock, StockSchema } from '../stock/schemas/stock.schema'
+import {
+  StockMovement,
+  StockMovementSchema,
+} from '../stock/schemas/stock-movement.schema'
 
 @Module({
   imports: [
@@ -23,6 +28,8 @@ import { TenantService } from './tenant.service'
       { name: Transaction.name, schema: TransactionSchema },
       { name: Report.name, schema: ReportSchema },
       { name: Aggregate.name, schema: AggregateSchema },
+      { name: Stock.name, schema: StockSchema },
+      { name: StockMovement.name, schema: StockMovementSchema },
     ]),
   ],
   providers: [

@@ -32,6 +32,7 @@ export interface CreateTransactionOperation {
   createdAt: string
   nextAttemptAt?: string
   lastError?: string
+  dispatchedAt?: string
 }
 
 export interface DeleteTransactionOperation {
@@ -46,6 +47,7 @@ export interface DeleteTransactionOperation {
   createdAt: string
   nextAttemptAt?: string
   lastError?: string
+  dispatchedAt?: string
 }
 
 export type OutboxOperation =
