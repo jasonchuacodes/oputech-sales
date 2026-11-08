@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Pencil } from 'lucide-react'
@@ -6,7 +6,6 @@ import {
   CustomModal,
   Input,
   Label,
-  SheetSelect,
   ImageDropzone,
 } from '../../../components'
 import { useUpdateProduct } from '../../../services/product/product.queries'
@@ -41,7 +40,6 @@ export const EditItemModal = ({ item, open, onClose }: Props) => {
           price: item.price,
           imageUrl: item.imageUrl,
           printCount: item.printCount,
-          category: item.category,
         }
       : undefined,
   })
@@ -62,16 +60,12 @@ export const EditItemModal = ({ item, open, onClose }: Props) => {
           price: data.price,
           imageUrl: data.imageUrl ?? '',
           printCount: data.printCount,
-          category: data.category,
         },
       },
       { onSuccess: handleClose }
     )
   }
 
-  useEffect(() => {
-    console.log('errors:', errors)
-  }, [errors])
   return (
     <CustomModal
       open={open}
@@ -135,26 +129,6 @@ export const EditItemModal = ({ item, open, onClose }: Props) => {
               {errors.printCount.message}
             </p>
           )}
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label>Category</Label>
-          <Controller
-            name="category"
-            control={control}
-            render={({ field }) => (
-              <SheetSelect
-                value={field.value}
-                onValueChange={field.onChange}
-                title="Choose a category"
-                placeholder="Select a category…"
-                options={[
-                  { value: 'main', label: 'Main' },
-                  { value: 'add-on', label: 'Add-on' },
-                ]}
-              />
-            )}
-          />
         </div>
       </div>
     </CustomModal>

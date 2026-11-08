@@ -1,5 +1,4 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator'
-import { ProductCategory } from '../schemas/product.schema'
+import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator'
 
 export class CreateProductDto {
   @IsString()
@@ -19,6 +18,4 @@ export class CreateProductDto {
   @Min(0)
   printCount?: number
 
-  @IsEnum(ProductCategory)
-  category: ProductCategory
 }

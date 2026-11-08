@@ -1,8 +1,17 @@
 import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
-import { Model } from 'mongoose'
+import { Model, QueryFilter } from 'mongoose'
 import { Product, ProductDocument } from './schemas/product.schema'
-import { CreateProductInput, UpdateProductInput } from './product.types'
+import {
+  CreateProductInput,
+  ProductPageResult,
+  ProductPagination,
+  UpdateProductInput,
+} from './product.types'
+import { InvalidInputException } from '../../common/exceptions'
+
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 @Injectable()
 export class ProductService {
@@ -11,13 +20,24 @@ export class ProductService {
     private product: Model<ProductDocument>,
   ) {}
 
-  findAll(tenantId: string, search?: string): Promise<ProductDocument[]> {
-    if (search) {
-      return this.product
-        .find({ tenantId, name: { $regex: search, $options: 'i' } })
-        .exec()
+  list(tenantId: string, pagination?: ProductPagination): Promise<ProductPageResult> {
+    return this.paginate({ tenantId }, pagination)
+  }
+
+  listByName(
+    tenantId: string,
+    search: string,
+    pagination?: ProductPagination,
+  ): Promise<ProductPageResult> {
+    const term = search.trim()
+    if (!term) {
+      throw new InvalidInputException('Enter a product name to search for.')
     }
-    return this.product.find({ tenantId }).exec()
+
+    return this.paginate(
+      { tenantId, name: { $regex: escapeRegExp(term), $options: 'i' } },
+      pagination,
+    )
   }
 
   create(tenantId: string, input: CreateProductInput): Promise<ProductDocument> {
@@ -32,5 +52,32 @@ export class ProductService {
 
   remove(tenantId: string, id: string): Promise<ProductDocument | null> {
     return this.product.findOneAndDelete({ _id: id, tenantId }).exec()
+  }
+
+  private async paginate(
+    filter: QueryFilter<Product>,
+    pagination?: ProductPagination,
+  ): Promise<ProductPageResult> {
+    const requestedPage = pagination?.page ?? 1
+    const pageSize = pagination?.pageSize ?? 50
+    const totalCount = await this.product.countDocuments(filter).exec()
+    const totalPages = Math.ceil(totalCount / pageSize)
+    const page = Math.min(requestedPage, Math.max(totalPages, 1))
+    const items = await this.product
+      .find(filter)
+      .sort({ _id: 1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
+      .exec()
+
+    return {
+      items,
+      page,
+      pageSize,
+      totalCount,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1 && totalPages > 0,
+    }
   }
 }

@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { ImageOff, Plus, Search } from 'lucide-react'
 import { Button, ContentSection, Input, PageHeader } from '../../components'
 import { DataTable, DataTableColumn } from '../../components/ui/data-table'
-import { useProducts } from '../../services/product/product.queries'
+import { useProductCatalogPage } from '../../services/product/product.queries'
 import { Product } from '../../services/product/product.types'
 import { formatCurrency } from '../../utils/number'
 import { useAuthContext } from '../../context/auth/useAuthContext'
@@ -16,19 +16,22 @@ import { DeleteConfirmModal } from './components/DeleteConfirmModal'
 import { ActionsDropdown } from './components/ActionsDropdown'
 import { useSyncContext } from '../../context/sync/useSyncContext'
 import { useDisclosure } from '../../hooks/useDisclosure'
+import { useTenantContext } from '../../context/tenant/useTenantContext'
 
-const ProductPage = () => {
+const ProductPageContent = () => {
   const { auth } = useAuthContext()
   const isAdmin = auth?.role !== UserRole.STAFF
   const { canModifyCatalog, pendingCount, blockedCount } = useSyncContext()
-
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const addItem = useDisclosure()
   const [selectedItem, setSelectedItem] = useState<Product | null>(null)
   const editItem = useDisclosure()
   const deleteItem = useDisclosure()
 
-  const { data, isLoading } = useProducts(search || undefined)
+  const catalog = useProductCatalogPage(search, page)
+  const { data, isLoading, isFetching } = catalog
+  const products = data?.items ?? []
 
   const openEdit = (item: Product) => {
     setSelectedItem(item)
@@ -46,7 +49,6 @@ const ProductPage = () => {
       heading: 'Name',
       cell: (item) => item.name,
       width: 320,
-      orderable: true,
     },
     {
       id: 'image',
@@ -69,7 +71,6 @@ const ProductPage = () => {
       id: 'price',
       heading: 'Price',
       cell: (item) => formatCurrency(item.price),
-      orderable: true,
     },
     {
       id: 'actions',
@@ -88,19 +89,8 @@ const ProductPage = () => {
     },
   ]
 
-  const mainProducts = (data ?? []).filter((item) => item.category === 'main')
-  const addOnProducts = (data ?? []).filter(
-    (item) => item.category === 'add-on'
-  )
-
-  const mainCollection = DataTable.collection({
-    items: mainProducts,
-    itemToValue: (item) => item.id,
-    itemToString: (item) => item.name,
-  })
-
-  const addOnCollection = DataTable.collection({
-    items: addOnProducts,
+  const collection = DataTable.collection({
+    items: products,
     itemToValue: (item) => item.id,
     itemToString: (item) => item.name,
   })
@@ -110,7 +100,7 @@ const ProductPage = () => {
       return <div className="rounded-card bg-card h-28 animate-pulse shadow-card" />
     }
 
-    if (items.length === 0) {
+    if (items.length === 0 && !catalog.isError) {
       return (
         <div className="rounded-card bg-card p-4 text-center text-sm text-text-secondary shadow-card">
           No items found
@@ -195,51 +185,101 @@ const ProductPage = () => {
         <Input
           placeholder="Search by name"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setPage(1)
+          }}
           className="pl-9"
         />
       </div>
 
-      <ContentSection
-        label="Main"
-        rightContent={
-          !isLoading ? (
-            <span className="text-text-tertiary text-sm">
-              {mainProducts.length} {mainProducts.length === 1 ? 'item' : 'items'}
-            </span>
-          ) : undefined
-        }
-      >
-        <div className="md:hidden">{renderMobileProducts(mainProducts)}</div>
-        <div className="hidden md:block">
-          <DataTable
-            collection={mainCollection}
-            columns={columns}
-            loading={isLoading}
-            emptyMessage="No items found"
-          />
+      {catalog.source === 'cache' && (
+        <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          Showing the latest catalog saved on this device. Reconnect to load current products.
+        </p>
+      )}
+
+      {catalog.isError && !data && (
+        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          <p>
+            {catalog.error instanceof Error
+              ? catalog.error.message
+              : 'Products could not be loaded.'}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => void catalog.refetch()}
+          >
+            Retry
+          </Button>
         </div>
-      </ContentSection>
+      )}
+
+      {catalog.fetchStatus === 'paused' && !data && (
+        <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          Products will load when the connection is restored.
+        </p>
+      )}
 
       <ContentSection
-        label="Add-ons"
+        label="Products"
         rightContent={
           !isLoading ? (
             <span className="text-text-tertiary text-sm">
-              {addOnProducts.length} {addOnProducts.length === 1 ? 'item' : 'items'}
+              {data?.totalCount ?? 0}{' '}
+              {data?.totalCount === 1 ? 'item' : 'items'}
             </span>
           ) : undefined
         }
       >
-        <div className="md:hidden">{renderMobileProducts(addOnProducts)}</div>
+        <div className="md:hidden">{renderMobileProducts(products)}</div>
         <div className="hidden md:block">
           <DataTable
-            collection={addOnCollection}
+            collection={collection}
             columns={columns}
             loading={isLoading}
             emptyMessage="No items found"
           />
         </div>
+        {!isLoading && !catalog.isError && (data?.totalPages ?? 0) > 1 && (
+          <div className="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
+            <p className="text-text-secondary text-sm">
+              {((data?.page ?? 1) - 1) * (data?.pageSize ?? 0) + 1}–
+              {Math.min(
+                (data?.page ?? 1) * (data?.pageSize ?? 0),
+                data?.totalCount ?? 0
+              )}{' '}
+              of{' '}
+              {data?.totalCount ?? 0} products · Page {data?.page} of{' '}
+              {data?.totalPages}
+            </p>
+            <div className="flex w-full gap-2 sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="flex-1 sm:flex-none"
+                disabled={!data?.hasPreviousPage || isFetching}
+                onClick={() => setPage((data?.page ?? page) - 1)}
+              >
+                Previous
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="flex-1 sm:flex-none"
+                disabled={!data?.hasNextPage || isFetching}
+                onClick={() => setPage((data?.page ?? page) + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </ContentSection>
 
       <AddItemModal
@@ -268,6 +308,11 @@ const ProductPage = () => {
       />
     </div>
   )
+}
+
+const ProductPage = () => {
+  const { currentTenant } = useTenantContext()
+  return <ProductPageContent key={currentTenant?.id ?? 'no-tenant'} />
 }
 
 export default ProductPage

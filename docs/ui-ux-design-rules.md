@@ -138,7 +138,7 @@ Examples:
 - Activity: **Transactions** + Period/date control → transaction list.
 - Overview: **Summary** + Period control → statistic cards.
 - Account: **Tenant**, **Manage**, and **Device** → associated cards or lists.
-- Catalog and POS: category label + optional count → product content.
+- Catalog and POS: product label + optional count → product content.
 
 ## 7. Buttons
 

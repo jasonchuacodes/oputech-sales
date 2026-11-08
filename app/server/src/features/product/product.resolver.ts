@@ -8,6 +8,7 @@ import { InvalidInputException, PayloadTooLargeException } from '../../common/ex
 import { TenantAccessGuard } from '../tenant/guards/tenant-access.guard'
 import { TenantId } from '../tenant/decorators/tenant-id.decorator'
 import { AdminGuard } from '../auth/guards/admin.guard'
+import { ProductPaginationDto } from './dto/product-pagination.dto'
 
 @UseGuards(JwtAuthGuard, TenantAccessGuard)
 @Resolver('Product')
@@ -15,8 +16,20 @@ export class ProductResolver {
   constructor(private readonly product: ProductService) {}
 
   @Query()
-  products(@TenantId() tenantId: string, @Args('search') search?: string) {
-    return this.product.findAll(tenantId, search)
+  products(
+    @TenantId() tenantId: string,
+    @Args('pagination', { nullable: true }) pagination?: ProductPaginationDto,
+  ) {
+    return this.product.list(tenantId, pagination)
+  }
+
+  @Query()
+  productsByName(
+    @TenantId() tenantId: string,
+    @Args('search') search: string,
+    @Args('pagination', { nullable: true }) pagination?: ProductPaginationDto,
+  ) {
+    return this.product.listByName(tenantId, search, pagination)
   }
 
   @Mutation()

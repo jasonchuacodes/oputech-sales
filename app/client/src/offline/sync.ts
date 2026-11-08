@@ -1,7 +1,7 @@
 import { isAxiosError } from 'axios'
 import api from '../lib/axios'
 import { GraphQLRequestError } from '../lib/graphql'
-import { getProducts } from '../services/product/product.api'
+import { getAllProducts } from '../services/product/product.api'
 import {
   createTransaction,
   deleteTransaction,
@@ -222,7 +222,7 @@ export const refreshLocalSnapshot = async (
   const cutoff = new Date(Date.now() - HISTORY_DAYS * 24 * 60 * 60 * 1000)
   cutoff.setHours(0, 0, 0, 0)
   const [products, transactions] = await Promise.all([
-    getProducts(undefined, tenantId),
+    getAllProducts(tenantId),
     getTransactions({ from: cutoff.toISOString() }, tenantId),
   ])
   const cachedAt = new Date().toISOString()

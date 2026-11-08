@@ -5,11 +5,26 @@ type Product {
   price: Float!
   imageUrl: String
   printCount: Int
-  category: String!
+}
+
+input ProductPaginationInput {
+  page: Int = 1
+  pageSize: Int = 50
+}
+
+type ProductPage {
+  items: [Product!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+  totalPages: Int!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
 }
 
 extend type Query {
-  products(search: String): [Product!]!
+  products(pagination: ProductPaginationInput): ProductPage!
+  productsByName(search: String!, pagination: ProductPaginationInput): ProductPage!
 }
 
 input CreateProductInput {
@@ -17,7 +32,6 @@ input CreateProductInput {
   price: Float!
   imageUrl: String
   printCount: Int
-  category: String!
 }
 
 input UpdateProductInput {
@@ -25,7 +39,6 @@ input UpdateProductInput {
   price: Float
   imageUrl: String
   printCount: Int
-  category: String
 }
 
 extend type Mutation {

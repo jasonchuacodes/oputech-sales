@@ -96,6 +96,10 @@ class OfflineDatabase extends Dexie {
       drafts: '&key,updatedAt',
       meta: '&key',
     }
+    const storesV6 = {
+      ...storesV4,
+      products: '&id,tenantId,[tenantId+name],name,cachedAt',
+    }
 
     this.version(1).stores(storesV2)
     this.version(2)
@@ -121,6 +125,16 @@ class OfflineDatabase extends Dexie {
           transaction.table('meta').clear(),
         ])
       })
+    this.version(6)
+      .stores(storesV6)
+      .upgrade((transaction) =>
+        transaction
+          .table<LocalProduct & { category?: unknown }, string>('products')
+          .toCollection()
+          .modify((product) => {
+            delete product.category
+          })
+      )
   }
 }
 

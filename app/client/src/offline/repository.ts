@@ -1,5 +1,6 @@
 import { offlineDb, type LocalTransaction } from './database'
 import { type Product } from '../services/product/product.types'
+import { type ProductPage } from '../services/product/product.types'
 import {
   type CreateTransactionInput,
   type TransactionFilter,
@@ -26,6 +27,41 @@ export const listLocalProducts = async (
   return products.filter((product) =>
     product.name.toLocaleLowerCase().includes(term)
   )
+}
+
+export const listLocalProductsPage = async (
+  tenantId: string,
+  page: number,
+  pageSize: number,
+  search?: string
+): Promise<ProductPage> => {
+  const term = search?.trim().toLocaleLowerCase()
+  const matchingProducts = () => {
+    const products = offlineDb.products.where('tenantId').equals(tenantId)
+    return term
+      ? products.filter((product) =>
+          product.name.toLocaleLowerCase().includes(term)
+        )
+      : products
+  }
+
+  const totalCount = await matchingProducts().count()
+  const totalPages = Math.ceil(totalCount / pageSize)
+  const selectedPage = Math.min(page, Math.max(totalPages, 1))
+  const items = await matchingProducts()
+    .offset((selectedPage - 1) * pageSize)
+    .limit(pageSize)
+    .toArray()
+
+  return {
+    items,
+    page: selectedPage,
+    pageSize,
+    totalCount,
+    totalPages,
+    hasNextPage: selectedPage < totalPages,
+    hasPreviousPage: selectedPage > 1 && totalPages > 0,
+  }
 }
 
 export const listLocalTransactions = async (

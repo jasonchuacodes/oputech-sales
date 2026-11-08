@@ -64,9 +64,6 @@ const POSPage = () => {
     })
   }, [draftKey, paymentType, transactionItems])
 
-  const mainProducts = products.filter((p) => p.category === 'main')
-  const addOnProducts = products.filter((p) => p.category === 'add-on')
-
   const handleProductClick = (product: Product) => {
     setTransactionItems((prev) => {
       const existing = prev.find((i) => i.productId === product.id)
@@ -145,24 +142,10 @@ const POSPage = () => {
                   : 'No products found.'}
               </p>
             )}
-            {!isLoading && mainProducts.length > 0 && (
-              <ContentSection label="Main" className="px-1">
+            {!isLoading && products.length > 0 && (
+              <ContentSection label="Products" className="px-1">
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
-                  {mainProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      quantity={transactionItems.find((item) => item.productId === product.id)?.quantity}
-                      onClick={handleProductClick}
-                    />
-                  ))}
-                </div>
-              </ContentSection>
-            )}
-            {!isLoading && addOnProducts.length > 0 && (
-              <ContentSection label="Add-ons" className="px-1">
-                <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
-                  {addOnProducts.map((product) => (
+                  {products.map((product) => (
                     <ProductCard
                       key={product.id}
                       product={product}

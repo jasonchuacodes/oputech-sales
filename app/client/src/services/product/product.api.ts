@@ -1,5 +1,13 @@
 import { requestGraphQL } from '../../lib/graphql'
-import { Product, CreateProductInput, UpdateProductInput } from './product.types'
+import {
+  Product,
+  CreateProductInput,
+  ProductPage,
+  ProductPagination,
+  UpdateProductInput,
+} from './product.types'
+
+export const PRODUCT_PAGE_SIZE = 50
 
 const PRODUCT_FIELDS = `
   id
@@ -7,22 +15,82 @@ const PRODUCT_FIELDS = `
   price
   imageUrl
   printCount
-  category
 `
 
 const GET_PRODUCTS = `
-  query GetProducts($search: String) {
-    products(search: $search) {
-      ${PRODUCT_FIELDS}
+  query GetProducts($pagination: ProductPaginationInput) {
+    products(pagination: $pagination) {
+      items {
+        ${PRODUCT_FIELDS}
+      }
+      page
+      pageSize
+      totalCount
+      totalPages
+      hasNextPage
+      hasPreviousPage
     }
   }
 `
 
-export async function getProducts(search?: string, tenantId?: string): Promise<Product[]> {
-  const data = await requestGraphQL<{ products: Product[] }>(GET_PRODUCTS, {
-    search: search || undefined,
-  }, { tenantId })
+const GET_PRODUCTS_BY_NAME = `
+  query GetProductsByName($search: String!, $pagination: ProductPaginationInput) {
+    productsByName(search: $search, pagination: $pagination) {
+      items {
+        ${PRODUCT_FIELDS}
+      }
+      page
+      pageSize
+      totalCount
+      totalPages
+      hasNextPage
+      hasPreviousPage
+    }
+  }
+`
+
+export async function getProducts(
+  pagination: ProductPagination,
+  tenantId?: string,
+  signal?: AbortSignal
+): Promise<ProductPage> {
+  const data = await requestGraphQL<{ products: ProductPage }>(GET_PRODUCTS, {
+    pagination,
+  }, { tenantId, signal })
   return data.products
+}
+
+export async function getProductsByName(
+  search: string,
+  pagination: ProductPagination,
+  tenantId?: string,
+  signal?: AbortSignal
+): Promise<ProductPage> {
+  const data = await requestGraphQL<{ productsByName: ProductPage }>(
+    GET_PRODUCTS_BY_NAME,
+    { search, pagination },
+    { tenantId, signal }
+  )
+  return data.productsByName
+}
+
+export async function getAllProducts(tenantId?: string): Promise<Product[]> {
+  const products: Product[] = []
+  let page = 1
+
+  while (true) {
+    const result = await getProducts(
+      { page, pageSize: PRODUCT_PAGE_SIZE },
+      tenantId
+    )
+    products.push(...result.items)
+
+    if (!result.hasNextPage) return products
+    if (result.items.length === 0) {
+      throw new Error('The product catalog pagination response was incomplete')
+    }
+    page += 1
+  }
 }
 
 const CREATE_PRODUCT = `

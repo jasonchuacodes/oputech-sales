@@ -1,11 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument } from 'mongoose'
 
-export enum ProductCategory {
-  Main = 'main',
-  AddOn = 'add-on',
-}
-
 export type ProductDocument = HydratedDocument<Product>
 
 @Schema({ timestamps: true })
@@ -24,10 +19,8 @@ export class Product {
 
   @Prop()
   printCount?: number
-
-  @Prop({ required: true, enum: Object.values(ProductCategory), default: ProductCategory.Main })
-  category: ProductCategory
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product)
 ProductSchema.index({ tenantId: 1, name: 1 })
+ProductSchema.index({ tenantId: 1, _id: 1 })

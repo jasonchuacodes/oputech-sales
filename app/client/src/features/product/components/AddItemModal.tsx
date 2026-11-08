@@ -6,7 +6,6 @@ import {
   CustomModal,
   Input,
   Label,
-  SheetSelect,
   ImageDropzone,
 } from '../../../components'
 import { NumberInput } from '../../../components/ui/number-input'
@@ -32,7 +31,7 @@ export const AddItemModal = ({ open, onClose }: Props) => {
     control,
     formState: { errors },
   } = useForm<AddProductInput>({
-    defaultValues: { category: 'main', price: 0, printCount: 0 },
+    defaultValues: { price: 0, printCount: 0 },
     resolver: zodResolver(AddProductSchema),
   })
 
@@ -49,7 +48,6 @@ export const AddItemModal = ({ open, onClose }: Props) => {
         price: data.price,
         imageUrl: data.imageUrl,
         printCount: data.printCount,
-        category: data.category,
       },
       { onSuccess: handleClose }
     )
@@ -116,26 +114,6 @@ export const AddItemModal = ({ open, onClose }: Props) => {
               {errors.printCount.message}
             </p>
           )}
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label>Category *</Label>
-          <Controller
-            name="category"
-            control={control}
-            render={({ field }) => (
-              <SheetSelect
-                value={field.value}
-                onValueChange={field.onChange}
-                title="Choose a category"
-                placeholder="Select a category…"
-                options={[
-                  { value: 'main', label: 'Main' },
-                  { value: 'add-on', label: 'Add-on' },
-                ]}
-              />
-            )}
-          />
         </div>
       </div>
     </CustomModal>

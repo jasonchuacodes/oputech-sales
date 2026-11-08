@@ -1,12 +1,24 @@
-export type ProductCategory = 'main' | 'add-on'
-
 export interface Product {
   id: string
   name: string
   price: number
   imageUrl?: string
   printCount?: number
-  category: ProductCategory
+}
+
+export interface ProductPagination {
+  page: number
+  pageSize: number
+}
+
+export interface ProductPage {
+  items: Product[]
+  page: number
+  pageSize: number
+  totalCount: number
+  totalPages: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
 }
 
 export interface CreateProductInput {
@@ -14,7 +26,6 @@ export interface CreateProductInput {
   price: number
   imageUrl?: string
   printCount?: number
-  category: ProductCategory
 }
 
 export interface UpdateProductInput {
@@ -22,5 +33,4 @@ export interface UpdateProductInput {
   price?: number
   imageUrl?: string
   printCount?: number
-  category?: ProductCategory
 }

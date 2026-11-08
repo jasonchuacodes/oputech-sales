@@ -1,5 +1,4 @@
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator'
-import { ProductCategory } from '../schemas/product.schema'
+import { IsNumber, IsOptional, IsString, Min } from 'class-validator'
 
 export class UpdateProductDto {
   @IsOptional()
@@ -20,7 +19,4 @@ export class UpdateProductDto {
   @Min(0)
   printCount?: number
 
-  @IsOptional()
-  @IsEnum(ProductCategory)
-  category?: ProductCategory
 }
