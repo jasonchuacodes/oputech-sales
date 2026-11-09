@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Button, Input, Label, PasswordInput } from '../../components'
+import { BrandLogo, Button, Input, Label, PasswordInput } from '../../components'
 import { Footer } from './components/Footer'
 import { LoginLayout } from './components/LoginLayout'
 import { useLoginMutation } from '../../services/auth/auth.queries'
@@ -65,19 +65,16 @@ export default function LoginPage() {
         <div className="flex flex-1 flex-col items-center justify-center">
           <div className="w-full max-w-sm">
             <div className="rounded-card bg-card shadow-card p-5 sm:p-6">
-              <div className="mb-5 flex justify-center">
-                <div
-                  className="rounded-card bg-primary text-primary-foreground flex size-12 items-center justify-center text-base font-bold"
-                  aria-label="Oputech Sales"
-                >
-                  OS
-                </div>
+              <div className="mb-6 flex justify-center">
+                <BrandLogo
+                  variant="wordmark"
+                  className="w-56 max-w-full"
+                  priority
+                />
               </div>
               <div className="mb-6 text-center">
-                <h1 className="text-foreground text-xl font-semibold">
-                  Oputech Sales
-                </h1>
-                <p className="text-text-secondary mt-1 text-sm">
+                <h1 className="sr-only">Sign in</h1>
+                <p className="text-text-secondary text-sm">
                   Sign in to manage today&apos;s business.
                 </p>
               </div>

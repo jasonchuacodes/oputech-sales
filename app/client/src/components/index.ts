@@ -9,6 +9,7 @@ export { Spinner } from './ui/spinner'
 export { Label } from './ui/label'
 export { ImageDropzone } from './ui/image-dropzone'
 export { SheetSelect } from './ui/sheet-select'
+export { BrandLogo } from './BrandLogo'
 export {
   DropdownMenu,
   DropdownMenuTrigger,

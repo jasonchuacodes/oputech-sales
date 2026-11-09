@@ -5,7 +5,11 @@ const CACHE_PREFIX = 'oputech-sales-'
 const CACHE_VERSION = ${JSON.stringify(buildVersion)}
 const SHELL_CACHE = \`\${CACHE_PREFIX}shell-\${CACHE_VERSION}\`
 const RUNTIME_CACHE = \`\${CACHE_PREFIX}runtime-\${CACHE_VERSION}\`
-const PRECACHE_ASSETS = ['/login', '/assets/brand/mark.svg']
+const PRECACHE_ASSETS = [
+  '/login',
+  '/assets/brand/mark.png',
+  '/assets/brand/wordmark.png',
+]
 const RUNTIME_DESTINATIONS = new Set(['font', 'image', 'script', 'style', 'worker'])
 
 self.addEventListener('install', (event) => {

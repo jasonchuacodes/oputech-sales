@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Building2, Check, LogOut, Plus, Users } from 'lucide-react'
-import { Button, Input, Label, Spinner } from '@/components'
+import { BrandLogo, Button, Input, Label, Spinner } from '@/components'
 import { useAuthContext } from '@/context/auth/useAuthContext'
 import { useTenantContext } from '@/context/tenant/useTenantContext'
 import { getApiErrorMessage } from '@/lib/api-error'
@@ -78,9 +78,7 @@ export default function OnboardingPage() {
     <div className="app-canvas min-h-dvh px-5 py-8 sm:px-6">
       <main className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-lg flex-col justify-center">
         <div className="mb-6 text-center">
-          <div className="bg-primary text-primary-foreground rounded-card mx-auto mb-4 flex size-12 items-center justify-center text-base font-bold">
-            OS
-          </div>
+          <BrandLogo className="mx-auto mb-4 w-16" />
           <h1 className="text-xl font-semibold">Set up your workspace</h1>
           <p className="text-text-secondary mt-2">
             Select where you&apos;ll manage sales, inventory, and reports.

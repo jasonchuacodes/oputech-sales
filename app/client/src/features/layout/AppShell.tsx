@@ -29,12 +29,12 @@ import { useAuthContext } from '@/context/auth/useAuthContext'
 import { useSyncContext } from '@/context/sync/useSyncContext'
 import { UserRole } from '@/types'
 import { cn } from '@/utils/cn'
-import { Button, Spinner } from '@/components'
+import { BrandLogo, Button, Spinner } from '@/components'
 import { AccountAvatar } from '@/features/account/components/AccountAvatar'
 import { PullToRefreshIndicator } from './components/PullToRefreshIndicator'
 import { SidebarTenantSwitcher } from './components/SidebarTenantSwitcher'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
-import { PublicRoutes, UserRoutes } from '@/routes/paths'
+import { PublicRoutes, UserRoutes, userHomePath } from '@/routes/paths'
 
 type NavItem = {
   label: string
@@ -311,17 +311,18 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
           )}
         >
           {!isSidebarCollapsed && (
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <div className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-md text-xs font-bold">
-                OS
-              </div>
-              <div className="min-w-0">
-                <p className="truncate font-medium">Oputech Sales</p>
-                <p className="text-text-secondary truncate text-xs">
-                  Business operations
-                </p>
-              </div>
-            </div>
+            <Link
+              href={userHomePath(auth.role)}
+              aria-label="Oputech Sales home"
+              className="focus-visible:ring-ring/30 shrink-0 rounded-sm outline-none focus-visible:ring-3"
+            >
+              <BrandLogo
+                variant="wordmark"
+                alt=""
+                className="w-36"
+                priority
+              />
+            </Link>
           )}
           <Button
             type="button"

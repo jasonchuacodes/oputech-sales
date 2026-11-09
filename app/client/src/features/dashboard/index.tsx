@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Bell } from 'lucide-react'
 import { PageHeader } from '../../components/ui/page-header'
-import { Button, ContentSection, SheetSelect } from '../../components'
+import { BrandLogo, Button, ContentSection, SheetSelect } from '../../components'
 import { useTenantContext } from '../../context/tenant/useTenantContext'
 import { useAnalytics } from '../../services/analytics/analytics.queries'
 import { AnalyticsRange } from '../../services/analytics/analytics.types'
@@ -32,9 +32,7 @@ const DashboardPage = () => {
     <>
       <header className="border-border/60 bg-background/95 sticky top-0 z-20 flex h-16 items-center justify-between border-b px-5 backdrop-blur md:hidden">
         <div className="flex items-center gap-3">
-          <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-md text-xs font-bold">
-            OS
-          </span>
+          <BrandLogo className="w-9 shrink-0" />
           <h1 className="max-w-[13rem] truncate text-base font-medium">
             {tenant.currentTenant?.name ?? 'Oputech Sales'}
           </h1>

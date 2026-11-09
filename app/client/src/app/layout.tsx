@@ -20,6 +20,10 @@ export const metadata: Metadata = {
   },
   description: 'Mobile-first point of sale and business operations.',
   formatDetection: { telephone: false },
+  icons: {
+    icon: '/assets/brand/mark.png',
+    apple: '/assets/brand/icon-apple-touch-180.png',
+  },
   title: {
     default: 'Oputech Sales',
     template: '%s · Oputech Sales',
