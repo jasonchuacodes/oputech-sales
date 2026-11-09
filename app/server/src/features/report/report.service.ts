@@ -253,7 +253,11 @@ export class ReportService {
   async remit(tenantId: string, reportId: string, isRemitted: boolean): Promise<ReportDocument> {
     this.assertValidReportId(reportId)
     const report = await this.reportModel
-      .findOneAndUpdate({ _id: reportId, tenantId }, { isRemitted }, { new: true })
+      .findOneAndUpdate(
+        { _id: reportId, tenantId },
+        { isRemitted },
+        { returnDocument: 'after' },
+      )
       .exec()
     if (!report) {
       throw new NotFoundException(
