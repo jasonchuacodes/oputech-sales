@@ -8,9 +8,43 @@ interface ProductCardProps {
   product: Product
   quantity?: number
   onClick: (product: Product) => void
+  variant?: 'card' | 'row'
 }
 
-export const ProductCard = ({ product, quantity = 0, onClick }: ProductCardProps) => {
+export const ProductCard = ({
+  product,
+  quantity = 0,
+  onClick,
+  variant = 'card',
+}: ProductCardProps) => {
+  if (variant === 'row') {
+    return (
+      <button
+        type="button"
+        onClick={() => onClick(product)}
+        className={cn(
+          'bg-card flex min-h-18 w-full cursor-pointer items-center gap-3 p-3 text-left transition-[background-color,box-shadow,transform] outline-none',
+          'hover:bg-surface-hover focus-visible:ring-ring/30 focus-visible:z-10 focus-visible:ring-3 focus-visible:ring-inset active:translate-y-px motion-reduce:transform-none motion-reduce:transition-none',
+          quantity > 0 && 'bg-surface-selected hover:bg-surface-selected'
+        )}
+      >
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="text-text-heading truncate font-medium">
+            {product.name}
+          </span>
+          {quantity > 0 && (
+            <span className="text-text-tertiary text-xs tabular-nums">
+              {quantity.toLocaleString()} in cart
+            </span>
+          )}
+        </span>
+        <span className="shrink-0 font-semibold whitespace-nowrap tabular-nums">
+          {formatCurrency(product.price)}
+        </span>
+      </button>
+    )
+  }
+
   return (
     <button
       type="button"

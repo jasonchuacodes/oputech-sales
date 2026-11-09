@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import { Search } from 'lucide-react'
-import { ContentSection, Input, Spinner } from '../../components'
+import { LayoutGrid, List, Search } from 'lucide-react'
+import { Button, ContentSection, Input, Spinner } from '../../components'
 import { PageHeader } from '../../components/ui/page-header'
 import { PaymentType, TransactionItem } from '../../services/transaction/transaction.types'
 import { Product } from '../../services/product/product.types'
@@ -20,12 +20,15 @@ interface PosDraft {
   paymentType: PaymentType
 }
 
+type ProductView = 'card' | 'row'
+
 const POSPage = () => {
   const [transactionItems, setTransactionItems] = useState<TransactionItem[]>(
     []
   )
   const [paymentType, setPaymentType] = useState<PaymentType>(PaymentType.Cash)
   const [search, setSearch] = useState('')
+  const [productView, setProductView] = useState<ProductView>('card')
   const draftLoaded = useRef(false)
   const { auth } = useAuthContext()
   const draftKey = getPosDraftKey(auth?.currentTenantId)
@@ -143,17 +146,84 @@ const POSPage = () => {
               </p>
             )}
             {!isLoading && products.length > 0 && (
-              <ContentSection label="Products" className="px-1">
-                <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
-                  {products.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      quantity={transactionItems.find((item) => item.productId === product.id)?.quantity}
-                      onClick={handleProductClick}
-                    />
-                  ))}
-                </div>
+              <ContentSection
+                label="Products"
+                className="px-1"
+                rightContent={
+                  <div
+                    role="group"
+                    aria-label="Product display"
+                    className="bg-card shadow-card flex items-center rounded-sm p-0.5"
+                  >
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Card view"
+                      aria-pressed={productView === 'card'}
+                      className={
+                        productView === 'card'
+                          ? 'bg-surface-selected text-brand hover:bg-surface-selected'
+                          : 'text-text-tertiary'
+                      }
+                      onClick={() => setProductView('card')}
+                    >
+                      <LayoutGrid aria-hidden="true" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Row view"
+                      aria-pressed={productView === 'row'}
+                      className={
+                        productView === 'row'
+                          ? 'bg-surface-selected text-brand hover:bg-surface-selected'
+                          : 'text-text-tertiary'
+                      }
+                      onClick={() => setProductView('row')}
+                    >
+                      <List aria-hidden="true" />
+                    </Button>
+                  </div>
+                }
+              >
+                {productView === 'card' ? (
+                  <div className="mt-2 grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
+                    {products.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        quantity={
+                          transactionItems.find(
+                            (item) => item.productId === product.id
+                          )?.quantity
+                        }
+                        onClick={handleProductClick}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <ul className="rounded-card bg-card shadow-card mt-2 overflow-hidden">
+                    {products.map((product) => (
+                      <li
+                        key={product.id}
+                        className="border-border/60 border-b last:border-b-0"
+                      >
+                        <ProductCard
+                          product={product}
+                          quantity={
+                            transactionItems.find(
+                              (item) => item.productId === product.id
+                            )?.quantity
+                          }
+                          onClick={handleProductClick}
+                          variant="row"
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </ContentSection>
             )}
           </div>
