@@ -34,6 +34,7 @@ import {
   getTransactionStatus,
   getTransactionTitle,
 } from './transaction-display'
+import { getTransactionSummary } from './transaction-summary'
 
 const TransactionsPage = () => {
   const router = useRouter()
@@ -64,18 +65,11 @@ const TransactionsPage = () => {
   )
   const showGenerateReport =
     !isLoading && pendingReportTransactions.length > 0
-  const pendingReportTotal = pendingReportTransactions.reduce(
-    (total, transaction) =>
-      total +
-      (transaction.type === TransactionType.Expense
-        ? -transaction.total
-        : transaction.total),
-    0
-  )
+  const pendingReportSummary = getTransactionSummary(pendingReportTransactions)
   const formattedPendingReportTotal =
-    pendingReportTotal < 0
-      ? `-${formatCurrency(Math.abs(pendingReportTotal))}`
-      : formatCurrency(pendingReportTotal)
+    pendingReportSummary.total < 0
+      ? `-${formatCurrency(Math.abs(pendingReportSummary.total))}`
+      : formatCurrency(pendingReportSummary.total)
   const syncBusy = sync.phase === 'checking' || sync.phase === 'syncing'
   const changeLabel = `${sync.pendingCount} ${sync.pendingCount === 1 ? 'change' : 'changes'}`
   const reportSyncMessage = !sync.statsReady
@@ -213,13 +207,40 @@ const TransactionsPage = () => {
 
   const reportFooter = showGenerateReport ? (
     <div className="border-border/60 flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-text-secondary text-sm font-normal">
-        {pendingReportTransactions.length}{' '}
-        {pendingReportTransactions.length === 1
-          ? 'pending transaction'
-          : 'pending transactions'}{' '}
-        - Total: {formattedPendingReportTotal}
-      </p>
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <p className="text-text-secondary text-sm font-normal">
+          {pendingReportTransactions.length}{' '}
+          {pendingReportTransactions.length === 1
+            ? 'pending transaction'
+            : 'pending transactions'}
+        </p>
+        <dl className="text-text-secondary flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums">
+          <div className="flex gap-1">
+            <dt>Total:</dt>
+            <dd className="text-text-heading font-semibold">
+              {formattedPendingReportTotal}
+            </dd>
+          </div>
+          <div className="flex gap-1">
+            <dt>Total prints:</dt>
+            <dd className="text-text-heading font-semibold">
+              {pendingReportSummary.totalPrintCount.toLocaleString()}
+            </dd>
+          </div>
+          <div className="flex gap-1">
+            <dt>Cash:</dt>
+            <dd className="text-text-heading font-semibold">
+              {formatCurrency(pendingReportSummary.totalCash)}
+            </dd>
+          </div>
+          <div className="flex gap-1">
+            <dt>Online:</dt>
+            <dd className="text-text-heading font-semibold">
+              {formatCurrency(pendingReportSummary.totalOnline)}
+            </dd>
+          </div>
+        </dl>
+      </div>
       <Button
         size="sm"
         className="w-full sm:w-auto"

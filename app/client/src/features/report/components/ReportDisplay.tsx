@@ -63,6 +63,7 @@ const expenseColumns: DataTableColumn<ReportExpense>[] = [
 export const ReportDisplay = ({ report, onDelete }: Props) => {
   const { auth } = useAuthContext()
   const isAdmin = auth?.role !== UserRole.STAFF
+  const netIncome = report.totalIncome - report.totalExpenses
 
   return (
     <div className="flex flex-col gap-4">
@@ -107,7 +108,7 @@ export const ReportDisplay = ({ report, onDelete }: Props) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
           <div className="bg-background flex flex-col gap-1 rounded-md p-3 sm:p-4">
             <span className="text-xs font-medium text-slate-500">Cash</span>
             <span className="text-foreground text-metric-md font-semibold">
@@ -126,11 +127,11 @@ export const ReportDisplay = ({ report, onDelete }: Props) => {
               {formatCurrency(report.totalExpenses)}
             </span>
           </div>
-          <div className="bg-primary text-primary-foreground order-first col-span-2 flex flex-col gap-1 rounded-md p-4 sm:order-none sm:col-span-1">
-            <span className="text-primary-foreground/70 text-xs font-medium">
+          <div className="bg-background flex flex-col gap-1 rounded-md p-3 sm:p-4">
+            <span className="text-xs font-medium text-slate-500">
               Total Income
             </span>
-            <span className="text-metric-md font-semibold">
+            <span className="text-foreground text-metric-md font-semibold">
               {formatCurrency(report.totalIncome)}
             </span>
           </div>
@@ -140,6 +141,14 @@ export const ReportDisplay = ({ report, onDelete }: Props) => {
             </span>
             <span className="text-foreground text-metric-md font-semibold">
               {report.totalPrintCount.toLocaleString()}
+            </span>
+          </div>
+          <div className="bg-primary text-primary-foreground flex flex-col gap-1 rounded-md p-3 sm:p-4">
+            <span className="text-primary-foreground/70 text-xs font-medium">
+              Net Income
+            </span>
+            <span className="text-metric-md font-semibold">
+              {formatCurrency(netIncome)}
             </span>
           </div>
         </div>
