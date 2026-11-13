@@ -38,11 +38,15 @@ const main = async () => {
           revision?: number
         }
       | undefined
+    const legacyRevision = Math.max(stock.sequence ?? 1, 1)
+    const revision = inventory?.revision
     if (
       !inventory ||
-      inventory.stockCount?.toString() !== stock.quantity?.toString() ||
       inventory.unit !== stock.unit ||
-      inventory.revision !== Math.max(stock.sequence ?? 1, 1)
+      revision === undefined ||
+      revision < legacyRevision ||
+      (revision === legacyRevision &&
+        inventory.stockCount?.toString() !== stock.quantity?.toString())
     ) {
       throw new Error(
         `Product ${String(stock.productId)} is not safely migrated`
