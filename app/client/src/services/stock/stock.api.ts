@@ -6,6 +6,7 @@ import type {
   ReconcileStockInput,
   StockMovement,
   StockMovementReason,
+  StockUnitOption,
 } from './stock.types'
 import type { InventoryProduct } from '../product/product.types'
 
@@ -54,6 +55,41 @@ const GET_MOVEMENTS = `
     }
   }
 `
+
+const GET_STOCK_UNIT_OPTIONS = `
+  query GetStockUnitOptions {
+    stockUnitOptions {
+      label
+    }
+  }
+`
+
+export const getStockUnitOptions = async (
+  tenantId?: string
+): Promise<StockUnitOption[]> => {
+  const data = await requestGraphQL<{
+    stockUnitOptions: StockUnitOption[]
+  }>(GET_STOCK_UNIT_OPTIONS, undefined, { tenantId })
+  return data.stockUnitOptions
+}
+
+const CREATE_STOCK_UNIT_OPTION = `
+  mutation CreateStockUnitOption($input: CreateStockUnitOptionInput!) {
+    createStockUnitOption(input: $input) {
+      label
+    }
+  }
+`
+
+export const createStockUnitOption = async (
+  label: string,
+  tenantId?: string
+): Promise<StockUnitOption> => {
+  const data = await requestGraphQL<{
+    createStockUnitOption: StockUnitOption
+  }>(CREATE_STOCK_UNIT_OPTION, { input: { label } }, { tenantId })
+  return data.createStockUnitOption
+}
 
 export const getStockMovements = async (
   page: number,

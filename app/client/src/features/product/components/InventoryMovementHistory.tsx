@@ -6,8 +6,8 @@ import { DataTable, type DataTableColumn } from '@/components/ui/data-table'
 import type { Product } from '@/services/product/product.types'
 import { useStockMovements } from '@/services/stock/stock.queries'
 import {
+  formatStockUnit,
   StockMovementReason,
-  stockUnitLabels,
   type StockMovement,
 } from '@/services/stock/stock.types'
 import { formatTime } from '@/utils/date'
@@ -61,7 +61,7 @@ export const InventoryMovementHistory = ({ open, product, onClose }: Props) => {
           }
         >
           {Number(movement.delta) > 0 ? '+' : ''}
-          {quantity(movement.delta)} {stockUnitLabels[movement.unit]}
+          {quantity(movement.delta)} {formatStockUnit(movement.unit)}
         </span>
       ),
     },
@@ -69,7 +69,7 @@ export const InventoryMovementHistory = ({ open, product, onClose }: Props) => {
       id: 'balance',
       heading: 'Balance',
       cell: (movement) =>
-        `${quantity(movement.balanceBefore)} → ${quantity(movement.balanceAfter)} ${stockUnitLabels[movement.unit]}`,
+        `${quantity(movement.balanceBefore)} → ${quantity(movement.balanceAfter)} ${formatStockUnit(movement.unit)}`,
     },
     {
       id: 'note',
@@ -203,7 +203,7 @@ const MobileMovementList = ({
               }
             >
               {Number(movement.delta) > 0 ? '+' : ''}
-              {quantity(movement.delta)} {stockUnitLabels[movement.unit]}
+              {quantity(movement.delta)} {formatStockUnit(movement.unit)}
             </span>
             <span className="text-text-tertiary text-xs">
               {quantity(movement.balanceBefore)} →{' '}

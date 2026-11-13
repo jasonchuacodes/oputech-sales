@@ -13,7 +13,6 @@ import { ReportModule } from './features/report/report.module'
 import { formatGraphQLError } from './common/exceptions'
 import { TenantModule } from './features/tenant/tenant.module'
 import { StockModule } from './features/stock/stock.module'
-import { StockUnit } from './features/stock/stock-unit'
 import { DecimalScalar } from './common/graphql/decimal.scalar'
 
 @Module({
@@ -24,17 +23,6 @@ import { DecimalScalar } from './common/graphql/decimal.scalar'
       typePaths: [path.resolve(__dirname, './graphql/schema/*.gql')],
       playground: true,
       formatError: formatGraphQLError,
-      resolvers: {
-        StockUnit: {
-          KG: StockUnit.KG,
-          G: StockUnit.G,
-          L: StockUnit.L,
-          ML: StockUnit.ML,
-          PC: StockUnit.PC,
-          GAL: StockUnit.GAL,
-          BAG: StockUnit.BAG,
-        },
-      },
     }),
     UsersModule,
     AuthModule,

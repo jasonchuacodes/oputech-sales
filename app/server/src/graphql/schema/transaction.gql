@@ -20,7 +20,7 @@ type TransactionItem {
   printCount: Int!
   quantity: Int!
   inventoryQuantity: Decimal
-  inventoryUnit: StockUnit
+  inventoryUnit: String
 }
 
 type Transaction {

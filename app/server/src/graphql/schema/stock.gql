@@ -1,15 +1,5 @@
 scalar Decimal
 
-enum StockUnit {
-  KG
-  G
-  L
-  ML
-  PC
-  GAL
-  BAG
-}
-
 enum StockMovementReason {
   OPENING
   RECEIPT
@@ -28,7 +18,7 @@ type StockMovement {
   productId: ID!
   product: Product
   productName: String!
-  unit: StockUnit!
+  unit: String!
   delta: Decimal!
   balanceBefore: Decimal!
   balanceAfter: Decimal!
@@ -68,10 +58,18 @@ type StockMovementPage {
 input EnableStockTrackingInput {
   clientMutationId: ID!
   productId: ID!
-  unit: StockUnit!
+  unit: String!
   openingQuantity: Decimal!
   occurredAt: String
   note: String
+}
+
+type StockUnitOption {
+  label: String!
+}
+
+input CreateStockUnitOptionInput {
+  label: String!
 }
 
 input ReceiveStockInput {
@@ -94,6 +92,7 @@ input ReconcileStockInput {
 }
 
 extend type Query {
+  stockUnitOptions: [StockUnitOption!]!
   stockMovements(
     filter: StockMovementFilterInput
     pagination: StockPaginationInput
@@ -101,6 +100,7 @@ extend type Query {
 }
 
 extend type Mutation {
+  createStockUnitOption(input: CreateStockUnitOptionInput!): StockUnitOption!
   enableStockTracking(input: EnableStockTrackingInput!): Product!
   receiveStock(input: ReceiveStockInput!): Product!
   reconcileStock(input: ReconcileStockInput!): Product!

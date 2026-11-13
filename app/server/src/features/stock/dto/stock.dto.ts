@@ -8,7 +8,7 @@ import {
   Max,
   Min,
 } from 'class-validator'
-import { StockUnit } from '../stock-unit'
+import { STOCK_UNIT_MAX_LENGTH } from '../stock-unit'
 import {
   StockMovementReason,
   StockMovementSourceType,
@@ -50,8 +50,10 @@ export class EnableStockTrackingDto {
   @IsNotEmpty()
   productId: string
 
-  @IsEnum(StockUnit)
-  unit: StockUnit
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(STOCK_UNIT_MAX_LENGTH)
+  unit: string
 
   @IsString()
   openingQuantity: string
@@ -64,6 +66,13 @@ export class EnableStockTrackingDto {
   @IsString()
   @MaxLength(500)
   note?: string
+}
+
+export class CreateStockUnitOptionDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(STOCK_UNIT_MAX_LENGTH)
+  label: string
 }
 
 export class ReceiveStockDto {

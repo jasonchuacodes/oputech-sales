@@ -12,3 +12,7 @@ export interface CreateTenantInput {
 export interface UpdateTenantInput {
   name: string
 }
+
+export interface StockUnitOption {
+  label: string
+}

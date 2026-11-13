@@ -5,8 +5,10 @@ import { offlineDb } from '@/offline/database'
 import type { InventoryProduct } from '../product/product.types'
 import { productKeys } from '../product/product.queries'
 import {
+  createStockUnitOption,
   enableStockTracking,
   getStockMovements,
+  getStockUnitOptions,
   receiveStock,
   reconcileStock,
 } from './stock.api'
@@ -15,11 +17,14 @@ import type {
   ReceiveStockInput,
   ReconcileStockInput,
   StockMovementReason,
+  StockUnitOption,
 } from './stock.types'
 
 export const stockKeys = {
   all: ['stocks'] as const,
   tenant: (tenantId?: string) => [...stockKeys.all, tenantId] as const,
+  unitOptions: (tenantId?: string) =>
+    [...stockKeys.tenant(tenantId), 'unit-options'] as const,
   movements: (
     tenantId: string | undefined,
     page: number,
@@ -33,6 +38,44 @@ export const stockKeys = {
       productId,
       reason,
     ] as const,
+}
+
+export const useStockUnitOptions = (enabled = true) => {
+  const { currentTenant } = useTenantContext()
+  const tenantId = currentTenant?.id
+  return useQuery({
+    queryKey: stockKeys.unitOptions(tenantId),
+    queryFn: () => getStockUnitOptions(tenantId),
+    enabled: !!tenantId && enabled,
+  })
+}
+
+export const useCreateStockUnitOption = () => {
+  const queryClient = useQueryClient()
+  const { currentTenant } = useTenantContext()
+  const tenantId = currentTenant?.id
+  return useMutation({
+    networkMode: 'always',
+    mutationFn: (label: string) => createStockUnitOption(label, tenantId),
+    onSuccess: (option) => {
+      queryClient.setQueryData<StockUnitOption[]>(
+        stockKeys.unitOptions(tenantId),
+        (current = []) =>
+          [...current.filter((item) => item.label !== option.label), option].sort(
+            (left, right) =>
+              left.label.localeCompare(right.label, undefined, {
+                sensitivity: 'base',
+              })
+          )
+      )
+      toast.success('Base unit added')
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : 'The base unit could not be added'
+      )
+    },
+  })
 }
 
 export const useStockMovements = (

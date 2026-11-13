@@ -26,8 +26,15 @@ import {
 import {
   AuthenticatedUser,
   CreateTenantInput,
+  StockUnitOption,
   UpdateTenantInput,
 } from './tenant.types'
+import {
+  canonicalizeStockUnit,
+  isValidStockUnit,
+  normalizeStockUnit,
+  STOCK_UNIT_MAX_LENGTH,
+} from '../stock/stock-unit'
 
 @Injectable()
 export class TenantService {
@@ -63,6 +70,86 @@ export class TenantService {
     }
 
     return this.tenantModel.find(query).sort({ name: 1 }).exec()
+  }
+
+  async listStockUnits(tenantId: string): Promise<StockUnitOption[]> {
+    const tenant = await this.tenantModel
+      .findById(tenantId)
+      .select('stockUnits')
+      .exec()
+    if (!tenant) {
+      throw new NotFoundException('The requested tenant was not found.')
+    }
+    return (tenant.stockUnits ?? [])
+      .map(({ label }) => ({ label }))
+      .sort((left, right) =>
+        left.label.localeCompare(right.label, undefined, {
+          sensitivity: 'base',
+        })
+      )
+  }
+
+  async addStockUnit(
+    tenantId: string,
+    inputLabel: string
+  ): Promise<StockUnitOption> {
+    const label = canonicalizeStockUnit(inputLabel ?? '')
+    if (!isValidStockUnit(label)) {
+      throw new InvalidInputException(
+        `Unit names must contain between 1 and ${STOCK_UNIT_MAX_LENGTH} characters and cannot contain control characters.`
+      )
+    }
+    const normalizedLabel = normalizeStockUnit(label)
+    const updated = await this.tenantModel
+      .findOneAndUpdate(
+        {
+          _id: tenantId,
+          stockUnits: { $not: { $elemMatch: { normalizedLabel } } },
+        },
+        {
+          $push: {
+            stockUnits: { label, normalizedLabel, createdAt: new Date() },
+          },
+        },
+        { returnDocument: 'after' }
+      )
+      .select('stockUnits')
+      .exec()
+    if (updated) return { label }
+
+    const tenant = await this.tenantModel
+      .findById(tenantId)
+      .select('stockUnits')
+      .exec()
+    if (!tenant) {
+      throw new NotFoundException('The requested tenant was not found.')
+    }
+    const existing = (tenant.stockUnits ?? []).find(
+      (unit) => unit.normalizedLabel === normalizedLabel
+    )
+    if (existing) return { label: existing.label }
+
+    throw new ConflictException('The unit could not be added. Please try again.')
+  }
+
+  async resolveStockUnit(tenantId: string, inputLabel: string): Promise<string> {
+    const normalizedLabel = normalizeStockUnit(inputLabel ?? '')
+    if (!normalizedLabel) {
+      throw new InvalidInputException('Select a base unit.')
+    }
+    const tenant = await this.tenantModel
+      .findOne({ _id: tenantId, 'stockUnits.normalizedLabel': normalizedLabel })
+      .select('stockUnits')
+      .exec()
+    const option = (tenant?.stockUnits ?? []).find(
+      (unit) => unit.normalizedLabel === normalizedLabel
+    )
+    if (!option) {
+      throw new InvalidInputException(
+        'Select a base unit from the current tenant options.'
+      )
+    }
+    return option.label
   }
 
   async create(

@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument } from 'mongoose'
 import { SchemaTypes, Types } from 'mongoose'
-import { StockUnit } from '../../stock/stock-unit'
 
 export enum PaymentType {
   CASH = 'CASH',
@@ -40,8 +39,8 @@ class TransactionItem {
   @Prop({ type: SchemaTypes.Decimal128 })
   inventoryQuantity?: Types.Decimal128
 
-  @Prop({ enum: Object.values(StockUnit) })
-  inventoryUnit?: StockUnit
+  @Prop({ trim: true })
+  inventoryUnit?: string
 }
 
 const TransactionItemSchema = SchemaFactory.createForClass(TransactionItem)

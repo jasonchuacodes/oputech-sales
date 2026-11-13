@@ -17,7 +17,7 @@ import { ActionsDropdown } from './components/ActionsDropdown'
 import { useSyncContext } from '../../context/sync/useSyncContext'
 import { useDisclosure } from '../../hooks/useDisclosure'
 import { useTenantContext } from '../../context/tenant/useTenantContext'
-import { stockUnitLabels } from '../../services/stock/stock.types'
+import { formatStockUnit } from '../../services/stock/stock.types'
 import {
   InventoryOperationModal,
   type InventoryOperationMode,
@@ -27,10 +27,13 @@ import { InventoryMovementHistory } from './components/InventoryMovementHistory'
 const formatStockCount = (value: string) =>
   Number(value).toLocaleString(undefined, { maximumFractionDigits: 6 })
 
-const stockLabel = (product: Product) =>
+const stockCountLabel = (product: Product) =>
   product.inventory
-    ? `${formatStockCount(product.inventory.stockCount)} ${stockUnitLabels[product.inventory.unit]}`
+    ? formatStockCount(product.inventory.stockCount)
     : 'Not tracked'
+
+const unitLabel = (product: Product) =>
+  product.inventory ? formatStockUnit(product.inventory.unit) : '—'
 
 const ProductPageContent = () => {
   const { auth } = useAuthContext()
@@ -129,8 +132,19 @@ const ProductPageContent = () => {
       cell: (item) => formatCurrency(item.price),
     },
     {
-      id: 'stock',
-      heading: 'Stock',
+      id: 'unit',
+      heading: 'Unit',
+      cell: (item) => (
+        <span
+          className={item.inventory ? 'font-medium' : 'text-text-tertiary'}
+        >
+          {unitLabel(item)}
+        </span>
+      ),
+    },
+    {
+      id: 'stockCount',
+      heading: 'Stock count',
       cell: (item) => (
         <span
           className={
@@ -141,7 +155,7 @@ const ProductPageContent = () => {
                 : 'text-text-tertiary'
           }
         >
-          {stockLabel(item)}
+          {stockCountLabel(item)}
         </span>
       ),
     },
@@ -200,18 +214,23 @@ const ProductPageContent = () => {
               <span className="text-text-heading truncate font-medium">
                 {item.name}
               </span>
+              {item.inventory && (
+                <span className="text-text-secondary text-sm">
+                  <span
+                    className={
+                      Number(item.inventory.stockCount) < 0
+                        ? 'text-destructive'
+                        : undefined
+                    }
+                  >
+                    {stockCountLabel(item)}
+                  </span>
+                  {` · ${unitLabel(item)}`}
+                </span>
+              )}
               <span className="text-text-tertiary text-sm">
                 {(item.printCount ?? 0).toLocaleString()}{' '}
-                {item.printCount === 1 ? 'print' : 'prints'} ·{' '}
-                <span
-                  className={
-                    item.inventory && Number(item.inventory.stockCount) < 0
-                      ? 'text-destructive'
-                      : undefined
-                  }
-                >
-                  Stock: {stockLabel(item)}
-                </span>
+                {item.printCount === 1 ? 'print' : 'prints'}
               </span>
             </span>
             <span className="flex shrink-0 items-center gap-1">

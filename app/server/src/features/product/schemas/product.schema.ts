@@ -1,14 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument, SchemaTypes, Types } from 'mongoose'
-import { StockUnit } from '../../stock/stock-unit'
 
 @Schema({ _id: false })
 export class ProductInventory {
   @Prop({ type: SchemaTypes.Decimal128, required: true })
   stockCount: Types.Decimal128
 
-  @Prop({ required: true, enum: Object.values(StockUnit) })
-  unit: StockUnit
+  @Prop({ required: true, trim: true })
+  unit: string
 
   @Prop({ required: true, default: 1, min: 1 })
   revision: number

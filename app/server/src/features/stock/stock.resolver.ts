@@ -15,6 +15,7 @@ import { TenantId } from '../tenant/decorators/tenant-id.decorator'
 import { StockService } from './stock.service'
 import { StockMovementDocument } from './schemas/stock-movement.schema'
 import {
+  CreateStockUnitOptionDto,
   EnableStockTrackingDto,
   ReceiveStockDto,
   ReconcileStockDto,
@@ -28,6 +29,11 @@ export class StockResolver {
   constructor(private readonly stockService: StockService) {}
 
   @Query()
+  stockUnitOptions(@TenantId() tenantId: string) {
+    return this.stockService.listUnitOptions(tenantId)
+  }
+
+  @Query()
   stockMovements(
     @TenantId() tenantId: string,
     @Args('filter', { nullable: true }) filter?: StockMovementFilterDto,
@@ -38,6 +44,14 @@ export class StockResolver {
       filter as never,
       pagination
     )
+  }
+
+  @Mutation()
+  createStockUnitOption(
+    @TenantId() tenantId: string,
+    @Args('input') input: CreateStockUnitOptionDto
+  ) {
+    return this.stockService.createUnitOption(tenantId, input.label)
   }
 
   @Mutation()

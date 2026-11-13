@@ -1,4 +1,3 @@
-import { StockUnit } from './stock-unit'
 import {
   StockMovementDocument,
   StockMovementReason,
@@ -29,7 +28,7 @@ export interface StockMovementPageResult {
 export interface EnableStockTrackingInput {
   clientMutationId: string
   productId: string
-  unit: StockUnit
+  unit: string
   openingQuantity: string
   occurredAt?: string
   note?: string

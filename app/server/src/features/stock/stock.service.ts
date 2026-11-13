@@ -21,7 +21,8 @@ import {
   StockMovementReason,
   StockMovementSourceType,
 } from './schemas/stock-movement.schema'
-import { StockUnit } from './stock-unit'
+import { TenantService } from '../tenant/tenant.service'
+import { StockUnitOption } from '../tenant/tenant.types'
 import {
   EnableStockTrackingInput,
   ReceiveStockInput,
@@ -45,7 +46,7 @@ interface SaleStockItem {
 export interface AppliedSaleStock {
   productId: string
   quantity: Types.Decimal128
-  unit: StockUnit
+  unit: string
 }
 
 const asDecimal128 = (value: Decimal): Types.Decimal128 =>
@@ -58,8 +59,20 @@ export class StockService {
     @InjectModel(StockMovement.name)
     private readonly movementModel: Model<StockMovementDocument>,
     @InjectModel(Product.name)
-    private readonly productModel: Model<ProductDocument>
+    private readonly productModel: Model<ProductDocument>,
+    private readonly tenantService: TenantService
   ) {}
+
+  listUnitOptions(tenantId: string): Promise<StockUnitOption[]> {
+    return this.tenantService.listStockUnits(tenantId)
+  }
+
+  createUnitOption(
+    tenantId: string,
+    label: string
+  ): Promise<StockUnitOption> {
+    return this.tenantService.addStockUnit(tenantId, label)
+  }
 
   async listMovements(
     tenantId: string,
@@ -95,12 +108,16 @@ export class StockService {
     return this.productModel.findOne({ _id: productId, tenantId }).exec()
   }
 
-  enableTracking(
+  async enableTracking(
     tenantId: string,
     input: EnableStockTrackingInput,
     actorId: string
   ): Promise<ProductDocument> {
     this.assertProductId(input.productId)
+    const unit = await this.tenantService.resolveStockUnit(
+      tenantId,
+      input.unit
+    )
     const opening = this.decimal(
       input.openingQuantity,
       'Opening quantity',
@@ -140,7 +157,7 @@ export class StockService {
               $set: {
                 inventory: {
                   stockCount: asDecimal128(opening),
-                  unit: input.unit,
+                  unit,
                   revision: 1,
                 },
               },
@@ -160,7 +177,7 @@ export class StockService {
               tenantId,
               productId: input.productId,
               productName: product.name,
-              unit: input.unit,
+              unit,
               delta: asDecimal128(opening),
               balanceBefore: asDecimal128(new Decimal(0)),
               balanceAfter: asDecimal128(opening),

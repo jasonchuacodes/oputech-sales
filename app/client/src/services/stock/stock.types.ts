@@ -1,13 +1,3 @@
-export enum StockUnit {
-  KG = 'KG',
-  G = 'G',
-  L = 'L',
-  ML = 'ML',
-  PC = 'PC',
-  GAL = 'GAL',
-  BAG = 'BAG',
-}
-
 export enum StockMovementReason {
   Opening = 'OPENING',
   Receipt = 'RECEIPT',
@@ -20,7 +10,7 @@ export interface StockMovement {
   id: string
   productId: string
   productName: string
-  unit: StockUnit
+  unit: string
   delta: string
   balanceBefore: string
   balanceAfter: string
@@ -47,9 +37,13 @@ export interface PageResult<T> {
 export interface EnableStockTrackingInput {
   clientMutationId: string
   productId: string
-  unit: StockUnit
+  unit: string
   openingQuantity: string
   note?: string
+}
+
+export interface StockUnitOption {
+  label: string
 }
 
 export interface ReceiveStockInput {
@@ -69,12 +63,15 @@ export interface ReconcileStockInput {
   note: string
 }
 
-export const stockUnitLabels: Record<StockUnit, string> = {
-  [StockUnit.KG]: 'kg',
-  [StockUnit.G]: 'g',
-  [StockUnit.L]: 'L',
-  [StockUnit.ML]: 'mL',
-  [StockUnit.PC]: 'pc',
-  [StockUnit.GAL]: 'gal',
-  [StockUnit.BAG]: 'bag',
+const legacyStockUnitLabels: Record<string, string> = {
+  KG: 'kg',
+  G: 'g',
+  L: 'L',
+  ML: 'mL',
+  PC: 'pc',
+  GAL: 'gal',
+  BAG: 'bag',
 }
+
+export const formatStockUnit = (unit: string): string =>
+  legacyStockUnitLabels[unit] ?? unit

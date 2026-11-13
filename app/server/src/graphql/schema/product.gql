@@ -1,6 +1,6 @@
 type InventoryState {
   stockCount: Decimal!
-  unit: StockUnit!
+  unit: String!
   revision: Int!
 }
 

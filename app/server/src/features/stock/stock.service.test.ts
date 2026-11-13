@@ -2,7 +2,6 @@ import { Types } from 'mongoose'
 import { describe, expect, it, vi } from 'vitest'
 import { StockMovementReason } from './schemas/stock-movement.schema'
 import { StockService } from './stock.service'
-import { StockUnit } from './stock-unit'
 
 vi.mock('../product/schemas/product.schema', () => ({
   Product: class Product {},
@@ -41,18 +40,72 @@ const makeConnection = () => ({
   }),
 })
 
+const makeTenantService = () => ({
+  resolveStockUnit: vi.fn().mockResolvedValue('Box'),
+})
+
 const inventoryProduct = (stockCount: string, revision: number) => ({
   _id: { toString: () => PRODUCT_ID },
   tenantId: 'tenant-1',
   name: 'Engine Oil 1L',
   inventory: {
     stockCount: Types.Decimal128.fromString(stockCount),
-    unit: StockUnit.PC,
+    unit: 'pc',
     revision,
   },
 })
 
 describe('StockService embedded inventory', () => {
+  it('uses the canonical tenant unit when enabling stock tracking', async () => {
+    const current = {
+      _id: { toString: () => PRODUCT_ID },
+      tenantId: 'tenant-1',
+      name: 'Filters',
+    }
+    const updated = inventoryProduct('4', 1)
+    const movementModel = {
+      findOne: vi.fn().mockReturnValue(queryResult(null)),
+      create: vi.fn().mockResolvedValue([]),
+    }
+    const productModel = {
+      findOne: vi.fn().mockReturnValue(queryResult(current)),
+      findOneAndUpdate: vi.fn().mockReturnValue(queryResult(updated)),
+    }
+    const tenantService = makeTenantService()
+    const service = new StockService(
+      makeConnection() as never,
+      movementModel as never,
+      productModel as never,
+      tenantService as never
+    )
+
+    await service.enableTracking(
+      'tenant-1',
+      {
+        clientMutationId: 'setup-1',
+        productId: PRODUCT_ID,
+        unit: 'box',
+        openingQuantity: '4',
+      },
+      'user-1'
+    )
+
+    expect(tenantService.resolveStockUnit).toHaveBeenCalledWith(
+      'tenant-1',
+      'box'
+    )
+    expect(productModel.findOneAndUpdate.mock.calls[0][1]).toEqual({
+      $set: {
+        inventory: {
+          stockCount: expect.any(Types.Decimal128),
+          unit: 'Box',
+          revision: 1,
+        },
+      },
+    })
+    expect(movementModel.create.mock.calls[0][0][0].unit).toBe('Box')
+  })
+
   it('updates the product and records before and after balances for a receipt', async () => {
     const current = inventoryProduct('10', 3)
     const updated = inventoryProduct('16', 4)
@@ -67,7 +120,8 @@ describe('StockService embedded inventory', () => {
     const service = new StockService(
       makeConnection() as never,
       movementModel as never,
-      productModel as never
+      productModel as never,
+      {} as never
     )
 
     const result = await service.receive(
@@ -115,7 +169,8 @@ describe('StockService embedded inventory', () => {
     const service = new StockService(
       makeConnection() as never,
       movementModel as never,
-      productModel as never
+      productModel as never,
+      {} as never
     )
 
     await expect(
@@ -148,7 +203,8 @@ describe('StockService embedded inventory', () => {
     const service = new StockService(
       connection as never,
       movementModel as never,
-      productModel as never
+      productModel as never,
+      {} as never
     )
 
     const result = await service.receive(

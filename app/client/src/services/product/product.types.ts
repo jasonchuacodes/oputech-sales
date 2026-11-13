@@ -1,8 +1,6 @@
-import type { StockUnit } from '../stock/stock.types'
-
 export interface InventoryState {
   stockCount: string
-  unit: StockUnit
+  unit: string
   revision: number
 }
 
