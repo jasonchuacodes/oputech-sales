@@ -69,7 +69,7 @@ const TransactionsPage = () => {
   )
   const showGenerateReport = !isLoading && pendingReportTransactions.length > 0
   const pendingReportSummary = getTransactionSummary(pendingReportTransactions)
-  const formattedPendingReportTotal =
+  const formattedPendingReportNetTotal =
     pendingReportSummary.total < 0
       ? `-${formatCurrency(Math.abs(pendingReportSummary.total))}`
       : formatCurrency(pendingReportSummary.total)
@@ -207,55 +207,129 @@ const TransactionsPage = () => {
     },
   ]
 
-  const reportFooter = showGenerateReport ? (
-    <div className="border-border/60 flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 flex-col gap-1.5">
-        <p className="text-text-secondary text-sm font-normal">
-          {pendingReportTransactions.length}{' '}
-          {pendingReportTransactions.length === 1
-            ? 'pending transaction'
-            : 'pending transactions'}
-        </p>
-        <dl className="text-text-secondary flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums">
-          <div className="flex gap-1">
-            <dt>Total:</dt>
-            <dd className="text-text-heading font-semibold">
-              {formattedPendingReportTotal}
+  const reportSummary = showGenerateReport ? (
+    <section
+      className="rounded-card bg-card shadow-card overflow-hidden"
+      aria-labelledby="pending-report-summary"
+    >
+      <header className="border-border/60 flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h2
+            id="pending-report-summary"
+            className="text-text-heading font-semibold"
+          >
+            Pending report summary
+          </h2>
+          <p className="text-text-secondary text-sm">
+            {pendingReportTransactions.length}{' '}
+            {pendingReportTransactions.length === 1
+              ? 'transaction is'
+              : 'transactions are'}{' '}
+            ready to include.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          className="w-full shrink-0 sm:w-auto"
+          onClick={handleGenerateReport}
+          disabled={createReport.isPending || !sync.canGenerateReport}
+          title={sync.canGenerateReport ? undefined : reportSyncMessage}
+        >
+          <FileText aria-hidden="true" />
+          {createReport.isPending ? 'Generating…' : 'Generate report'}
+        </Button>
+      </header>
+
+      <div className="flex flex-col gap-4 p-4">
+        <dl
+          className={cn(
+            'grid grid-cols-2 gap-2',
+            showPrintCount
+              ? 'sm:grid-cols-3 lg:grid-cols-5'
+              : 'sm:grid-cols-4'
+          )}
+        >
+          <div className="bg-background rounded-md p-3">
+            <dt className="text-text-secondary text-xs font-medium">
+              Net total
+            </dt>
+            <dd className="text-text-heading mt-1 font-semibold tabular-nums">
+              {formattedPendingReportNetTotal}
+            </dd>
+          </div>
+          <div className="bg-background rounded-md p-3">
+            <dt className="text-text-secondary text-xs font-medium">Cash</dt>
+            <dd className="text-text-heading mt-1 font-semibold tabular-nums">
+              {formatCurrency(pendingReportSummary.totalCash)}
+            </dd>
+          </div>
+          <div className="bg-background rounded-md p-3">
+            <dt className="text-text-secondary text-xs font-medium">Online</dt>
+            <dd className="text-text-heading mt-1 font-semibold tabular-nums">
+              {formatCurrency(pendingReportSummary.totalOnline)}
+            </dd>
+          </div>
+          <div className="bg-background rounded-md p-3">
+            <dt className="text-text-secondary text-xs font-medium">
+              Expenses
+            </dt>
+            <dd className="text-text-heading mt-1 font-semibold tabular-nums">
+              {formatCurrency(pendingReportSummary.totalExpenses)}
             </dd>
           </div>
           {showPrintCount && (
-            <div className="flex gap-1">
-              <dt>Total prints:</dt>
-              <dd className="text-text-heading font-semibold">
+            <div className="bg-background rounded-md p-3">
+              <dt className="text-text-secondary text-xs font-medium">
+                Total prints
+              </dt>
+              <dd className="text-text-heading mt-1 font-semibold tabular-nums">
                 {pendingReportSummary.totalPrintCount.toLocaleString()}
               </dd>
             </div>
           )}
-          <div className="flex gap-1">
-            <dt>Cash:</dt>
-            <dd className="text-text-heading font-semibold">
-              {formatCurrency(pendingReportSummary.totalCash)}
-            </dd>
-          </div>
-          <div className="flex gap-1">
-            <dt>Online:</dt>
-            <dd className="text-text-heading font-semibold">
-              {formatCurrency(pendingReportSummary.totalOnline)}
-            </dd>
-          </div>
         </dl>
+
+        {pendingReportSummary.products.length > 0 && (
+          <section
+            className="border-border/60 flex flex-col gap-2 border-t pt-4"
+            aria-labelledby="pending-products-sold"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <h3
+                id="pending-products-sold"
+                className="text-text-heading text-sm font-semibold"
+              >
+                Products sold
+              </h3>
+              <span className="text-text-tertiary text-xs">
+                {pendingReportSummary.products.length}{' '}
+                {pendingReportSummary.products.length === 1
+                  ? 'product'
+                  : 'products'}
+              </span>
+            </div>
+            <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {pendingReportSummary.products.map((product) => (
+                <div
+                  key={product.productId}
+                  className="bg-background flex min-w-0 items-center justify-between gap-3 rounded-md px-3 py-2.5"
+                >
+                  <dt
+                    className="text-text-secondary min-w-0 truncate text-sm"
+                    title={product.name}
+                  >
+                    {product.name}
+                  </dt>
+                  <dd className="text-text-heading shrink-0 font-semibold tabular-nums">
+                    {product.quantity.toLocaleString()}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
       </div>
-      <Button
-        size="sm"
-        className="w-full sm:w-auto"
-        onClick={handleGenerateReport}
-        disabled={createReport.isPending || !sync.canGenerateReport}
-        title={sync.canGenerateReport ? undefined : reportSyncMessage}
-      >
-        <FileText aria-hidden="true" />
-        {createReport.isPending ? 'Generating…' : 'Generate report'}
-      </Button>
-    </div>
+    </section>
   ) : null
 
   return (
@@ -418,7 +492,6 @@ const TransactionsPage = () => {
                   )
                 })}
               </ul>
-              {reportFooter}
             </div>
             <div className="hidden md:block">
               <DataTable
@@ -428,12 +501,13 @@ const TransactionsPage = () => {
                   itemToString: (item) => getTransactionTitle(item),
                 })}
                 columns={columns}
-                footer={reportFooter}
               />
             </div>
           </>
         )}
       </ContentSection>
+
+      {reportSummary}
 
       <TransactionActionsSheet
         item={selectedItem}

@@ -57,6 +57,20 @@ describe('getTransactionSummary', () => {
         ],
       }),
       makeTransaction({
+        id: 'second-cash-sale',
+        type: TransactionType.Sale,
+        total: 200,
+        items: [
+          {
+            productId: 'photo',
+            name: 'Photo',
+            price: 100,
+            printCount: 2,
+            quantity: 2,
+          },
+        ],
+      }),
+      makeTransaction({
         id: 'expense',
         type: TransactionType.Expense,
         paymentType: PaymentType.Online,
@@ -65,10 +79,16 @@ describe('getTransactionSummary', () => {
     ]
 
     expect(getTransactionSummary(transactions)).toEqual({
-      total: 475,
-      totalCash: 250,
+      total: 675,
+      totalCash: 450,
       totalOnline: 300,
-      totalPrintCount: 14,
+      totalExpenses: 75,
+      totalPrintCount: 18,
+      products: [
+        { productId: 'album', name: 'Album', quantity: 1 },
+        { productId: 'frame', name: 'Frame', quantity: 1 },
+        { productId: 'photo', name: 'Photo', quantity: 4 },
+      ],
     })
   })
 
@@ -77,7 +97,9 @@ describe('getTransactionSummary', () => {
       total: 0,
       totalCash: 0,
       totalOnline: 0,
+      totalExpenses: 0,
       totalPrintCount: 0,
+      products: [],
     })
   })
 })

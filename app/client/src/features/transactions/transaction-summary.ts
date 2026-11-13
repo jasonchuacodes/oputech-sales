@@ -8,37 +8,69 @@ export interface TransactionSummary {
   total: number
   totalCash: number
   totalOnline: number
+  totalExpenses: number
   totalPrintCount: number
+  products: ProductQuantitySummary[]
+}
+
+export interface ProductQuantitySummary {
+  productId: string
+  name: string
+  quantity: number
 }
 
 export const getTransactionSummary = (
   transactions: Transaction[]
-): TransactionSummary =>
-  transactions.reduce<TransactionSummary>(
-    (summary, transaction) => {
+): TransactionSummary => {
+  const productQuantities = new Map<string, ProductQuantitySummary>()
+  const summary = transactions.reduce<Omit<TransactionSummary, 'products'>>(
+    (current, transaction) => {
       if (transaction.type === TransactionType.Expense) {
-        summary.total -= transaction.total
-        return summary
+        current.total -= transaction.total
+        current.totalExpenses += transaction.total
+        return current
       }
 
-      summary.total += transaction.total
-      summary.totalPrintCount += transaction.items.reduce(
+      current.total += transaction.total
+      current.totalPrintCount += transaction.items.reduce(
         (total, item) => total + item.printCount * item.quantity,
         0
       )
 
-      if (transaction.paymentType === PaymentType.Cash) {
-        summary.totalCash += transaction.total
-      } else {
-        summary.totalOnline += transaction.total
+      for (const item of transaction.items) {
+        const existing = productQuantities.get(item.productId)
+        if (existing) {
+          existing.quantity += item.quantity
+        } else {
+          productQuantities.set(item.productId, {
+            productId: item.productId,
+            name: item.name,
+            quantity: item.quantity,
+          })
+        }
       }
 
-      return summary
+      if (transaction.paymentType === PaymentType.Cash) {
+        current.totalCash += transaction.total
+      } else {
+        current.totalOnline += transaction.total
+      }
+
+      return current
     },
     {
       total: 0,
       totalCash: 0,
       totalOnline: 0,
+      totalExpenses: 0,
       totalPrintCount: 0,
     }
   )
+
+  return {
+    ...summary,
+    products: [...productQuantities.values()].sort((left, right) =>
+      left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
+    ),
+  }
+}
