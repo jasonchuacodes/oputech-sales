@@ -1,4 +1,12 @@
-import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql'
+import {
+  Args,
+  Context,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql'
 import { UseGuards } from '@nestjs/common'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { SuperAdminGuard } from '../auth/guards/superadmin.guard'
@@ -8,11 +16,17 @@ import {
   CreateTenantInput,
   UpdateTenantInput,
 } from './tenant.types'
+import { Tenant, TenantType } from './schemas/tenant.schema'
 
 @UseGuards(JwtAuthGuard)
 @Resolver('Tenant')
 export class TenantResolver {
   constructor(private readonly tenantService: TenantService) {}
+
+  @ResolveField('type')
+  type(@Parent() tenant: Tenant): TenantType {
+    return tenant.type ?? TenantType.DEFAULT
+  }
 
   @Query()
   tenants(@Context() context: any) {

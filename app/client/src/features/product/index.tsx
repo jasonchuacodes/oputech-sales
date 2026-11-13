@@ -18,6 +18,7 @@ import { useSyncContext } from '../../context/sync/useSyncContext'
 import { useDisclosure } from '../../hooks/useDisclosure'
 import { useTenantContext } from '../../context/tenant/useTenantContext'
 import { formatStockUnit } from '../../services/stock/stock.types'
+import { TenantType } from '../../services/tenant/tenant.types'
 import {
   InventoryOperationModal,
   type InventoryOperationMode,
@@ -35,7 +36,11 @@ const stockCountLabel = (product: Product) =>
 const unitLabel = (product: Product) =>
   product.inventory ? formatStockUnit(product.inventory.unit) : '—'
 
-const ProductPageContent = () => {
+const ProductPageContent = ({
+  showPrintCount,
+}: {
+  showPrintCount: boolean
+}) => {
   const { auth } = useAuthContext()
   const isAdmin = auth?.role !== UserRole.STAFF
   const { canModifyProducts, pendingCount, blockedCount } = useSyncContext()
@@ -131,13 +136,21 @@ const ProductPageContent = () => {
       heading: 'Price',
       cell: (item) => formatCurrency(item.price),
     },
+    ...(showPrintCount
+      ? [
+          {
+            id: 'printCount',
+            heading: 'Print count',
+            align: 'right' as const,
+            cell: (item: Product) => (item.printCount ?? 0).toLocaleString(),
+          },
+        ]
+      : []),
     {
       id: 'unit',
       heading: 'Unit',
       cell: (item) => (
-        <span
-          className={item.inventory ? 'font-medium' : 'text-text-tertiary'}
-        >
+        <span className={item.inventory ? 'font-medium' : 'text-text-tertiary'}>
           {unitLabel(item)}
         </span>
       ),
@@ -228,10 +241,12 @@ const ProductPageContent = () => {
                   {` · ${unitLabel(item)}`}
                 </span>
               )}
-              <span className="text-text-tertiary text-sm">
-                {(item.printCount ?? 0).toLocaleString()}{' '}
-                {item.printCount === 1 ? 'print' : 'prints'}
-              </span>
+              {showPrintCount && (
+                <span className="text-text-tertiary text-sm">
+                  {(item.printCount ?? 0).toLocaleString()}{' '}
+                  {item.printCount === 1 ? 'print' : 'prints'}
+                </span>
+              )}
             </span>
             <span className="flex shrink-0 items-center gap-1">
               <span className="flex flex-col items-end gap-1">
@@ -382,6 +397,7 @@ const ProductPageContent = () => {
       <AddItemModal
         key={addItem.open ? 'add-open' : 'add-closed'}
         open={isAdmin && addItem.open}
+        showPrintCount={showPrintCount}
         onClose={addItem.onClose}
       />
 
@@ -389,6 +405,7 @@ const ProductPageContent = () => {
         key={selectedItem?.id ?? 'edit-none'}
         item={selectedItem}
         open={editItem.open}
+        showPrintCount={showPrintCount}
         onClose={() => {
           editItem.onClose()
           setSelectedItem(null)
@@ -434,7 +451,12 @@ const ProductPageContent = () => {
 
 const ProductPage = () => {
   const { currentTenant } = useTenantContext()
-  return <ProductPageContent key={currentTenant?.id ?? 'no-tenant'} />
+  return (
+    <ProductPageContent
+      key={currentTenant?.id ?? 'no-tenant'}
+      showPrintCount={currentTenant?.type === TenantType.PHOTO}
+    />
+  )
 }
 
 export default ProductPage

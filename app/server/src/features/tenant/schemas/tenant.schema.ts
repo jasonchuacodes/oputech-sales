@@ -4,6 +4,11 @@ import { STOCK_UNIT_MAX_LENGTH } from '../../stock/stock-unit'
 
 export type TenantDocument = HydratedDocument<Tenant>
 
+export enum TenantType {
+  DEFAULT = 'DEFAULT',
+  PHOTO = 'PHOTO',
+}
+
 @Schema({ _id: false })
 export class TenantStockUnit {
   @Prop({ required: true, trim: true, maxlength: STOCK_UNIT_MAX_LENGTH })
@@ -25,6 +30,13 @@ export class Tenant {
 
   @Prop({ required: true, index: true })
   ownerUserId: string
+
+  @Prop({
+    required: true,
+    enum: Object.values(TenantType),
+    default: TenantType.DEFAULT,
+  })
+  type: TenantType
 
   @Prop({ type: [TenantStockUnitSchema], default: [] })
   stockUnits: TenantStockUnit[]

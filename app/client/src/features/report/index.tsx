@@ -25,6 +25,8 @@ import {
   getReportPresetRange,
   toReportDateRangeInput,
 } from './report-list-state'
+import { useTenantContext } from '../../context/tenant/useTenantContext'
+import { TenantType } from '../../services/tenant/tenant.types'
 
 const PAGE_SIZE = 10
 const EMPTY_REPORT_TOTALS = {
@@ -37,6 +39,8 @@ const EMPTY_REPORT_TOTALS = {
 const ReportPage = () => {
   const router = useRouter()
   const { auth } = useAuthContext()
+  const { currentTenant } = useTenantContext()
+  const showPrintCount = currentTenant?.type === TenantType.PHOTO
   const isAdmin = auth?.role !== UserRole.STAFF
   const canViewSummary =
     auth?.role === UserRole.ADMIN || auth?.role === UserRole.SUPERADMIN
@@ -111,7 +115,7 @@ const ReportPage = () => {
             <Button
               type="button"
               variant="ghost"
-              className="h-10 gap-1 px-1.5 text-sm text-text-secondary"
+              className="text-text-secondary h-10 gap-1 px-1.5 text-sm"
               aria-label={
                 sort === 'DATE_DESC'
                   ? 'Sort reports oldest first'
@@ -142,6 +146,7 @@ const ReportPage = () => {
           }
           isAdmin={isAdmin}
           actionsDisabled={remitReport.isPending}
+          showPrintCount={showPrintCount}
           onPageChange={setPage}
           onRetry={() => void reportsQuery.refetch()}
           onView={(item) => router.push(reportDetailPath(item.id))}

@@ -9,6 +9,7 @@ interface ProductCardProps {
   quantity?: number
   onClick: (product: Product) => void
   variant?: 'card' | 'row'
+  showPrintCount?: boolean
 }
 
 export const ProductCard = ({
@@ -16,6 +17,7 @@ export const ProductCard = ({
   quantity = 0,
   onClick,
   variant = 'card',
+  showPrintCount = false,
 }: ProductCardProps) => {
   if (variant === 'row') {
     return (
@@ -37,6 +39,12 @@ export const ProductCard = ({
               {quantity.toLocaleString()} in cart
             </span>
           )}
+          {showPrintCount && (
+            <span className="text-text-tertiary text-xs tabular-nums">
+              {(product.printCount ?? 0).toLocaleString()}{' '}
+              {product.printCount === 1 ? 'print' : 'prints'}
+            </span>
+          )}
         </span>
         <span className="shrink-0 font-semibold whitespace-nowrap tabular-nums">
           {formatCurrency(product.price)}
@@ -50,13 +58,13 @@ export const ProductCard = ({
       type="button"
       onClick={() => onClick(product)}
       className={cn(
-        'relative flex min-h-40 min-w-[120px] flex-col gap-2 rounded-card border-2 border-transparent bg-card p-3 text-left shadow-card transition-[border-color,box-shadow,transform] outline-none',
-        'cursor-pointer hover:shadow-card-hover focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.98] motion-reduce:transform-none motion-reduce:transition-none',
+        'rounded-card bg-card shadow-card relative flex min-h-40 min-w-[120px] flex-col gap-2 border-2 border-transparent p-3 text-left transition-[border-color,box-shadow,transform] outline-none',
+        'hover:shadow-card-hover focus-visible:border-ring focus-visible:ring-ring/30 cursor-pointer focus-visible:ring-3 active:scale-[0.98] motion-reduce:transform-none motion-reduce:transition-none',
         quantity > 0 && 'border-primary/50'
       )}
     >
       {quantity > 0 && (
-        <span className="absolute top-2 right-2 z-10 flex size-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+        <span className="bg-primary text-primary-foreground absolute top-2 right-2 z-10 flex size-7 items-center justify-center rounded-full text-xs font-semibold">
           {quantity}
         </span>
       )}
@@ -76,9 +84,15 @@ export const ProductCard = ({
         <span className="text-text-heading line-clamp-2 text-sm leading-snug font-medium">
           {product.name}
         </span>
-        <span className="text-sm font-semibold text-foreground tabular-nums">
+        <span className="text-foreground text-sm font-semibold tabular-nums">
           {formatCurrency(product.price)}
         </span>
+        {showPrintCount && (
+          <span className="text-text-tertiary text-xs tabular-nums">
+            {(product.printCount ?? 0).toLocaleString()}{' '}
+            {product.printCount === 1 ? 'print' : 'prints'}
+          </span>
+        )}
       </div>
     </button>
   )

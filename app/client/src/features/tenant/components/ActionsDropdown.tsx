@@ -68,7 +68,7 @@ export const ActionsDropdown = ({
           {canEdit && (
             <DropdownMenuItem onSelect={() => runAction(onEdit)}>
               <Pencil className="size-4" aria-hidden="true" />
-              Edit name
+              Edit tenant
             </DropdownMenuItem>
           )}
           {canEdit && canDelete && <DropdownMenuSeparator />}
@@ -121,7 +121,7 @@ export const ActionsDropdown = ({
               onClick={() => runAction(onEdit)}
             >
               <Pencil aria-hidden="true" />
-              Edit name
+              Edit tenant
             </Button>
           )}
           {canDelete && (

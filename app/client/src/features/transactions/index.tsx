@@ -35,6 +35,8 @@ import {
   getTransactionTitle,
 } from './transaction-display'
 import { getTransactionSummary } from './transaction-summary'
+import { useTenantContext } from '../../context/tenant/useTenantContext'
+import { TenantType } from '../../services/tenant/tenant.types'
 
 const TransactionsPage = () => {
   const router = useRouter()
@@ -45,6 +47,8 @@ const TransactionsPage = () => {
   const logExpense = useDisclosure()
   const createReport = useCreateReport()
   const sync = useSyncContext()
+  const { currentTenant } = useTenantContext()
+  const showPrintCount = currentTenant?.type === TenantType.PHOTO
 
   const { data, isLoading } = useTransactions({
     from: dayjsLocal(date).startOf('day').toISOString(),
@@ -63,8 +67,7 @@ const TransactionsPage = () => {
   const pendingReportTransactions = transactions.filter(
     (transaction) => !transaction.processed
   )
-  const showGenerateReport =
-    !isLoading && pendingReportTransactions.length > 0
+  const showGenerateReport = !isLoading && pendingReportTransactions.length > 0
   const pendingReportSummary = getTransactionSummary(pendingReportTransactions)
   const formattedPendingReportTotal =
     pendingReportSummary.total < 0
@@ -93,8 +96,7 @@ const TransactionsPage = () => {
                   ? `${changeLabel} ${sync.pendingCount === 1 ? 'is' : 'are'} waiting to sync before generating this report.`
                   : `Sync ${changeLabel} before generating this report.`
                 : 'Finish refreshing activity before generating this report.'
-  const canRequestSync =
-    sync.statsReady && !sync.authRequired && !syncBusy
+  const canRequestSync = sync.statsReady && !sync.authRequired && !syncBusy
   const syncActionLabel =
     sync.blockedCount > 0
       ? 'Retry blocked changes'
@@ -221,12 +223,14 @@ const TransactionsPage = () => {
               {formattedPendingReportTotal}
             </dd>
           </div>
-          <div className="flex gap-1">
-            <dt>Total prints:</dt>
-            <dd className="text-text-heading font-semibold">
-              {pendingReportSummary.totalPrintCount.toLocaleString()}
-            </dd>
-          </div>
+          {showPrintCount && (
+            <div className="flex gap-1">
+              <dt>Total prints:</dt>
+              <dd className="text-text-heading font-semibold">
+                {pendingReportSummary.totalPrintCount.toLocaleString()}
+              </dd>
+            </div>
+          )}
           <div className="flex gap-1">
             <dt>Cash:</dt>
             <dd className="text-text-heading font-semibold">
@@ -329,7 +333,9 @@ const TransactionsPage = () => {
               <Receipt className="size-6" aria-hidden="true" />
             </span>
             <div className="flex flex-col gap-1">
-              <p className="text-text-heading font-medium">No transactions found</p>
+              <p className="text-text-heading font-medium">
+                No transactions found
+              </p>
               <p className="text-text-secondary text-sm">
                 Sales and expenses recorded on this date will appear here.
               </p>
@@ -368,7 +374,9 @@ const TransactionsPage = () => {
                         </span>
 
                         <span className="flex min-w-0 flex-col gap-1">
-                          <span className="text-text-heading truncate font-medium">{title}</span>
+                          <span className="text-text-heading truncate font-medium">
+                            {title}
+                          </span>
                           <span className="text-text-tertiary truncate text-sm">
                             {isExpense ? 'Expense' : 'Sale'} ·{' '}
                             {transaction.paymentType === PaymentType.Cash

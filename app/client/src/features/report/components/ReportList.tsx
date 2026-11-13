@@ -3,8 +3,14 @@
 import { useState } from 'react'
 import { ChevronRight, FileText } from 'lucide-react'
 import { Button, Spinner } from '../../../components'
-import { DataTable, type DataTableColumn } from '../../../components/ui/data-table'
-import type { ReportListItem, ReportsPage } from '../../../services/report/report.types'
+import {
+  DataTable,
+  type DataTableColumn,
+} from '../../../components/ui/data-table'
+import type {
+  ReportListItem,
+  ReportsPage,
+} from '../../../services/report/report.types'
 import { cn } from '../../../utils/cn'
 import { formatDate, formatRange, dayjsLocal } from '../../../utils/date'
 import { formatCurrency } from '../../../utils/number'
@@ -19,6 +25,7 @@ interface Props {
   unavailable: boolean
   isAdmin: boolean
   actionsDisabled: boolean
+  showPrintCount: boolean
   onPageChange: (page: number) => void
   onRetry: () => void
   onView: (item: ReportListItem) => void
@@ -33,7 +40,12 @@ const Status = ({ remitted }: { remitted: boolean }) => (
       remitted ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'
     )}
   >
-    <span className={cn('size-2 rounded-full', remitted ? 'bg-success' : 'bg-warning')} />
+    <span
+      className={cn(
+        'size-2 rounded-full',
+        remitted ? 'bg-success' : 'bg-warning'
+      )}
+    />
     {remitted ? 'Remitted' : 'Pending'}
   </span>
 )
@@ -46,6 +58,7 @@ export const ReportList = ({
   unavailable,
   isAdmin,
   actionsDisabled,
+  showPrintCount,
   onPageChange,
   onRetry,
   onView,
@@ -82,6 +95,17 @@ export const ReportList = ({
       heading: 'Date',
       cell: (item) => formatDate(item.toDate, 'MMM D, YYYY'),
     },
+    ...(showPrintCount
+      ? [
+          {
+            id: 'totalPrintCount',
+            heading: 'Prints',
+            align: 'right' as const,
+            cell: (item: ReportListItem) =>
+              item.totalPrintCount.toLocaleString(),
+          },
+        ]
+      : []),
     {
       id: 'totalCash',
       heading: 'Cash',
@@ -104,7 +128,9 @@ export const ReportList = ({
       id: 'netIncome',
       heading: 'Net Income',
       align: 'right',
-      cell: (item) => <span className="font-semibold">{formatCurrency(item.netIncome)}</span>,
+      cell: (item) => (
+        <span className="font-semibold">{formatCurrency(item.netIncome)}</span>
+      ),
     },
     {
       id: 'status',
@@ -120,7 +146,9 @@ export const ReportList = ({
         <ReportActions
           item={item}
           mobileOpen={mobileActionId === item.id}
-          onMobileOpenChange={(open) => setMobileActionId(open ? item.id : undefined)}
+          onMobileOpenChange={(open) =>
+            setMobileActionId(open ? item.id : undefined)
+          }
           onView={closeAndView}
           onRemit={closeAndRemit}
           onDelete={closeAndDelete}
@@ -136,26 +164,32 @@ export const ReportList = ({
   return (
     <section className="flex flex-col gap-3" aria-label="Reports">
       {loading ? (
-        <div className="rounded-card bg-card flex min-h-40 items-center justify-center shadow-card">
+        <div className="rounded-card bg-card shadow-card flex min-h-40 items-center justify-center">
           <Spinner />
         </div>
       ) : unavailable ? (
-        <div className="rounded-card bg-card flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center shadow-card">
-          <p className="text-text-heading font-medium">Reports are unavailable</p>
+        <div className="rounded-card bg-card shadow-card flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center">
+          <p className="text-text-heading font-medium">
+            Reports are unavailable
+          </p>
           <p className="text-text-secondary text-sm">
             Reports are not stored for offline access. Connect and try again.
           </p>
         </div>
       ) : error ? (
-        <div className="rounded-card bg-card flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center shadow-card">
-          <p className="text-text-heading font-medium">Reports could not be loaded</p>
-          <p className="text-text-secondary text-sm">Check your connection and try again.</p>
+        <div className="rounded-card bg-card shadow-card flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center">
+          <p className="text-text-heading font-medium">
+            Reports could not be loaded
+          </p>
+          <p className="text-text-secondary text-sm">
+            Check your connection and try again.
+          </p>
           <Button type="button" variant="outline" size="sm" onClick={onRetry}>
             Retry
           </Button>
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-card bg-card flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center shadow-card">
+        <div className="rounded-card bg-card shadow-card flex min-h-40 flex-col items-center justify-center gap-2 p-4 text-center">
           <span className="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-full">
             <FileText className="size-6" aria-hidden="true" />
           </span>
@@ -168,11 +202,12 @@ export const ReportList = ({
         </div>
       ) : (
         <>
-          <ul
-            className="rounded-card bg-card overflow-hidden shadow-card md:hidden"
-          >
+          <ul className="rounded-card bg-card shadow-card overflow-hidden md:hidden">
             {items.map((item) => (
-              <li key={item.id} className="border-border/60 border-b last:border-b-0">
+              <li
+                key={item.id}
+                className="border-border/60 border-b last:border-b-0"
+              >
                 <button
                   type="button"
                   onClick={() => setMobileActionId(item.id)}
@@ -184,16 +219,23 @@ export const ReportList = ({
                       <FileText className="size-5" aria-hidden="true" />
                     </span>
                     <span className="flex min-w-0 flex-col gap-1">
-                      <span className="text-text-heading font-medium">{formatDate(item.toDate)}</span>
-                      <span className="text-text-tertiary text-xs">
-                        prints: {item.totalPrintCount.toLocaleString()}
+                      <span className="text-text-heading font-medium">
+                        {formatDate(item.toDate)}
                       </span>
+                      {showPrintCount && (
+                        <span className="text-text-tertiary text-xs">
+                          Prints: {item.totalPrintCount.toLocaleString()}
+                        </span>
+                      )}
                       {!dayjsLocal(item.fromDate).isSame(
                         dayjsLocal(item.toDate),
                         'day'
                       ) && (
                         <span className="text-text-tertiary truncate text-sm">
-                          {formatRange(dayjsLocal(item.fromDate), dayjsLocal(item.toDate))}
+                          {formatRange(
+                            dayjsLocal(item.fromDate),
+                            dayjsLocal(item.toDate)
+                          )}
                         </span>
                       )}
                       <span className="text-text-tertiary hidden text-xs sm:block">
@@ -212,7 +254,10 @@ export const ReportList = ({
                     </span>
                   </div>
                   <span className="flex items-center pr-3">
-                    <ChevronRight className="text-text-tertiary size-5" aria-hidden="true" />
+                    <ChevronRight
+                      className="text-text-tertiary size-5"
+                      aria-hidden="true"
+                    />
                   </span>
                 </button>
                 <ReportActions
@@ -243,14 +288,14 @@ export const ReportList = ({
               columns={columns}
             />
           </div>
-
         </>
       )}
 
       {!loading && !error && pageCount > 1 && (
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="text-text-secondary text-sm">
-            {firstItem}–{lastItem} of {totalCount} reports · Page {page} of {pageCount}
+            {firstItem}–{lastItem} of {totalCount} reports · Page {page} of{' '}
+            {pageCount}
           </p>
           <div className="flex w-full gap-2 sm:w-auto">
             <Button

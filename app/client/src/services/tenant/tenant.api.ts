@@ -1,16 +1,16 @@
 import { requestGraphQL } from '../../lib/graphql'
 import { AuthUser } from '../auth/auth.types'
-import { Tenant } from './tenant.types'
+import { Tenant, TenantType } from './tenant.types'
 
-const TENANTS = `query Tenants { tenants { id name } }`
+const TENANTS = `query Tenants { tenants { id name type } }`
 const CREATE_TENANT = `
   mutation CreateTenant($input: CreateTenantInput!) {
-    createTenant(input: $input) { id name }
+    createTenant(input: $input) { id name type }
   }
 `
 const UPDATE_TENANT = `
   mutation UpdateTenant($tenantId: ID!, $input: UpdateTenantInput!) {
-    updateTenant(tenantId: $tenantId, input: $input) { id name }
+    updateTenant(tenantId: $tenantId, input: $input) { id name type }
   }
 `
 const DELETE_TENANT = `
@@ -31,9 +31,15 @@ export const getTenants = async (): Promise<Tenant[]> => {
   return data.tenants
 }
 
-export const createTenant = async (name: string): Promise<Tenant> => {
+export const createTenant = async ({
+  name,
+  type,
+}: {
+  name: string
+  type: TenantType
+}): Promise<Tenant> => {
   const data = await requestGraphQL<{ createTenant: Tenant }>(CREATE_TENANT, {
-    input: { name },
+    input: { name, type },
   })
   return data.createTenant
 }
@@ -41,13 +47,15 @@ export const createTenant = async (name: string): Promise<Tenant> => {
 export const updateTenant = async ({
   tenantId,
   name,
+  type,
 }: {
   tenantId: string
   name: string
+  type: TenantType
 }): Promise<Tenant> => {
   const data = await requestGraphQL<{ updateTenant: Tenant }>(UPDATE_TENANT, {
     tenantId,
-    input: { name },
+    input: { name, type },
   })
   return data.updateTenant
 }

@@ -17,12 +17,13 @@ import {
   Input,
   Label,
   PageHeader,
+  SheetSelect,
   Spinner,
 } from '@/components'
 import { useSyncContext } from '@/context/sync/useSyncContext'
 import { useTenantContext } from '@/context/tenant/useTenantContext'
 import { getApiErrorMessage } from '@/lib/api-error'
-import type { Tenant } from '@/services/tenant/tenant.types'
+import { TenantType, type Tenant } from '@/services/tenant/tenant.types'
 import { ActionsDropdown } from './components/ActionsDropdown'
 
 const TenantsPage = () => {
@@ -32,6 +33,7 @@ const TenantsPage = () => {
   const [tenantToEdit, setTenantToEdit] = useState<Tenant>()
   const [tenantToDelete, setTenantToDelete] = useState<Tenant>()
   const [name, setName] = useState('')
+  const [tenantType, setTenantType] = useState(TenantType.DEFAULT)
   const [error, setError] = useState<string>()
   const [switchingTenantId, setSwitchingTenantId] = useState<string>()
 
@@ -39,11 +41,13 @@ const TenantsPage = () => {
     setCreateOpen(false)
     setTenantToEdit(undefined)
     setName('')
+    setTenantType(TenantType.DEFAULT)
     setError(undefined)
   }
 
   const openCreate = () => {
     setName('')
+    setTenantType(TenantType.DEFAULT)
     setError(undefined)
     setTenantToEdit(undefined)
     setCreateOpen(true)
@@ -51,6 +55,7 @@ const TenantsPage = () => {
 
   const openEdit = (item: Tenant) => {
     setName(item.name)
+    setTenantType(item.type)
     setError(undefined)
     setCreateOpen(false)
     setTenantToEdit(item)
@@ -62,10 +67,10 @@ const TenantsPage = () => {
     setError(undefined)
     try {
       if (tenantToEdit) {
-        await tenant.update(tenantToEdit.id, value)
+        await tenant.update(tenantToEdit.id, value, tenantType)
         toast.success('Tenant updated')
       } else {
-        await tenant.create(value)
+        await tenant.create(value, tenantType)
         toast.success('Tenant created')
       }
       closeEditor()
@@ -111,7 +116,8 @@ const TenantsPage = () => {
 
   const editorOpen = createOpen || !!tenantToEdit
   const saving = tenant.creating || tenant.updating
-  const unchanged = tenantToEdit?.name === name.trim()
+  const unchanged =
+    tenantToEdit?.name === name.trim() && tenantToEdit.type === tenantType
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-5 md:p-6">
@@ -172,6 +178,11 @@ const TenantsPage = () => {
                   <span className="text-text-heading block truncate font-medium">
                     {item.name}
                   </span>
+                  <span className="text-text-tertiary block text-xs">
+                    {item.type === TenantType.PHOTO
+                      ? 'Photo booth'
+                      : 'General business'}
+                  </span>
                   <span className="text-text-tertiary mt-1 flex items-center gap-1 text-sm">
                     {active ? (
                       <>
@@ -205,7 +216,7 @@ const TenantsPage = () => {
         title={tenantToEdit ? 'Edit tenant' : 'Add tenant'}
         subheader={
           tenantToEdit
-            ? 'Update the name shown across the workspace.'
+            ? 'Update the workspace name and business type.'
             : 'Create another workspace for sales and reporting.'
         }
         icon={tenantToEdit ? Pencil : Building2}
@@ -215,27 +226,47 @@ const TenantsPage = () => {
         onClose={closeEditor}
         onSubmit={() => void saveTenant()}
       >
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="tenant-name">Name</Label>
-          <Input
-            id="tenant-name"
-            autoFocus
-            value={name}
-            maxLength={80}
-            placeholder="Tenant name"
-            onChange={(event) => setName(event.target.value)}
-            onKeyDown={(event) => {
-              if (
-                event.key === 'Enter' &&
-                name.trim() &&
-                !saving &&
-                !unchanged
-              ) {
-                void saveTenant()
-              }
-            }}
-          />
-          {error && <p className="text-status-error mt-1 text-sm">{error}</p>}
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="tenant-name">Name</Label>
+            <Input
+              id="tenant-name"
+              autoFocus
+              value={name}
+              maxLength={80}
+              placeholder="Tenant name"
+              onChange={(event) => setName(event.target.value)}
+              onKeyDown={(event) => {
+                if (
+                  event.key === 'Enter' &&
+                  name.trim() &&
+                  !saving &&
+                  !unchanged
+                ) {
+                  void saveTenant()
+                }
+              }}
+            />
+            {error && <p className="text-status-error mt-1 text-sm">{error}</p>}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Business type</Label>
+            <SheetSelect
+              value={tenantType}
+              title="Choose business type"
+              options={[
+                { value: TenantType.DEFAULT, label: 'General business' },
+                { value: TenantType.PHOTO, label: 'Photo booth' },
+              ]}
+              onValueChange={(value) => setTenantType(value as TenantType)}
+            />
+            {tenantType === TenantType.PHOTO && (
+              <p className="text-text-tertiary text-xs">
+                Photo booth tenants can track print counts on products and
+                reports.
+              </p>
+            )}
+          </div>
         </div>
       </CustomModal>
 

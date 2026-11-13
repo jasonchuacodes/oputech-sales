@@ -44,4 +44,21 @@ describe('ProductCard', () => {
 
     expect(markup).not.toContain('in cart')
   })
+
+  it('renders print count only when enabled', () => {
+    const photoProduct = { ...product, printCount: 2 }
+    const hidden = renderToStaticMarkup(
+      <ProductCard product={photoProduct} onClick={() => undefined} />
+    )
+    const visible = renderToStaticMarkup(
+      <ProductCard
+        product={photoProduct}
+        onClick={() => undefined}
+        showPrintCount
+      />
+    )
+
+    expect(hidden).not.toContain('2 prints')
+    expect(visible).toContain('2 prints')
+  })
 })

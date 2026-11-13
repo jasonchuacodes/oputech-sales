@@ -16,7 +16,7 @@ import {
   useTenants,
   useUpdateTenant,
 } from '../../services/tenant/tenant.queries'
-import { Tenant } from '../../services/tenant/tenant.types'
+import { Tenant, TenantType } from '../../services/tenant/tenant.types'
 import { setActiveTenantId } from '../../lib/tenant-scope'
 import { UserRole } from '../../types'
 
@@ -33,8 +33,8 @@ interface TenantContextValue {
   updating: boolean
   deleting: boolean
   switchTenant: (tenantId: string) => Promise<void>
-  create: (name: string) => Promise<Tenant>
-  update: (tenantId: string, name: string) => Promise<Tenant>
+  create: (name: string, type: TenantType) => Promise<Tenant>
+  update: (tenantId: string, name: string, type: TenantType) => Promise<Tenant>
   remove: (tenantId: string) => Promise<void>
 }
 
@@ -62,9 +62,7 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
     return () => setActiveTenantId(undefined)
   }, [activeId])
 
-  const selectionMutation = useSelectTenant(
-    auth?.tenantSelectionVersion ?? 0
-  )
+  const selectionMutation = useSelectTenant(auth?.tenantSelectionVersion ?? 0)
   const creation = useCreateTenant(auth?.id)
   const update = useUpdateTenant(auth?.id)
   const deletion = useDeleteTenant(auth?.id)
@@ -95,12 +93,13 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
         })
         await refetch()
       },
-      create: async (name) => {
-        const tenant = await creation.mutateAsync(name)
+      create: async (name, type) => {
+        const tenant = await creation.mutateAsync({ name, type })
         await refetch()
         return tenant
       },
-      update: (tenantId, name) => update.mutateAsync({ tenantId, name }),
+      update: (tenantId, name, type) =>
+        update.mutateAsync({ tenantId, name, type }),
       remove: async (tenantId) => {
         await deletion.mutateAsync(tenantId)
         if (activeId === tenantId) setLocalSelection(undefined)

@@ -15,6 +15,7 @@ import { ReportDetailActions } from './ReportDetailActions'
 
 interface Props {
   report: Report
+  showPrintCount: boolean
   onDelete?: (id: string) => void
 }
 
@@ -60,7 +61,7 @@ const expenseColumns: DataTableColumn<ReportExpense>[] = [
   },
 ]
 
-export const ReportDisplay = ({ report, onDelete }: Props) => {
+export const ReportDisplay = ({ report, showPrintCount, onDelete }: Props) => {
   const { auth } = useAuthContext()
   const isAdmin = auth?.role !== UserRole.STAFF
   const netIncome = report.totalIncome - report.totalExpenses
@@ -108,7 +109,12 @@ export const ReportDisplay = ({ report, onDelete }: Props) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
+        <div
+          className={cn(
+            'grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3',
+            showPrintCount ? 'lg:grid-cols-6' : 'lg:grid-cols-5'
+          )}
+        >
           <div className="bg-background flex flex-col gap-1 rounded-md p-3 sm:p-4">
             <span className="text-xs font-medium text-slate-500">Cash</span>
             <span className="text-foreground text-metric-md font-semibold">
@@ -135,14 +141,16 @@ export const ReportDisplay = ({ report, onDelete }: Props) => {
               {formatCurrency(report.totalIncome)}
             </span>
           </div>
-          <div className="bg-background flex flex-col gap-1 rounded-md p-3 sm:p-4">
-            <span className="text-xs font-medium text-slate-500">
-              Total Prints
-            </span>
-            <span className="text-foreground text-metric-md font-semibold">
-              {report.totalPrintCount.toLocaleString()}
-            </span>
-          </div>
+          {showPrintCount && (
+            <div className="bg-background flex flex-col gap-1 rounded-md p-3 sm:p-4">
+              <span className="text-xs font-medium text-slate-500">
+                Total Prints
+              </span>
+              <span className="text-foreground text-metric-md font-semibold">
+                {report.totalPrintCount.toLocaleString()}
+              </span>
+            </div>
+          )}
           <div className="bg-primary text-primary-foreground flex flex-col gap-1 rounded-md p-3 sm:p-4">
             <span className="text-primary-foreground/70 text-xs font-medium">
               Net Income
@@ -189,14 +197,14 @@ export const ReportDisplay = ({ report, onDelete }: Props) => {
 const MobileProductSales = ({ items }: { items: ProductSale[] }) => {
   if (items.length === 0) {
     return (
-      <div className="rounded-card bg-card p-4 text-center text-sm text-text-secondary shadow-card">
+      <div className="rounded-card bg-card text-text-secondary shadow-card p-4 text-center text-sm">
         No transactions found in this date range.
       </div>
     )
   }
 
   return (
-    <ul className="rounded-card bg-card overflow-hidden shadow-card">
+    <ul className="rounded-card bg-card shadow-card overflow-hidden">
       {items.map((product) => (
         <li
           key={product.productId}

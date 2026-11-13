@@ -2,12 +2,7 @@ import { useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PackagePlus } from 'lucide-react'
-import {
-  CustomModal,
-  Input,
-  Label,
-  ImageDropzone,
-} from '../../../components'
+import { CustomModal, Input, Label, ImageDropzone } from '../../../components'
 import { NumberInput } from '../../../components/ui/number-input'
 import { useCreateProduct } from '../../../services/product/product.queries'
 import {
@@ -17,10 +12,11 @@ import {
 
 interface Props {
   open: boolean
+  showPrintCount: boolean
   onClose: () => void
 }
 
-export const AddItemModal = ({ open, onClose }: Props) => {
+export const AddItemModal = ({ open, showPrintCount, onClose }: Props) => {
   const createItem = useCreateProduct()
   const [imageError, setImageError] = useState<string | null>(null)
 
@@ -47,7 +43,7 @@ export const AddItemModal = ({ open, onClose }: Props) => {
         name: data.name,
         price: data.price,
         imageUrl: data.imageUrl,
-        printCount: data.printCount,
+        ...(showPrintCount ? { printCount: data.printCount } : {}),
       },
       { onSuccess: handleClose }
     )
@@ -106,15 +102,17 @@ export const AddItemModal = ({ open, onClose }: Props) => {
           )}
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="printCount">Print Count</Label>
-          <NumberInput name="printCount" control={control} step={1} min={0} />
-          {errors.printCount && (
-            <p className="text-destructive text-xs">
-              {errors.printCount.message}
-            </p>
-          )}
-        </div>
+        {showPrintCount && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="printCount">Print Count</Label>
+            <NumberInput name="printCount" control={control} step={1} min={0} />
+            {errors.printCount && (
+              <p className="text-destructive text-xs">
+                {errors.printCount.message}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </CustomModal>
   )

@@ -18,7 +18,7 @@ import {
   Aggregate,
   AggregateDocument,
 } from '../report/schemas/aggregate.schema'
-import { Tenant, TenantDocument } from './schemas/tenant.schema'
+import { Tenant, TenantDocument, TenantType } from './schemas/tenant.schema'
 import {
   StockMovement,
   StockMovementDocument,
@@ -129,10 +129,15 @@ export class TenantService {
     )
     if (existing) return { label: existing.label }
 
-    throw new ConflictException('The unit could not be added. Please try again.')
+    throw new ConflictException(
+      'The unit could not be added. Please try again.'
+    )
   }
 
-  async resolveStockUnit(tenantId: string, inputLabel: string): Promise<string> {
+  async resolveStockUnit(
+    tenantId: string,
+    inputLabel: string
+  ): Promise<string> {
     const normalizedLabel = normalizeStockUnit(inputLabel ?? '')
     if (!normalizedLabel) {
       throw new InvalidInputException('Select a base unit.')
@@ -163,7 +168,11 @@ export class TenantService {
       )
     }
 
-    const tenant = await this.tenantModel.create({ name, ownerUserId })
+    const tenant = await this.tenantModel.create({
+      name,
+      ownerUserId,
+      type: input.type ?? TenantType.DEFAULT,
+    })
     await this.userModel.updateOne(
       { _id: ownerUserId, currentTenantId: { $exists: false } },
       {
@@ -195,7 +204,7 @@ export class TenantService {
     const tenant = await this.tenantModel
       .findOneAndUpdate(
         { _id: tenantId, ownerUserId },
-        { $set: { name } },
+        { $set: { name, type: input.type ?? TenantType.DEFAULT } },
         { returnDocument: 'after' }
       )
       .exec()

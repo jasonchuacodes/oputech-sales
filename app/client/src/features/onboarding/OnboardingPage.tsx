@@ -3,12 +3,19 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Building2, Check, LogOut, Plus, Users } from 'lucide-react'
-import { BrandLogo, Button, Input, Label, Spinner } from '@/components'
+import {
+  BrandLogo,
+  Button,
+  Input,
+  Label,
+  SheetSelect,
+  Spinner,
+} from '@/components'
 import { useAuthContext } from '@/context/auth/useAuthContext'
 import { useTenantContext } from '@/context/tenant/useTenantContext'
 import { getApiErrorMessage } from '@/lib/api-error'
 import { PublicRoutes, userHomePath } from '@/routes/paths'
-import type { Tenant } from '@/services/tenant/tenant.types'
+import { TenantType, type Tenant } from '@/services/tenant/tenant.types'
 import { UserRole } from '@/types'
 
 export default function OnboardingPage() {
@@ -16,6 +23,7 @@ export default function OnboardingPage() {
   const { auth, loading: authLoading, logout } = useAuthContext()
   const tenant = useTenantContext()
   const [name, setName] = useState('')
+  const [tenantType, setTenantType] = useState(TenantType.DEFAULT)
   const [error, setError] = useState<string>()
   const [selectingTenantId, setSelectingTenantId] = useState<string>()
 
@@ -52,7 +60,7 @@ export default function OnboardingPage() {
 
     setError(undefined)
     try {
-      await tenant.create(value)
+      await tenant.create(value, tenantType)
       continueToApp()
     } catch (cause) {
       setError(getApiErrorMessage(cause, 'Unable to create the tenant.'))
@@ -183,6 +191,30 @@ export default function OnboardingPage() {
                     disabled={busy}
                     onChange={(event) => setName(event.target.value)}
                   />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>Business type</Label>
+                  <SheetSelect
+                    value={tenantType}
+                    title="Choose business type"
+                    options={[
+                      {
+                        value: TenantType.DEFAULT,
+                        label: 'General business',
+                      },
+                      { value: TenantType.PHOTO, label: 'Photo booth' },
+                    ]}
+                    disabled={busy}
+                    onValueChange={(value) =>
+                      setTenantType(value as TenantType)
+                    }
+                  />
+                  {tenantType === TenantType.PHOTO && (
+                    <p className="text-text-tertiary text-xs">
+                      Photo booths can track print counts on products and
+                      reports.
+                    </p>
+                  )}
                 </div>
                 <Button
                   type="submit"

@@ -1,14 +1,22 @@
+enum TenantType {
+  DEFAULT
+  PHOTO
+}
+
 type Tenant {
   id: ID!
   name: String!
+  type: TenantType!
 }
 
 input CreateTenantInput {
   name: String!
+  type: TenantType!
 }
 
 input UpdateTenantInput {
   name: String!
+  type: TenantType!
 }
 
 extend type Query {

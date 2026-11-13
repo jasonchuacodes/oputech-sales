@@ -11,6 +11,8 @@ import { UserRoutes } from '../../routes/paths'
 import { useAuthContext } from '../../context/auth/useAuthContext'
 import { UserRole } from '../../types'
 import { useDisclosure } from '../../hooks/useDisclosure'
+import { useTenantContext } from '../../context/tenant/useTenantContext'
+import { TenantType } from '../../services/tenant/tenant.types'
 
 const ReportDetailPage = () => {
   const { reportId } = useParams<{ reportId: string }>()
@@ -19,6 +21,7 @@ const ReportDetailPage = () => {
   const { data: report } = reportQuery
   const deleteReport = useDisclosure()
   const { auth } = useAuthContext()
+  const { currentTenant } = useTenantContext()
   const isAdmin = auth?.role !== UserRole.STAFF
 
   return (
@@ -56,9 +59,7 @@ const ReportDetailPage = () => {
         </div>
       ) : !report ? (
         <div className="flex flex-col items-center gap-2 py-20 text-center">
-          <p className="text-lg font-medium text-slate-700">
-            Report not found
-          </p>
+          <p className="text-lg font-medium text-slate-700">Report not found</p>
           <p className="text-sm text-slate-400">
             This report may have been deleted.
           </p>
@@ -66,6 +67,7 @@ const ReportDetailPage = () => {
       ) : (
         <ReportDisplay
           report={report}
+          showPrintCount={currentTenant?.type === TenantType.PHOTO}
           onDelete={
             isAdmin || !report.isRemitted ? deleteReport.onOpen : undefined
           }

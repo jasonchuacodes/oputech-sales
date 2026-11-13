@@ -1,4 +1,5 @@
 import { UserRole } from '../users/schemas/user.schema'
+import { TenantType } from './schemas/tenant.schema'
 
 export interface AuthenticatedUser {
   userId: string
@@ -7,10 +8,12 @@ export interface AuthenticatedUser {
 
 export interface CreateTenantInput {
   name: string
+  type: TenantType
 }
 
 export interface UpdateTenantInput {
   name: string
+  type: TenantType
 }
 
 export interface StockUnitOption {

@@ -5,7 +5,10 @@ import toast from 'react-hot-toast'
 import { LayoutGrid, List, Search } from 'lucide-react'
 import { Button, ContentSection, Input, Spinner } from '../../components'
 import { PageHeader } from '../../components/ui/page-header'
-import { PaymentType, TransactionItem } from '../../services/transaction/transaction.types'
+import {
+  PaymentType,
+  TransactionItem,
+} from '../../services/transaction/transaction.types'
 import { Product } from '../../services/product/product.types'
 import { useProducts } from '../../services/product/product.queries'
 import { ProductCard } from './components/ProductCard'
@@ -14,6 +17,8 @@ import { getPosDraftKey } from './constants'
 import { getDraft, saveDraft } from '../../offline/database'
 import { useSyncContext } from '../../context/sync/useSyncContext'
 import { useAuthContext } from '../../context/auth/useAuthContext'
+import { useTenantContext } from '../../context/tenant/useTenantContext'
+import { TenantType } from '../../services/tenant/tenant.types'
 
 interface PosDraft {
   items: TransactionItem[]
@@ -31,6 +36,8 @@ const POSPage = () => {
   const [productView, setProductView] = useState<ProductView>('card')
   const draftLoaded = useRef(false)
   const { auth } = useAuthContext()
+  const { currentTenant } = useTenantContext()
+  const showPrintCount = currentTenant?.type === TenantType.PHOTO
   const draftKey = getPosDraftKey(auth?.currentTenantId)
 
   const { data: products = [], isLoading } = useProducts(search)
@@ -38,21 +45,23 @@ const POSPage = () => {
 
   useEffect(() => {
     draftLoaded.current = false
-    void getDraft<PosDraft>(draftKey).then((draft) => {
-      if (draft) {
-        setTransactionItems(draft.items)
-        setPaymentType(draft.paymentType)
-      } else {
-        setTransactionItems([])
-        setPaymentType(PaymentType.Cash)
-      }
-      draftLoaded.current = true
-    }).catch(() => {
-      draftLoaded.current = true
-      toast.error('The saved cart could not be restored', {
-        id: 'pos-draft-storage',
+    void getDraft<PosDraft>(draftKey)
+      .then((draft) => {
+        if (draft) {
+          setTransactionItems(draft.items)
+          setPaymentType(draft.paymentType)
+        } else {
+          setTransactionItems([])
+          setPaymentType(PaymentType.Cash)
+        }
+        draftLoaded.current = true
       })
-    })
+      .catch(() => {
+        draftLoaded.current = true
+        toast.error('The saved cart could not be restored', {
+          id: 'pos-draft-storage',
+        })
+      })
   }, [draftKey])
 
   useEffect(() => {
@@ -95,7 +104,9 @@ const POSPage = () => {
   const handleIncrementItem = (productId: string) => {
     setTransactionItems((prev) =>
       prev.map((item) =>
-        item.productId === productId ? { ...item, quantity: item.quantity + 1 } : item
+        item.productId === productId
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
       )
     )
   }
@@ -104,7 +115,9 @@ const POSPage = () => {
     setTransactionItems((prev) =>
       prev
         .map((item) =>
-          item.productId === productId ? { ...item, quantity: item.quantity - 1 } : item
+          item.productId === productId
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
         )
         .filter((item) => item.quantity > 0)
     )
@@ -200,6 +213,7 @@ const POSPage = () => {
                           )?.quantity
                         }
                         onClick={handleProductClick}
+                        showPrintCount={showPrintCount}
                       />
                     ))}
                   </div>
@@ -219,6 +233,7 @@ const POSPage = () => {
                           }
                           onClick={handleProductClick}
                           variant="row"
+                          showPrintCount={showPrintCount}
                         />
                       </li>
                     ))}
