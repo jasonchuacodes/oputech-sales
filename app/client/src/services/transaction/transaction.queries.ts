@@ -1,7 +1,8 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLiveQuery } from 'dexie-react-hooks'
 import toast from 'react-hot-toast'
 import { CreateTransactionInput, TransactionFilter } from './transaction.api'
+import { TransactionType } from './transaction.types'
 import {
   listLocalTransactions,
   queueLocalTransaction,
@@ -10,6 +11,7 @@ import {
 import { useAuthContext } from '../../context/auth/useAuthContext'
 import { notifyOutboxChanged } from '../../context/sync/sync-context'
 import { useTenantContext } from '../../context/tenant/useTenantContext'
+import { productKeys } from '../product/product.queries'
 
 export const useTransactions = (filter?: TransactionFilter) => {
   const { currentTenant } = useTenantContext()
@@ -29,6 +31,7 @@ export const useTransactions = (filter?: TransactionFilter) => {
 }
 
 export const useCreateTransaction = () => {
+  const queryClient = useQueryClient()
   const { auth } = useAuthContext()
   const { currentTenant } = useTenantContext()
 
@@ -42,9 +45,14 @@ export const useCreateTransaction = () => {
     onError: (error: Error) => {
       toast.error(error.message)
     },
-    onSuccess: () => {
+    onSuccess: (_transaction, input) => {
       toast.success('Transaction saved on this device')
       notifyOutboxChanged()
+      if (input.type === TransactionType.Sale) {
+        void queryClient.invalidateQueries({
+          queryKey: productKeys.tenant(currentTenant?.id),
+        })
+      }
     },
   })
 }

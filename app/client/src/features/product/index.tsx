@@ -132,21 +132,6 @@ const ProductPageContent = ({
       width: 320,
     },
     {
-      id: 'price',
-      heading: 'Price',
-      cell: (item) => formatCurrency(item.price),
-    },
-    ...(showPrintCount
-      ? [
-          {
-            id: 'printCount',
-            heading: 'Print count',
-            align: 'right' as const,
-            cell: (item: Product) => (item.printCount ?? 0).toLocaleString(),
-          },
-        ]
-      : []),
-    {
       id: 'unit',
       heading: 'Unit',
       cell: (item) => (
@@ -158,6 +143,7 @@ const ProductPageContent = ({
     {
       id: 'stockCount',
       heading: 'Stock count',
+      align: 'right',
       cell: (item) => (
         <span
           className={
@@ -172,6 +158,22 @@ const ProductPageContent = ({
         </span>
       ),
     },
+    {
+      id: 'price',
+      heading: 'Price',
+      align: 'right',
+      cell: (item) => formatCurrency(item.price),
+    },
+    ...(showPrintCount
+      ? [
+          {
+            id: 'printCount',
+            heading: 'Print count',
+            align: 'right' as const,
+            cell: (item: Product) => (item.printCount ?? 0).toLocaleString(),
+          },
+        ]
+      : []),
     {
       id: 'actions',
       heading: '',
