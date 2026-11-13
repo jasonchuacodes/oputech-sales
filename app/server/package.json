@@ -11,6 +11,8 @@
     "test": "vitest run",
     "clear-database": "ts-node --project scripts/tsconfig.json scripts/clear-database.ts",
     "migrate:transaction-occurred-at": "ts-node --project scripts/tsconfig.json scripts/migrate-transaction-occurred-at.ts",
+    "migrate:embed-stock": "ts-node --project scripts/tsconfig.json scripts/migrate-stock-into-products.ts",
+    "cleanup:legacy-stock": "ts-node --project scripts/tsconfig.json scripts/drop-legacy-stocks.ts",
     "migrate:data": "pnpm migrate-expenses && pnpm migrate:transaction-occurred-at",
     "migrate:data:dry-run": "pnpm migrate-expenses -- --dry-run && pnpm migrate:transaction-occurred-at -- --dry-run",
     "register-superadmin": "ts-node --project scripts/tsconfig.json scripts/register-superadmin.ts",

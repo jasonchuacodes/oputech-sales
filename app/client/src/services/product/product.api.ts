@@ -15,7 +15,11 @@ const PRODUCT_FIELDS = `
   price
   imageUrl
   printCount
-  stockTrackingEnabled
+  inventory {
+    stockCount
+    unit
+    revision
+  }
 `
 
 const GET_PRODUCTS = `
@@ -55,9 +59,13 @@ export async function getProducts(
   tenantId?: string,
   signal?: AbortSignal
 ): Promise<ProductPage> {
-  const data = await requestGraphQL<{ products: ProductPage }>(GET_PRODUCTS, {
-    pagination,
-  }, { tenantId, signal })
+  const data = await requestGraphQL<{ products: ProductPage }>(
+    GET_PRODUCTS,
+    {
+      pagination,
+    },
+    { tenantId, signal }
+  )
   return data.products
 }
 
@@ -88,7 +96,7 @@ export async function getAllProducts(tenantId?: string): Promise<Product[]> {
 
     if (!result.hasNextPage) return products
     if (result.items.length === 0) {
-      throw new Error('The product catalog pagination response was incomplete')
+      throw new Error('The product pagination response was incomplete')
     }
     page += 1
   }
@@ -102,10 +110,17 @@ const CREATE_PRODUCT = `
   }
 `
 
-export async function createProduct(input: CreateProductInput, tenantId?: string): Promise<Product> {
-  const data = await requestGraphQL<{ createProduct: Product }>(CREATE_PRODUCT, {
-    input,
-  }, { tenantId })
+export async function createProduct(
+  input: CreateProductInput,
+  tenantId?: string
+): Promise<Product> {
+  const data = await requestGraphQL<{ createProduct: Product }>(
+    CREATE_PRODUCT,
+    {
+      input,
+    },
+    { tenantId }
+  )
   return data.createProduct
 }
 
@@ -120,12 +135,16 @@ const UPDATE_PRODUCT = `
 export async function updateProduct(
   id: string,
   input: UpdateProductInput,
-  tenantId?: string,
+  tenantId?: string
 ): Promise<Product> {
-  const data = await requestGraphQL<{ updateProduct: Product }>(UPDATE_PRODUCT, {
-    id,
-    input,
-  }, { tenantId })
+  const data = await requestGraphQL<{ updateProduct: Product }>(
+    UPDATE_PRODUCT,
+    {
+      id,
+      input,
+    },
+    { tenantId }
+  )
   return data.updateProduct
 }
 
@@ -135,9 +154,16 @@ const DELETE_PRODUCT = `
   }
 `
 
-export async function deleteProduct(id: string, tenantId?: string): Promise<boolean> {
-  const data = await requestGraphQL<{ deleteProduct: boolean }>(DELETE_PRODUCT, {
-    id,
-  }, { tenantId })
+export async function deleteProduct(
+  id: string,
+  tenantId?: string
+): Promise<boolean> {
+  const data = await requestGraphQL<{ deleteProduct: boolean }>(
+    DELETE_PRODUCT,
+    {
+      id,
+    },
+    { tenantId }
+  )
   return data.deleteProduct
 }

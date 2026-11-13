@@ -18,7 +18,6 @@ import {
   ChevronRight,
   House,
   Package,
-  Boxes,
   ReceiptText,
   ShoppingBag,
   UserRound,
@@ -51,8 +50,7 @@ const primaryNavigation: NavItem[] = [
 ]
 
 const adminNavigation: NavItem[] = [
-  { label: 'Catalog', href: '/catalog', icon: Package },
-  { label: 'Stock', href: '/stock', icon: Boxes },
+  { label: 'Products', href: '/products', icon: Package },
   { label: 'Tenants', href: '/tenants', icon: Building2 },
   { label: 'Users', href: '/users', icon: Users },
 ]
@@ -246,8 +244,8 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     }
     if (
       !isAdmin &&
-       ['/dashboard', '/catalog', '/stock', '/tenants'].some((path) =>
-        pathname.startsWith(path)
+      ['/dashboard', '/products', '/catalog', '/stock', '/tenants'].some(
+        (path) => pathname.startsWith(path)
       )
     ) {
       router.replace('/sell')
@@ -263,9 +261,15 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
       queryClient.refetchQueries({
         type: 'active',
         predicate: (query) =>
-          ['reports', 'report', 'analytics', 'users', 'tenants', 'stocks'].includes(
-            String(query.queryKey[0])
-          ),
+          [
+            'products',
+            'reports',
+            'report',
+            'analytics',
+            'users',
+            'tenants',
+            'stocks',
+          ].includes(String(query.queryKey[0])),
       }),
     ])
   }, [queryClient, syncNow])
@@ -316,12 +320,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
               aria-label="Oputech Sales home"
               className="focus-visible:ring-ring/30 shrink-0 rounded-sm outline-none focus-visible:ring-3"
             >
-              <BrandLogo
-                variant="wordmark"
-                alt=""
-                className="w-36"
-                priority
-              />
+              <BrandLogo variant="wordmark" alt="" className="w-36" priority />
             </Link>
           )}
           <Button

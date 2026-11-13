@@ -38,20 +38,18 @@ export function useProducts(search?: string) {
   const tenantId = currentTenant?.id
   const data = useLiveQuery(
     () =>
-      tenantId
-        ? listLocalProducts(tenantId, search)
-        : Promise.resolve([]),
+      tenantId ? listLocalProducts(tenantId, search) : Promise.resolve([]),
     [tenantId, search]
   )
   return { data, isLoading: data === undefined }
 }
 
-export function useProductCatalogPage(search: string, page: number) {
+export function useProductPage(search: string, page: number) {
   const { currentTenant } = useTenantContext()
   const { reachability } = useSyncContext()
   const tenantId = currentTenant?.id
   const normalizedSearch = search.trim()
-  const useCachedCatalog = reachability === 'unreachable'
+  const useCachedProducts = reachability === 'unreachable'
   const pagination = { page, pageSize: PRODUCT_PAGE_SIZE }
   const remoteQuery = useQuery({
     queryKey: normalizedSearch
@@ -59,19 +57,14 @@ export function useProductCatalogPage(search: string, page: number) {
       : productKeys.list(tenantId, page),
     queryFn: ({ signal }) =>
       normalizedSearch
-        ? getProductsByName(
-            normalizedSearch,
-            pagination,
-            tenantId,
-            signal
-          )
+        ? getProductsByName(normalizedSearch, pagination, tenantId, signal)
         : getProducts(pagination, tenantId, signal),
-    enabled: !!tenantId && !useCachedCatalog,
+    enabled: !!tenantId && !useCachedProducts,
     staleTime: 60 * 1000,
   })
   const cachedData = useLiveQuery(
     () =>
-      tenantId && useCachedCatalog
+      tenantId && useCachedProducts
         ? listLocalProductsPage(
             tenantId,
             page,
@@ -79,10 +72,10 @@ export function useProductCatalogPage(search: string, page: number) {
             normalizedSearch || undefined
           )
         : Promise.resolve(undefined),
-    [tenantId, useCachedCatalog, normalizedSearch, page]
+    [tenantId, useCachedProducts, normalizedSearch, page]
   )
 
-  if (useCachedCatalog) {
+  if (useCachedProducts) {
     return {
       data: cachedData,
       isLoading: cachedData === undefined,
@@ -129,11 +122,11 @@ export function useUpdateProduct() {
   const queryClient = useQueryClient()
   const { currentTenant } = useTenantContext()
   const tenantId = currentTenant?.id
-  const { canModifyCatalog } = useSyncContext()
+  const { canModifyProducts } = useSyncContext()
   return useMutation({
     networkMode: 'always',
     mutationFn: ({ id, input }: { id: string; input: UpdateProductInput }) => {
-      if (!canModifyCatalog) {
+      if (!canModifyProducts) {
         throw new Error('Sync pending records before changing inventory')
       }
       return updateProduct(id, input, tenantId)
@@ -154,13 +147,13 @@ export function useUpdateProduct() {
 
 export function useDeleteProduct() {
   const queryClient = useQueryClient()
-  const { canModifyCatalog } = useSyncContext()
+  const { canModifyProducts } = useSyncContext()
   const { currentTenant } = useTenantContext()
   const tenantId = currentTenant?.id
   return useMutation({
     networkMode: 'always',
     mutationFn: (id: string) => {
-      if (!canModifyCatalog) {
+      if (!canModifyProducts) {
         throw new Error('Sync pending records before changing inventory')
       }
       return deleteProduct(id, tenantId)

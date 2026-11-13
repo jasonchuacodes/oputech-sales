@@ -47,7 +47,7 @@ describe('TransactionService offline synchronization', () => {
       transactionModel as never,
       {} as never,
       makeConnection() as never,
-      {} as never,
+      {} as never
     )
 
     const result = await service.createTransaction('tenant-1', {
@@ -97,15 +97,21 @@ describe('TransactionService offline synchronization', () => {
             name: 'Photo Strip',
             price: 120,
             printCount: 1,
+            inventory: {
+              stockCount: { toString: () => '10' },
+              unit: 'pc',
+              revision: 1,
+            },
           },
-        ]),
+        ])
       ),
     }
+    const stockService = { applySale: vi.fn().mockResolvedValue([]) }
     const service = new TransactionService(
       transactionModel as never,
       productModel as never,
       makeConnection() as never,
-      { applySale: vi.fn().mockResolvedValue([]) } as never,
+      stockService as never
     )
 
     const result = await service.createTransaction('tenant-1', {
@@ -125,13 +131,26 @@ describe('TransactionService offline synchronization', () => {
           total: 240,
         }),
       ],
-      expect.objectContaining({ session: expect.anything() }),
+      expect.objectContaining({ session: expect.anything() })
     )
     expect(productModel.find).toHaveBeenCalledWith({
       _id: { $in: ['product-1'] },
       tenantId: 'tenant-1',
       archivedAt: { $exists: false },
     })
+    expect(stockService.applySale).toHaveBeenCalledWith(
+      'tenant-1',
+      'transaction-2',
+      new Date('2026-08-20T03:00:00.000Z'),
+      undefined,
+      [
+        expect.objectContaining({
+          productId: 'product-1',
+          tracked: true,
+        }),
+      ],
+      expect.anything()
+    )
   })
 
   it('queries by occurredAt with a legacy createdAt fallback', async () => {
@@ -142,7 +161,7 @@ describe('TransactionService offline synchronization', () => {
       { find } as never,
       {} as never,
       makeConnection() as never,
-      {} as never,
+      {} as never
     )
 
     await service.getTransactions('tenant-1', {

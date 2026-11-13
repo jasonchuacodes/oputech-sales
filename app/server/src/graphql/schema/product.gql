@@ -1,3 +1,9 @@
+type InventoryState {
+  stockCount: Decimal!
+  unit: StockUnit!
+  revision: Int!
+}
+
 type Product {
   id: ID!
   tenantId: ID!
@@ -5,7 +11,7 @@ type Product {
   price: Float!
   imageUrl: String
   printCount: Int
-  stockTrackingEnabled: Boolean!
+  inventory: InventoryState
 }
 
 input ProductPaginationInput {
@@ -25,7 +31,10 @@ type ProductPage {
 
 extend type Query {
   products(pagination: ProductPaginationInput): ProductPage!
-  productsByName(search: String!, pagination: ProductPaginationInput): ProductPage!
+  productsByName(
+    search: String!
+    pagination: ProductPaginationInput
+  ): ProductPage!
 }
 
 input CreateProductInput {

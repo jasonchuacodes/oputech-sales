@@ -8,7 +8,7 @@ import {
   Max,
   Min,
 } from 'class-validator'
-import { StockUnit } from '../schemas/stock.schema'
+import { StockUnit } from '../stock-unit'
 import {
   StockMovementReason,
   StockMovementSourceType,
@@ -107,6 +107,10 @@ export class ReconcileStockDto {
 
   @IsString()
   countedQuantity: string
+
+  @IsInt()
+  @Min(1)
+  expectedRevision: number
 
   @IsOptional()
   @IsString()

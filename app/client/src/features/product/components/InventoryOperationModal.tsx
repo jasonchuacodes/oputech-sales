@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
-import { Boxes, ClipboardCheck, PackagePlus } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Box, ClipboardCheck, PackagePlus } from 'lucide-react'
 import { CustomModal, Input, Label, SheetSelect } from '@/components'
 import type { Product } from '@/services/product/product.types'
 import {
@@ -9,19 +9,14 @@ import {
   useReceiveStock,
   useReconcileStock,
 } from '@/services/stock/stock.queries'
-import {
-  StockUnit,
-  stockUnitLabels,
-  type Stock,
-} from '@/services/stock/stock.types'
+import { StockUnit, stockUnitLabels } from '@/services/stock/stock.types'
 
-export type StockOperationMode = 'setup' | 'receive' | 'reconcile'
+export type InventoryOperationMode = 'setup' | 'receive' | 'reconcile'
 
 interface Props {
-  mode: StockOperationMode
+  mode: InventoryOperationMode
   open: boolean
-  products: Product[]
-  stock?: Stock | null
+  product: Product
   onClose: () => void
 }
 
@@ -30,69 +25,65 @@ const unitOptions = Object.values(StockUnit).map((unit) => ({
   label: stockUnitLabels[unit],
 }))
 
-export const StockOperationModal = ({
+export const InventoryOperationModal = ({
   mode,
   open,
-  products,
-  stock,
+  product,
   onClose,
 }: Props) => {
   const enable = useEnableStockTracking()
   const receive = useReceiveStock()
   const reconcile = useReconcileStock()
-  const availableProducts = useMemo(
-    () => products.filter((product) => !product.stockTrackingEnabled),
-    [products],
-  )
-  const [productId, setProductId] = useState(
-    stock?.productId ?? availableProducts[0]?.id ?? '',
-  )
+  const inventory = product.inventory
   const [unit, setUnit] = useState<StockUnit>(StockUnit.PC)
-  const [openingQuantity, setOpeningQuantity] = useState('0')
+  const [openingQuantity, setOpeningQuantity] = useState('')
   const [packageCount, setPackageCount] = useState('1')
   const [quantityPerPackage, setQuantityPerPackage] = useState('1')
   const [packageLabel, setPackageLabel] = useState('')
-  const [countedQuantity, setCountedQuantity] = useState(stock?.quantity ?? '0')
+  const [countedQuantity, setCountedQuantity] = useState(
+    inventory?.stockCount ?? '0'
+  )
   const [note, setNote] = useState('')
   const clientMutationId = useRef('')
 
   const pending = enable.isPending || receive.isPending || reconcile.isPending
   const validDecimal = (value: string, allowZero = false) => {
+    if (!value.trim()) return false
     const parsed = Number(value)
     return Number.isFinite(parsed) && (allowZero ? parsed >= 0 : parsed > 0)
   }
-  const selectedProduct = availableProducts.find((product) => product.id === productId)
 
   const closeAfter = { onSuccess: onClose }
   const submit = () => {
     clientMutationId.current ||= crypto.randomUUID()
     if (mode === 'setup') {
-      if (!productId || !validDecimal(openingQuantity, true)) return
+      if (inventory || !validDecimal(openingQuantity, true)) return
       enable.mutate(
         {
           clientMutationId: clientMutationId.current,
-          productId,
+          productId: product.id,
           unit,
           openingQuantity,
           note: note.trim() || undefined,
         },
-        closeAfter,
+        closeAfter
       )
       return
     }
-    if (!stock) return
+    if (!inventory) return
     if (mode === 'receive') {
-      if (!validDecimal(packageCount) || !validDecimal(quantityPerPackage)) return
+      if (!validDecimal(packageCount) || !validDecimal(quantityPerPackage))
+        return
       receive.mutate(
         {
           clientMutationId: clientMutationId.current,
-          productId: stock.productId,
+          productId: product.id,
           packageCount,
           quantityPerPackage,
           packageLabel: packageLabel.trim() || undefined,
           note: note.trim() || undefined,
         },
-        closeAfter,
+        closeAfter
       )
       return
     }
@@ -100,32 +91,35 @@ export const StockOperationModal = ({
     reconcile.mutate(
       {
         clientMutationId: clientMutationId.current,
-        productId: stock.productId,
+        productId: product.id,
         countedQuantity,
+        expectedRevision: inventory.revision,
         note: note.trim(),
       },
-      closeAfter,
+      closeAfter
     )
   }
 
   const config =
     mode === 'setup'
       ? {
-          title: 'Set up stock',
-          subtitle: 'Choose the base unit and record the current physical count.',
+          title: `Set up ${product.name}`,
+          subtitle:
+            'Choose the base unit and record the current physical count.',
           submit: 'Enable tracking',
-          icon: Boxes,
+          icon: Box,
         }
       : mode === 'receive'
         ? {
-            title: `Receive ${stock?.product.name ?? 'stock'}`,
-            subtitle: `Add incoming packages in ${stock ? stockUnitLabels[stock.unit] : ''}.`,
+            title: `Receive ${product.name}`,
+            subtitle: `Add incoming packages in ${inventory ? stockUnitLabels[inventory.unit] : ''}.`,
             submit: 'Receive stock',
             icon: PackagePlus,
           }
         : {
-            title: `Count ${stock?.product.name ?? 'stock'}`,
-            subtitle: 'Enter the physical quantity. The difference will be recorded.',
+            title: `Count ${product.name}`,
+            subtitle:
+              'Enter the physical quantity. The difference will be recorded.',
             submit: 'Reconcile count',
             icon: ClipboardCheck,
           }
@@ -140,10 +134,12 @@ export const StockOperationModal = ({
       loading={pending}
       disabled={
         mode === 'setup'
-          ? !productId || !validDecimal(openingQuantity, true)
+          ? !!inventory || !validDecimal(openingQuantity, true)
           : mode === 'receive'
-            ? !validDecimal(packageCount) || !validDecimal(quantityPerPackage)
-            : !validDecimal(countedQuantity, true) || !note.trim()
+            ? !inventory ||
+              !validDecimal(packageCount) ||
+              !validDecimal(quantityPerPackage)
+            : !inventory || !validDecimal(countedQuantity, true) || !note.trim()
       }
       onClose={onClose}
       onSubmit={submit}
@@ -151,24 +147,6 @@ export const StockOperationModal = ({
       <div className="flex flex-col gap-4">
         {mode === 'setup' && (
           <>
-            <div className="flex flex-col gap-1.5">
-              <Label>Product</Label>
-              <SheetSelect
-                title="Choose a product"
-                value={productId}
-                onValueChange={setProductId}
-                options={availableProducts.map((product) => ({
-                  value: product.id,
-                  label: product.name,
-                }))}
-                placeholder="Select product"
-              />
-              {availableProducts.length === 0 && (
-                <p className="text-text-tertiary text-sm">
-                  Every catalog product already has stock tracking enabled.
-                </p>
-              )}
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label>Base unit</Label>
@@ -183,19 +161,17 @@ export const StockOperationModal = ({
                 id="opening-quantity"
                 label="Opening count"
                 value={openingQuantity}
+                placeholder="0"
                 onChange={setOpeningQuantity}
               />
             </div>
-            {selectedProduct && (
-              <p className="rounded-md bg-muted p-3 text-sm text-text-secondary">
-                {selectedProduct.name} will be priced and tracked per{' '}
-                {stockUnitLabels[unit]}.
-              </p>
-            )}
+            <p className="bg-muted text-text-secondary rounded-md p-3 text-sm">
+              {product.name} will be tracked in {stockUnitLabels[unit]}.
+            </p>
           </>
         )}
 
-        {mode === 'receive' && stock && (
+        {mode === 'receive' && inventory && (
           <>
             <div className="grid grid-cols-2 gap-3">
               <DecimalField
@@ -206,7 +182,7 @@ export const StockOperationModal = ({
               />
               <DecimalField
                 id="quantity-per-package"
-                label={`Quantity per package (${stockUnitLabels[stock.unit]})`}
+                label={`Quantity per package (${stockUnitLabels[inventory.unit]})`}
                 value={quantityPerPackage}
                 onChange={setQuantityPerPackage}
               />
@@ -224,10 +200,10 @@ export const StockOperationModal = ({
           </>
         )}
 
-        {mode === 'reconcile' && stock && (
+        {mode === 'reconcile' && inventory && (
           <DecimalField
             id="counted-quantity"
-            label={`Physical count (${stockUnitLabels[stock.unit]})`}
+            label={`Physical count (${stockUnitLabels[inventory.unit]})`}
             value={countedQuantity}
             onChange={setCountedQuantity}
           />
@@ -241,7 +217,11 @@ export const StockOperationModal = ({
             id="stock-note"
             value={note}
             maxLength={500}
-            placeholder={mode === 'reconcile' ? 'Why is this count changing?' : 'Reference or details'}
+            placeholder={
+              mode === 'reconcile'
+                ? 'Why is this count changing?'
+                : 'Reference or details'
+            }
             onChange={(event) => setNote(event.target.value)}
           />
         </div>
@@ -254,11 +234,13 @@ const DecimalField = ({
   id,
   label,
   value,
+  placeholder,
   onChange,
 }: {
   id: string
   label: string
   value: string
+  placeholder?: string
   onChange: (value: string) => void
 }) => (
   <div className="flex flex-col gap-1.5">
@@ -268,6 +250,7 @@ const DecimalField = ({
       type="text"
       inputMode="decimal"
       value={value}
+      placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
     />
   </div>

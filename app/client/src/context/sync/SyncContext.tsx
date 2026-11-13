@@ -64,8 +64,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
   )
   const retryAtRef = useRef<number | undefined>(undefined)
   const observedPendingCount = useRef<number | undefined>(undefined)
-  const [reachability, setReachability] =
-    useState<Reachability>('unknown')
+  const [reachability, setReachability] = useState<Reachability>('unknown')
   const [phase, setPhase] = useState<SyncPhase>('idle')
   const [authRequired, setAuthRequired] = useState(false)
   const [statsReady, setStatsReady] = useState(false)
@@ -88,9 +87,12 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
     const tenantOperations = tenantId
       ? allOperations.filter((operation) => operation.tenantId === tenantId)
       : []
-    const currentOperations = authId && tenantId
-      ? tenantOperations.filter((operation) => operation.ownerUserId === authId)
-      : []
+    const currentOperations =
+      authId && tenantId
+        ? tenantOperations.filter(
+            (operation) => operation.ownerUserId === authId
+          )
+        : []
     const pending = currentOperations.length
     const blocked = currentOperations.filter(
       (operation) => operation.state === 'blocked'
@@ -148,9 +150,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
         }
 
         const hasWork =
-          statsAtStart.pending > 0 ||
-          refreshSnapshot ||
-          !!request.retryBlocked
+          statsAtStart.pending > 0 || refreshSnapshot || !!request.retryBlocked
         setLastError(undefined)
 
         if (!authId || !tenantId) {
@@ -191,8 +191,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
             force: manual,
             refreshSnapshot,
             retryBlocked: request.retryBlocked,
-            onProgress: (completed, total) =>
-              setProgress({ completed, total }),
+            onProgress: (completed, total) => setProgress({ completed, total }),
           })
           setReachability('reachable')
           setPhase('idle')
@@ -297,9 +296,12 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
       const tenantOperations = tenantId
         ? operations.filter((operation) => operation.tenantId === tenantId)
         : []
-      const current = authId && tenantId
-        ? tenantOperations.filter((operation) => operation.ownerUserId === authId)
-        : []
+      const current =
+        authId && tenantId
+          ? tenantOperations.filter(
+              (operation) => operation.ownerUserId === authId
+            )
+          : []
       return {
         pending: current.length,
         blocked: current.filter((operation) => operation.state === 'blocked')
@@ -309,13 +311,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
         snapshotRefreshNeeded: !!snapshotRefreshNeeded,
       }
     }).subscribe(
-      ({
-        pending,
-        blocked,
-        otherPending,
-        syncedAt,
-        snapshotRefreshNeeded,
-      }) => {
+      ({ pending, blocked, otherPending, syncedAt, snapshotRefreshNeeded }) => {
         setPendingCount(pending)
         setBlockedCount(blocked)
         setOtherUserPendingCount(otherPending)
@@ -323,13 +319,12 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
         setStatsReady(true)
         if (pending === 0 && !snapshotRefreshNeeded) cancelRetry()
         if (
-          authId && tenantId &&
+          authId &&
+          tenantId &&
           observedPendingCount.current !== undefined &&
           pending > observedPendingCount.current
         ) {
-          queueMicrotask(() =>
-            void runSyncRef.current({ source: 'automatic' })
-          )
+          queueMicrotask(() => void runSyncRef.current({ source: 'automatic' }))
         }
         observedPendingCount.current = pending
       },
@@ -442,7 +437,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
       storagePersistent,
       storagePressure,
       canGenerateReport: canUseQueueSensitiveFeatures,
-      canModifyCatalog: canUseQueueSensitiveFeatures,
+      canModifyProducts: canUseQueueSensitiveFeatures,
       syncNow,
       refreshInBackground,
       retryBlocked,

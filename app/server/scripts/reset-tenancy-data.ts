@@ -5,7 +5,6 @@ const dryRun = process.argv.includes('--dry-run')
 const confirmed = process.argv.includes('--confirm-reset')
 const collections = [
   'stockmovements',
-  'stocks',
   'aggregates',
   'reports',
   'transactions',
@@ -18,7 +17,9 @@ const main = async () => {
   const uri = process.env.MONGO_URI
   if (!uri) throw new Error('MONGO_URI env var is required')
   if (!dryRun && !confirmed) {
-    throw new Error('Pass --confirm-reset to permanently remove all tenancy and business data')
+    throw new Error(
+      'Pass --confirm-reset to permanently remove all tenancy and business data'
+    )
   }
 
   await mongoose.connect(uri)
@@ -28,12 +29,16 @@ const main = async () => {
   for (const name of collections) {
     const collection = database.collection(name)
     const count = await collection.countDocuments()
-    console.log(`${name}: ${count} document(s) ${dryRun ? 'would be removed' : 'removed'}`)
+    console.log(
+      `${name}: ${count} document(s) ${dryRun ? 'would be removed' : 'removed'}`
+    )
     if (!dryRun) await collection.deleteMany({})
   }
 
   if (!dryRun) {
-    console.log('Reset complete. Run register-superadmin before using the application.')
+    console.log(
+      'Reset complete. Run register-superadmin before using the application.'
+    )
   }
 }
 

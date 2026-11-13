@@ -45,11 +45,11 @@ export const AccountPage = () => {
         ? 'Sign in to sync'
         : sync.reachability === 'unreachable'
           ? 'Working offline'
-            : syncBusy
-              ? 'Syncing changes'
-              : sync.pendingCount > 0
-                ? `${sync.pendingCount} changes pending`
-                : 'Device is up to date'
+          : syncBusy
+            ? 'Syncing changes'
+            : sync.pendingCount > 0
+              ? `${sync.pendingCount} changes pending`
+              : 'Device is up to date'
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-5 py-5 md:p-6">
@@ -81,14 +81,9 @@ export const AccountPage = () => {
         <ContentSection label="Manage">
           <div className="rounded-card bg-card shadow-card overflow-hidden">
             <ManagementLink
-              href="/catalog"
-              title="Product catalog"
-              description="Manage products, pricing, and images"
-            />
-            <ManagementLink
-              href="/stock"
-              title="Stock management"
-              description="Receive stock, count inventory, and review history"
+              href="/products"
+              title="Products"
+              description="Manage products, pricing, stock, and movement history"
             />
             {isSuperAdmin && (
               <ManagementLink
@@ -150,11 +145,7 @@ export const AccountPage = () => {
         </div>
       </ContentSection>
 
-      <Button
-        className="w-full gap-2"
-        variant="outline"
-        onClick={logout}
-      >
+      <Button className="w-full gap-2" variant="outline" onClick={logout}>
         <LogOut className="size-5 md:size-4" />
         Sign out
       </Button>

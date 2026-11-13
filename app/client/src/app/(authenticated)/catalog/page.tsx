@@ -1,5 +1,6 @@
-import ProductPage from '@/features/product'
+import { redirect } from 'next/navigation'
+import { UserRoutes } from '@/routes/paths'
 
 export default function CatalogRoute() {
-  return <ProductPage />
+  redirect(UserRoutes.Products)
 }

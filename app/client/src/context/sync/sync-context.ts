@@ -18,7 +18,7 @@ export interface SyncContextValue {
   storagePersistent?: boolean
   storagePressure?: boolean
   canGenerateReport: boolean
-  canModifyCatalog: boolean
+  canModifyProducts: boolean
   syncNow: () => Promise<void>
   refreshInBackground: () => Promise<void>
   retryBlocked: () => Promise<void>
@@ -34,7 +34,7 @@ const initialValue: SyncContextValue = {
   blockedCount: 0,
   otherUserPendingCount: 0,
   canGenerateReport: false,
-  canModifyCatalog: false,
+  canModifyProducts: false,
   syncNow: async () => undefined,
   refreshInBackground: async () => undefined,
   retryBlocked: async () => undefined,

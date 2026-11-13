@@ -13,7 +13,7 @@ import { ReportModule } from './features/report/report.module'
 import { formatGraphQLError } from './common/exceptions'
 import { TenantModule } from './features/tenant/tenant.module'
 import { StockModule } from './features/stock/stock.module'
-import { StockUnit } from './features/stock/schemas/stock.schema'
+import { StockUnit } from './features/stock/stock-unit'
 import { DecimalScalar } from './common/graphql/decimal.scalar'
 
 @Module({

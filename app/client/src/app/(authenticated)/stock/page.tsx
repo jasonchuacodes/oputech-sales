@@ -1,5 +1,6 @@
-import StockPage from '@/features/stock'
+import { redirect } from 'next/navigation'
+import { UserRoutes } from '@/routes/paths'
 
 export default function StockRoute() {
-  return <StockPage />
+  redirect(UserRoutes.Products)
 }

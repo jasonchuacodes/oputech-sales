@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument, SchemaTypes, Types } from 'mongoose'
-import { StockUnit } from './stock.schema'
+import { StockUnit } from '../stock-unit'
 
 export enum StockMovementReason {
   OPENING = 'OPENING',
@@ -25,9 +25,6 @@ export class StockMovement {
   tenantId: string
 
   @Prop({ required: true })
-  stockId: string
-
-  @Prop({ required: true })
   productId: string
 
   @Prop({ required: true })
@@ -38,6 +35,9 @@ export class StockMovement {
 
   @Prop({ type: SchemaTypes.Decimal128, required: true })
   delta: Types.Decimal128
+
+  @Prop({ type: SchemaTypes.Decimal128, required: true })
+  balanceBefore: Types.Decimal128
 
   @Prop({ type: SchemaTypes.Decimal128, required: true })
   balanceAfter: Types.Decimal128
@@ -78,7 +78,7 @@ StockMovementSchema.index({ tenantId: 1, productId: 1, postedAt: -1 })
 StockMovementSchema.index({ tenantId: 1, reason: 1, postedAt: -1 })
 StockMovementSchema.index(
   { tenantId: 1, sourceType: 1, sourceId: 1, productId: 1, reason: 1 },
-  { unique: true },
+  { unique: true }
 )
 StockMovementSchema.index(
   { tenantId: 1, clientMutationId: 1 },
@@ -88,5 +88,5 @@ StockMovementSchema.index(
       sourceType: StockMovementSourceType.STOCK_OPERATION,
       clientMutationId: { $type: 'string' },
     },
-  },
+  }
 )

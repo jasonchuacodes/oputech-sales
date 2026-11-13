@@ -20,13 +20,17 @@ import { StockService } from '../stock/stock.service'
 @Injectable()
 export class TransactionService {
   constructor(
-    @InjectModel(Transaction.name) private transaction: Model<TransactionDocument>,
+    @InjectModel(Transaction.name)
+    private transaction: Model<TransactionDocument>,
     @InjectModel(Product.name) private product: Model<ProductDocument>,
     @InjectConnection() private readonly connection: Connection,
-    private readonly stockService: StockService,
+    private readonly stockService: StockService
   ) {}
 
-  async getTransactions(tenantId: string, filter?: TransactionFilter): Promise<TransactionDocument[]> {
+  async getTransactions(
+    tenantId: string,
+    filter?: TransactionFilter
+  ): Promise<TransactionDocument[]> {
     const query: QueryFilter<TransactionDocument> = {
       tenantId,
       status: { $ne: TransactionStatus.VOIDED },
@@ -51,32 +55,34 @@ export class TransactionService {
   async createTransaction(
     tenantId: string,
     input: CreateTransactionInput,
-    actorId?: string,
+    actorId?: string
   ): Promise<TransactionDocument> {
     if (input.clientMutationId) {
-      const existing = await this.transaction.findOne({
-        tenantId,
-        clientMutationId: input.clientMutationId,
-      }).exec()
+      const existing = await this.transaction
+        .findOne({
+          tenantId,
+          clientMutationId: input.clientMutationId,
+        })
+        .exec()
       if (existing) return existing
     }
 
-    const occurredAt = input.occurredAt ? new Date(input.occurredAt) : new Date()
+    const occurredAt = input.occurredAt
+      ? new Date(input.occurredAt)
+      : new Date()
     if (Number.isNaN(occurredAt.getTime())) {
       throw new InvalidInputException(
-        'The transaction occurrence date is invalid.',
+        'The transaction occurrence date is invalid.'
       )
     }
 
     if (input.type === TransactionType.EXPENSE) {
       if (!input.label?.trim()) {
-        throw new InvalidInputException(
-          'An expense label is required.',
-        )
+        throw new InvalidInputException('An expense label is required.')
       }
       if (!input.amount || input.amount <= 0) {
         throw new InvalidInputException(
-          'The expense amount must be greater than zero.',
+          'The expense amount must be greater than zero.'
         )
       }
 
@@ -96,13 +102,13 @@ export class TransactionService {
     const items = input.items ?? []
     if (items.length === 0) {
       throw new InvalidInputException(
-        'At least one transaction item is required.',
+        'At least one transaction item is required.'
       )
     }
     for (const item of items) {
       if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
         throw new InvalidInputException(
-          'Transaction quantities must be positive whole numbers.',
+          'Transaction quantities must be positive whole numbers.'
         )
       }
     }
@@ -133,17 +139,21 @@ export class TransactionService {
           .exec()
 
         for (const { productId } of items) {
-          const product = products.find((candidate) => candidate._id.toString() === productId)
+          const product = products.find(
+            (candidate) => candidate._id.toString() === productId
+          )
           if (!product) {
             throw new NotFoundException(
               'One or more selected products are no longer available.',
-              { details: { productId } },
+              { details: { productId } }
             )
           }
         }
 
         const transactionItems = items.map(({ productId, quantity }) => {
-          const product = products.find((candidate) => candidate._id.toString() === productId)!
+          const product = products.find(
+            (candidate) => candidate._id.toString() === productId
+          )!
           return {
             productId,
             name: product.name,
@@ -154,21 +164,23 @@ export class TransactionService {
         })
         const total = transactionItems.reduce(
           (sum, item) => sum + item.price * item.quantity,
-          0,
+          0
         )
         const [transaction] = await this.transaction.create(
-          [{
-            tenantId,
-            clientMutationId: input.clientMutationId,
-            occurredAt,
-            type: TransactionType.SALE,
-            items: transactionItems,
-            paymentType: input.paymentType,
-            total,
-            processed: false,
-            status: TransactionStatus.ACTIVE,
-          }],
-          { session },
+          [
+            {
+              tenantId,
+              clientMutationId: input.clientMutationId,
+              occurredAt,
+              type: TransactionType.SALE,
+              items: transactionItems,
+              paymentType: input.paymentType,
+              total,
+              processed: false,
+              status: TransactionStatus.ACTIVE,
+            },
+          ],
+          { session }
         )
 
         const applied = await this.stockService.applySale(
@@ -178,20 +190,22 @@ export class TransactionService {
           actorId,
           transactionItems.map((item) => {
             const product = products.find(
-              (candidate) => candidate._id.toString() === item.productId,
+              (candidate) => candidate._id.toString() === item.productId
             )!
             return {
               productId: item.productId,
               productName: item.name,
               quantity: item.quantity,
-              tracked: product.stockTrackingEnabled === true,
+              tracked: Boolean(product.inventory),
             }
           }),
-          session,
+          session
         )
 
         if (applied.length > 0) {
-          const byProduct = new Map(applied.map((entry) => [entry.productId, entry]))
+          const byProduct = new Map(
+            applied.map((entry) => [entry.productId, entry])
+          )
           for (const item of transaction.items) {
             const inventory = byProduct.get(item.productId)
             if (!inventory) continue
@@ -221,13 +235,15 @@ export class TransactionService {
   private async createIdempotently(
     tenantId: string,
     clientMutationId: string | undefined,
-    data: Record<string, unknown>,
+    data: Record<string, unknown>
   ): Promise<TransactionDocument> {
     try {
       return await this.transaction.create(data)
     } catch (error: any) {
       if (error?.code === 11000 && clientMutationId) {
-        const existing = await this.transaction.findOne({ tenantId, clientMutationId }).exec()
+        const existing = await this.transaction
+          .findOne({ tenantId, clientMutationId })
+          .exec()
         if (existing) return existing
       }
       throw error
@@ -237,7 +253,7 @@ export class TransactionService {
   async remove(
     tenantId: string,
     id: string,
-    actorId?: string,
+    actorId?: string
   ): Promise<TransactionDocument | null> {
     const session = await this.connection.startSession()
     try {
@@ -254,7 +270,7 @@ export class TransactionService {
         }
         if (transaction.processed) {
           throw new ConflictException(
-            'This transaction cannot be voided because it is already included in a report.',
+            'This transaction cannot be voided because it is already included in a report.'
           )
         }
 
@@ -263,7 +279,7 @@ export class TransactionService {
             tenantId,
             transaction._id.toString(),
             actorId,
-            session,
+            session
           )
         }
         transaction.status = TransactionStatus.VOIDED

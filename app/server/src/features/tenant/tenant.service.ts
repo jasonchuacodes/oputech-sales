@@ -19,7 +19,6 @@ import {
   AggregateDocument,
 } from '../report/schemas/aggregate.schema'
 import { Tenant, TenantDocument } from './schemas/tenant.schema'
-import { Stock, StockDocument } from '../stock/schemas/stock.schema'
 import {
   StockMovement,
   StockMovementDocument,
@@ -44,10 +43,8 @@ export class TenantService {
     private readonly reportModel: Model<ReportDocument>,
     @InjectModel(Aggregate.name)
     private readonly aggregateModel: Model<AggregateDocument>,
-    @InjectModel(Stock.name)
-    private readonly stockModel: Model<StockDocument>,
     @InjectModel(StockMovement.name)
-    private readonly stockMovementModel: Model<StockMovementDocument>,
+    private readonly stockMovementModel: Model<StockMovementDocument>
   ) {}
 
   async listForUser(user: AuthenticatedUser): Promise<TenantDocument[]> {
@@ -162,7 +159,6 @@ export class TenantService {
       this.transactionModel.deleteMany({ tenantId }),
       this.reportModel.deleteMany({ tenantId }),
       this.aggregateModel.deleteMany({ tenantId }),
-      this.stockModel.deleteMany({ tenantId }),
       this.stockMovementModel.deleteMany({ tenantId }),
     ])
     const result = await this.tenantModel.deleteOne({

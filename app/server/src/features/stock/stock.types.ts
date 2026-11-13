@@ -1,4 +1,4 @@
-import { StockDocument, StockUnit } from './schemas/stock.schema'
+import { StockUnit } from './stock-unit'
 import {
   StockMovementDocument,
   StockMovementReason,
@@ -8,16 +8,6 @@ import {
 export interface StockPagination {
   page?: number
   pageSize?: number
-}
-
-export interface StockPageResult {
-  items: StockDocument[]
-  page: number
-  pageSize: number
-  totalCount: number
-  totalPages: number
-  hasNextPage: boolean
-  hasPreviousPage: boolean
 }
 
 export interface StockMovementFilter {
@@ -59,6 +49,7 @@ export interface ReconcileStockInput {
   clientMutationId: string
   productId: string
   countedQuantity: string
+  expectedRevision: number
   occurredAt?: string
   note: string
 }

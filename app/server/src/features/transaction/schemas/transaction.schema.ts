@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument } from 'mongoose'
 import { SchemaTypes, Types } from 'mongoose'
-import { StockUnit } from '../../stock/schemas/stock.schema'
+import { StockUnit } from '../../stock/stock-unit'
 
 export enum PaymentType {
   CASH = 'CASH',
@@ -61,7 +61,11 @@ export class Transaction {
   @Prop({ required: true, default: Date.now, index: true })
   occurredAt: Date
 
-  @Prop({ required: true, enum: Object.values(TransactionType), default: TransactionType.SALE })
+  @Prop({
+    required: true,
+    enum: Object.values(TransactionType),
+    default: TransactionType.SALE,
+  })
   type: TransactionType
 
   @Prop({ type: [TransactionItemSchema], required: true, default: [] })
@@ -79,7 +83,11 @@ export class Transaction {
   @Prop({ required: true, default: false })
   processed: boolean
 
-  @Prop({ required: true, enum: Object.values(TransactionStatus), default: TransactionStatus.ACTIVE })
+  @Prop({
+    required: true,
+    enum: Object.values(TransactionStatus),
+    default: TransactionStatus.ACTIVE,
+  })
   status: TransactionStatus
 
   @Prop()
@@ -97,5 +105,8 @@ TransactionSchema.index({ tenantId: 1, occurredAt: -1 })
 TransactionSchema.index({ tenantId: 1, processed: 1, occurredAt: 1 })
 TransactionSchema.index(
   { tenantId: 1, clientMutationId: 1 },
-  { unique: true, partialFilterExpression: { clientMutationId: { $type: 'string' } } },
+  {
+    unique: true,
+    partialFilterExpression: { clientMutationId: { $type: 'string' } },
+  }
 )

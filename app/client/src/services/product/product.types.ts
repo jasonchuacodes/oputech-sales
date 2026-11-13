@@ -1,10 +1,22 @@
+import type { StockUnit } from '../stock/stock.types'
+
+export interface InventoryState {
+  stockCount: string
+  unit: StockUnit
+  revision: number
+}
+
 export interface Product {
   id: string
   name: string
   price: number
   imageUrl?: string
   printCount?: number
-  stockTrackingEnabled?: boolean
+  inventory?: InventoryState
+}
+
+export interface InventoryProduct extends Product {
+  inventory: InventoryState
 }
 
 export interface ProductPagination {

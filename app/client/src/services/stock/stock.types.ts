@@ -1,5 +1,3 @@
-import type { Product } from '../product/product.types'
-
 export enum StockUnit {
   KG = 'KG',
   G = 'G',
@@ -18,21 +16,13 @@ export enum StockMovementReason {
   Correction = 'CORRECTION',
 }
 
-export interface Stock {
-  id: string
-  productId: string
-  product: Product
-  quantity: string
-  unit: StockUnit
-  sequence: number
-}
-
 export interface StockMovement {
   id: string
   productId: string
   productName: string
   unit: StockUnit
   delta: string
+  balanceBefore: string
   balanceAfter: string
   reason: StockMovementReason
   sourceId: string
@@ -75,6 +65,7 @@ export interface ReconcileStockInput {
   clientMutationId: string
   productId: string
   countedQuantity: string
+  expectedRevision: number
   note: string
 }
 

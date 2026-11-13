@@ -23,16 +23,6 @@ enum StockMovementSourceType {
   STOCK_OPERATION
 }
 
-type Stock {
-  id: ID!
-  tenantId: ID!
-  productId: ID!
-  product: Product!
-  quantity: Decimal!
-  unit: StockUnit!
-  sequence: Int!
-}
-
 type StockMovement {
   id: ID!
   productId: ID!
@@ -40,6 +30,7 @@ type StockMovement {
   productName: String!
   unit: StockUnit!
   delta: Decimal!
+  balanceBefore: Decimal!
   balanceAfter: Decimal!
   reason: StockMovementReason!
   sourceType: StockMovementSourceType!
@@ -62,16 +53,6 @@ input StockMovementFilterInput {
   productId: ID
   reason: StockMovementReason
   sourceType: StockMovementSourceType
-}
-
-type StockPage {
-  items: [Stock!]!
-  page: Int!
-  pageSize: Int!
-  totalCount: Int!
-  totalPages: Int!
-  hasNextPage: Boolean!
-  hasPreviousPage: Boolean!
 }
 
 type StockMovementPage {
@@ -107,13 +88,12 @@ input ReconcileStockInput {
   clientMutationId: ID!
   productId: ID!
   countedQuantity: Decimal!
+  expectedRevision: Int!
   occurredAt: String
   note: String!
 }
 
 extend type Query {
-  stocks(search: String, pagination: StockPaginationInput): StockPage!
-  stock(productId: ID!): Stock
   stockMovements(
     filter: StockMovementFilterInput
     pagination: StockPaginationInput
@@ -121,7 +101,7 @@ extend type Query {
 }
 
 extend type Mutation {
-  enableStockTracking(input: EnableStockTrackingInput!): Stock!
-  receiveStock(input: ReceiveStockInput!): Stock!
-  reconcileStock(input: ReconcileStockInput!): Stock!
+  enableStockTracking(input: EnableStockTrackingInput!): Product!
+  receiveStock(input: ReceiveStockInput!): Product!
+  reconcileStock(input: ReconcileStockInput!): Product!
 }

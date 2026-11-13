@@ -4,53 +4,23 @@ import type {
   PageResult,
   ReceiveStockInput,
   ReconcileStockInput,
-  Stock,
   StockMovement,
   StockMovementReason,
 } from './stock.types'
+import type { InventoryProduct } from '../product/product.types'
 
-const STOCK_FIELDS = `
+const INVENTORY_PRODUCT_FIELDS = `
   id
-  productId
-  quantity
-  unit
-  sequence
-  product {
-    id
-    name
-    price
-    imageUrl
-    printCount
-    stockTrackingEnabled
+  name
+  price
+  imageUrl
+  printCount
+  inventory {
+    stockCount
+    unit
+    revision
   }
 `
-
-const GET_STOCKS = `
-  query GetStocks($search: String, $pagination: StockPaginationInput) {
-    stocks(search: $search, pagination: $pagination) {
-      items { ${STOCK_FIELDS} }
-      page
-      pageSize
-      totalCount
-      totalPages
-      hasNextPage
-      hasPreviousPage
-    }
-  }
-`
-
-export const getStocks = async (
-  search: string,
-  page: number,
-  tenantId?: string,
-): Promise<PageResult<Stock>> => {
-  const data = await requestGraphQL<{ stocks: PageResult<Stock> }>(
-    GET_STOCKS,
-    { search: search.trim() || undefined, pagination: { page, pageSize: 25 } },
-    { tenantId },
-  )
-  return data.stocks
-}
 
 const GET_MOVEMENTS = `
   query GetStockMovements(
@@ -64,6 +34,7 @@ const GET_MOVEMENTS = `
         productName
         unit
         delta
+        balanceBefore
         balanceAfter
         reason
         sourceId
@@ -88,7 +59,7 @@ export const getStockMovements = async (
   page: number,
   productId?: string,
   reason?: StockMovementReason,
-  tenantId?: string,
+  tenantId?: string
 ): Promise<PageResult<StockMovement>> => {
   const data = await requestGraphQL<{
     stockMovements: PageResult<StockMovement>
@@ -101,61 +72,61 @@ export const getStockMovements = async (
           : undefined,
       pagination: { page, pageSize: 25 },
     },
-    { tenantId },
+    { tenantId }
   )
   return data.stockMovements
 }
 
 const ENABLE_TRACKING = `
   mutation EnableStockTracking($input: EnableStockTrackingInput!) {
-    enableStockTracking(input: $input) { ${STOCK_FIELDS} }
+    enableStockTracking(input: $input) { ${INVENTORY_PRODUCT_FIELDS} }
   }
 `
 
 export const enableStockTracking = async (
   input: EnableStockTrackingInput,
-  tenantId?: string,
-): Promise<Stock> => {
-  const data = await requestGraphQL<{ enableStockTracking: Stock }>(
+  tenantId?: string
+): Promise<InventoryProduct> => {
+  const data = await requestGraphQL<{ enableStockTracking: InventoryProduct }>(
     ENABLE_TRACKING,
     { input },
-    { tenantId },
+    { tenantId }
   )
   return data.enableStockTracking
 }
 
 const RECEIVE_STOCK = `
   mutation ReceiveStock($input: ReceiveStockInput!) {
-    receiveStock(input: $input) { ${STOCK_FIELDS} }
+    receiveStock(input: $input) { ${INVENTORY_PRODUCT_FIELDS} }
   }
 `
 
 export const receiveStock = async (
   input: ReceiveStockInput,
-  tenantId?: string,
-): Promise<Stock> => {
-  const data = await requestGraphQL<{ receiveStock: Stock }>(
+  tenantId?: string
+): Promise<InventoryProduct> => {
+  const data = await requestGraphQL<{ receiveStock: InventoryProduct }>(
     RECEIVE_STOCK,
     { input },
-    { tenantId },
+    { tenantId }
   )
   return data.receiveStock
 }
 
 const RECONCILE_STOCK = `
   mutation ReconcileStock($input: ReconcileStockInput!) {
-    reconcileStock(input: $input) { ${STOCK_FIELDS} }
+    reconcileStock(input: $input) { ${INVENTORY_PRODUCT_FIELDS} }
   }
 `
 
 export const reconcileStock = async (
   input: ReconcileStockInput,
-  tenantId?: string,
-): Promise<Stock> => {
-  const data = await requestGraphQL<{ reconcileStock: Stock }>(
+  tenantId?: string
+): Promise<InventoryProduct> => {
+  const data = await requestGraphQL<{ reconcileStock: InventoryProduct }>(
     RECONCILE_STOCK,
     { input },
-    { tenantId },
+    { tenantId }
   )
   return data.reconcileStock
 }
