@@ -58,8 +58,19 @@ const main = async () => {
   }
 
   await database.dropCollection('stocks')
+  const [products, movements] = await Promise.all([
+    database
+      .collection('products')
+      .updateMany(
+        { stockTrackingEnabled: { $exists: true } },
+        { $unset: { stockTrackingEnabled: '' } }
+      ),
+    database
+      .collection('stockmovements')
+      .updateMany({ stockId: { $exists: true } }, { $unset: { stockId: '' } }),
+  ])
   console.log(
-    `Dropped the legacy stocks collection after verifying ${stocks.length} record(s).`
+    `Dropped the legacy stocks collection after verifying ${stocks.length} record(s). Removed ${products.modifiedCount} legacy product flag(s) and ${movements.modifiedCount} movement reference(s).`
   )
 }
 

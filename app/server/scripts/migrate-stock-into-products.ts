@@ -105,7 +105,6 @@ const main = async () => {
                 revision: Math.max(stock.sequence ?? 1, 1),
               },
             },
-            $unset: { stockTrackingEnabled: '' },
           },
         },
       }))
@@ -127,7 +126,6 @@ const main = async () => {
                   balanceBefore.toString()
                 ),
               },
-              $unset: { stockId: '' },
             },
           },
         }
@@ -135,15 +133,8 @@ const main = async () => {
     )
   }
 
-  await database
-    .collection('products')
-    .updateMany(
-      { stockTrackingEnabled: { $exists: true } },
-      { $unset: { stockTrackingEnabled: '' } }
-    )
-
   console.log(
-    'Inventory embedding migration completed. The stocks collection was retained.'
+    'Inventory embedding migration completed. Legacy stock data and fields were retained for rollback.'
   )
 }
 
