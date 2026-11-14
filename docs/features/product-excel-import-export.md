@@ -1,189 +1,355 @@
-# Product Excel Import and Export
+# Product Excel Import and Export: Setup and Implementation Guide
 
-**Status:** Planned; implementation deferred  
-**Applies to:** `app/client`, `app/server`, worker infrastructure  
-**Target capacity:** Up to 10,000 product rows per workbook  
-**Last reviewed:** 2026-11-09
+**Status:** Infrastructure partially complete; backend and client implementation not started
+**Environment:** Private beta
+**Application hosting:** Railway
+**Database:** MongoDB Atlas
+**Queue:** BullMQ on Redis Cloud
+**File storage:** Private Amazon S3 bucket
 
 ## 1. Purpose
 
-Provide administrators with a reliable way to:
+This document is the end-to-end guide for setting up and implementing product Excel imports and exports. It records what has already been configured and describes the remaining application and deployment work.
 
-- Import products and inventory quantities from an Excel workbook.
-- Create products that do not exist yet.
-- Reconcile the quantity of products that already exist.
-- Export every product belonging to the active tenant into an Excel workbook.
-- Track validation and import/export progress without keeping the browser open.
+The first release is intentionally bounded. It should reliably handle approximately 5,000 product rows without introducing architecture intended for 100,000-row workbooks.
 
-Imports and exports are online-only administrative operations. They must not use the offline transaction outbox.
+## 2. Current status
 
-## 2. Scope and decisions
+### Completed
 
-The first release will use the following behavior:
+- The NestJS backend is deployed as a Railway service.
+- MongoDB Atlas is configured and used by the backend.
+- An AWS account and product-image S3 bucket already exist.
+- A separate private S3 bucket was created for temporary product import and export files.
+- S3 Block Public Access is enabled on the transfer bucket.
+- The transfer bucket uses bucket-owner-enforced object ownership and default encryption.
+- The transfer bucket has browser CORS configured for the approved frontend origin.
+- A lifecycle rule expires transfer objects after seven days.
+- Incomplete multipart uploads are removed after one day.
+- IAM policies are named:
+  - `ProductImageBucketAccess`
+  - `ProductTransferBucketAccess`
+- Both policies are attached to the IAM user whose credentials are configured in Railway.
+- Railway already has its AWS credentials, AWS region, image bucket configuration, and transfer bucket configuration.
+- The transfer bucket is configured in Railway as `S3_PRODUCT_TRANSFER_BUCKET`.
+- A free Redis Cloud database was created for the private beta.
+- Redis uses the `noeviction` policy required by BullMQ.
+- The Redis connection URL is stored on the existing Railway backend service as `REDIS_URL`.
 
-- Accept `.xlsx` workbooks only.
-- Support a maximum of 10,000 product rows. Files over the limit are rejected.
-- Run validation, import, and export work in background jobs.
-- Store uploaded workbooks, generated exports, and error reports in private S3 storage.
-- Match existing products by normalized product name.
-- Update only inventory quantity when a row matches an existing product.
-- Create a product when no matching product exists.
-- Leave products that are absent from the workbook unchanged.
-- Export all products for the active tenant, not only visible search results.
-- Validate the complete workbook before changing products.
-- Apply validated rows in resumable, idempotent batches.
+### Not yet completed
 
-This is an upsert workflow, not a complete catalog replacement.
+- BullMQ and Redis client dependencies are not installed.
+- No BullMQ queue or queue keys exist yet.
+- The API does not connect to Redis yet.
+- Product-transfer MongoDB schemas do not exist.
+- S3 presigned upload and download URLs are not implemented.
+- Workbook parsing, validation, staging, application, and generation are not implemented.
+- A worker application entry point does not exist.
+- A separate Railway worker service has not been created.
+- GraphQL product-transfer operations do not exist.
+- Import/export client UI does not exist.
 
-## 3. Prerequisites
-
-Implementation should begin after the unit and inventory work has established:
-
-- The final product unit representation.
-- Whether inventory quantity is an integer or decimal.
-- Whether inventory uses a current-value field, an adjustment ledger, or both.
-- The service boundary through which stock reconciliation must occur.
-- The fields required to create a product.
-
-The checked-in product client and server contracts must also be aligned before this feature is built. In particular, product pagination and fields such as category must have one shared contract.
-
-## 4. Workbook contract
-
-The workbook contains one worksheet named `Products`. The template and export functionality must generate the same format accepted by import.
-
-| Product Name | Unit | Quantity | Price | Category |
-| --- | --- | ---: | ---: | --- |
-| Coca-Cola | bottle | 24 | 25.00 | Main |
-
-### Column rules
-
-- **Product Name:** Required text. Used to identify existing products after normalization.
-- **Unit:** Required when creating a product. It does not change the unit of an existing matching product in the first release.
-- **Quantity:** Required, numeric, and nonnegative. Its integer or decimal rules follow the inventory domain.
-- **Price:** Required when creating a product unless the product model defines a safe default.
-- **Category:** Optional only when the product model supplies a default, such as `Main`.
-
-If the workbook is limited to Product Name, Unit, and Quantity, it can create products only after a safe default price and category policy is defined. Otherwise, a three-column workbook can update existing products but cannot safely create complete POS products.
-
-### Workbook validation
-
-- Header names and required columns must match the supported format.
-- Wholly blank rows may be ignored.
-- Partially populated rows are invalid.
-- Formulas, formula-like executable values, merged data cells, and unsupported cell types are rejected.
-- Duplicate normalized names inside the workbook are rejected.
-- If a normalized name matches multiple existing products, the row is ambiguous and validation fails.
-- Cell lengths, worksheet count, compressed file size, and row count are bounded.
-- Errors retain their original Excel row and column references.
-
-Product-name normalization should trim leading and trailing whitespace, collapse repeated internal whitespace, and compare case-insensitively. A future stable SKU or product ID should replace name matching when one is available.
-
-## 5. System architecture
+## 3. Final architecture
 
 ```text
 Browser
-  ├── GraphQL: create job and obtain S3 upload details
-  ├── Direct upload to private S3
-  ├── GraphQL: queue validation or export
-  └── Poll persisted job progress
+  |
+  | GraphQL requests, status polling, confirmation
+  v
+Railway API service
+  |-- MongoDB Atlas: create and read authoritative job records
+  |-- Redis Cloud: enqueue BullMQ jobs
+  |-- Amazon S3: create presigned upload/download authorization
+  |
+  +---- presigned authorization ----> Browser
 
-API
-  ├── Authenticates the user and tenant
-  ├── Creates short-lived S3 upload/download authorization
-  ├── Stores job state in MongoDB
-  └── Enqueues work in BullMQ
+Browser
+  |-- direct presigned upload ------> Amazon S3
+  +-- direct signed download <------- Amazon S3
 
-Worker
-  ├── Streams workbooks from or to S3
-  ├── Validates and stages import rows
-  ├── Applies confirmed rows in batches
-  ├── Generates exports and error reports
-  └── Persists progress in MongoDB
+Redis Cloud
+  | BullMQ job delivery
+  v
+Railway worker service
+  |-- MongoDB Atlas: products, inventory, staged rows, progress
+  |-- Amazon S3: source files, error reports, generated exports
+  +-- Redis Cloud: retries, locks, and job completion
 ```
 
-### Infrastructure
+### Service responsibilities
 
-- **S3:** Private source files, generated exports, and validation-error workbooks.
-- **Redis or Valkey:** BullMQ queue storage.
-- **BullMQ:** Durable background validation, import, and export jobs.
-- **MongoDB:** User-visible job state, progress, and temporary staged rows.
-- **Worker process:** Runs separately from the API so workbook processing cannot block API traffic.
+| Component | Responsibility |
+| --- | --- |
+| Browser | Select files, upload directly to S3, show progress, confirm imports, and download results |
+| Railway API | Authenticate users, authorize tenant/admin access, create job records, enqueue work, and issue signed S3 authorization |
+| Redis Cloud | Hold temporary BullMQ queue state, retries, locks, and stalled-job metadata |
+| Railway worker | Validate workbooks, apply imports, generate exports, and persist progress |
+| MongoDB Atlas | Store products, inventory, authoritative transfer jobs, staged rows, checkpoints, and results |
+| Amazon S3 | Store source workbooks, skipped-row reports, and generated exports |
 
-MongoDB is the source of truth for user-visible progress. BullMQ progress is operational metadata only.
+MongoDB is the source of truth for user-visible state. Redis is not the permanent job database.
 
-## 6. Import workflow
+## 4. Security boundaries
 
-### 6.1 Create and upload
+- The browser must never receive MongoDB, Redis, or AWS credentials.
+- The browser receives only short-lived, operation-specific S3 authorization.
+- The transfer bucket remains private with Block Public Access enabled.
+- Every API and worker operation is scoped to the authenticated tenant.
+- Object keys are generated by the server and are never accepted as arbitrary client input.
+- BullMQ payloads contain only opaque MongoDB transfer-job IDs.
+- Workbook contents, personal data, AWS credentials, signed S3 URLs, and staged rows must not be stored in Redis job payloads.
+- Railway variables hold secrets and must not be committed to the repository or logged.
 
-1. The client requests a new import job through GraphQL.
-2. The server verifies admin and tenant access.
-3. The server creates an `AWAITING_UPLOAD` job and an S3 object key.
-4. The server returns a presigned POST that expires after approximately 15 minutes.
-5. The browser uploads directly to S3 and displays upload progress.
-6. The client asks the server to queue validation.
-7. The server verifies the object with `HeadObject` before enqueueing work.
+### Private-beta Redis exception
 
-Recommended initial limits:
+The current free Redis Cloud database does not support TLS. Railway therefore reaches it through a public, non-TLS Redis endpoint. This is accepted only for the private beta.
 
-- Maximum compressed file size: 10 MiB.
-- Maximum data rows: 10,000.
-- One products worksheet with only the supported columns.
+Before a production release, replace it with one of the following:
 
-### 6.2 Validate and stage
+1. A paid Redis Cloud Essentials database with TLS, persistence, and appropriate availability; or
+2. Redis deployed within Railway's private network with persistence and monitoring.
 
-The validation worker streams the workbook and:
+After migration, rotate the Redis password and update `REDIS_URL`.
 
-1. Verifies the workbook structure and headers.
-2. Normalizes and validates every row.
-3. Detects duplicate and ambiguous product names.
-4. Determines whether each row will create or update a product.
-5. Writes normalized rows to a temporary staging collection in batches of 500.
-6. Updates validation progress after each batch.
+## 5. Initial operational limits
 
-Validation does not modify products or inventory. When validation succeeds, the job moves to `AWAITING_CONFIRMATION` and reports create, update, and error counts.
+- Maximum product rows per workbook: **5,000**, excluding the header.
+- Row 5,001 causes the workbook to be rejected.
+- Maximum compressed upload size: **5 MiB**.
+- Accepted format: `.xlsx` only.
+- Required worksheet: exactly one worksheet named `Products`.
+- One active product-transfer operation per tenant.
+- Initial worker concurrency: one.
+- Export fails before generation if the tenant has more than 5,000 active products.
+- Partial exports are not produced.
+- Source workbooks, error reports, and generated exports expire from S3 after seven days.
+- Presigned upload authorization should expire after approximately 15 minutes.
+- Signed download authorization should expire after approximately five minutes.
 
-When validation fails, the worker produces an error workbook containing the original row number, column, submitted value, and error message. No product writes occur.
+These limits should be constants or validated configuration with a tested hard ceiling. Raising them requires load and memory testing.
 
-### 6.3 Confirm and apply
+## 6. Workbook contract
 
-After reviewing the validation summary, the administrator confirms the import. The apply worker then:
+The `Products` worksheet uses these columns:
 
-1. Claims the job and prevents another import from running for the same tenant.
-2. Reads staged rows in stable batches of 500.
-3. Creates missing products using the approved product service.
-4. Reconciles matching product quantities through the inventory service.
-5. Commits one database transaction per batch where supported.
-6. Stores a checkpoint and progress after each successful batch.
-7. Retries transient failures with exponential backoff.
+| Product ID | Product Name | Price | Unit | Quantity |
+| --- | --- | ---: | --- | ---: |
 
-Batch size and worker concurrency must be configurable. The initial deployment should use one active import per tenant and a global worker concurrency of two.
+### Column behavior
 
-The job is validated completely before application begins, but the full 10,000-row operation is not one database transaction. Application is made reliable through batch transactions, checkpoints, and idempotency rather than a long-running global transaction.
+- **Product ID:** Optional for manually added rows and always included in exports. If supplied, it must identify an active product belonging to the current tenant.
+- **Product Name:** Required. Used as a fallback identity when Product ID is blank.
+- **Price:** Required when creating a product. It does not update an existing product in the first release.
+- **Unit and Quantity:**
+  - Both blank: no stock change.
+  - Both populated: enable or reconcile stock.
+  - Only one populated: skip the row as invalid.
+- **Quantity:** Nonnegative decimal with at most six decimal places.
 
-Cancellation is allowed before application begins. Once application begins, the system should resume it to completion instead of intentionally leaving a partial catalog update.
+`Category` is not included because the current product model does not have that field.
 
-## 7. Inventory reconciliation and idempotency
+### Product matching
 
-Imports must use the inventory service and must not directly mutate a product quantity field.
+1. Match by tenant-owned Product ID when provided.
+2. Otherwise normalize and match Product Name.
+3. If no match exists, create a product.
+4. Skip ambiguous or duplicate matches.
 
-For ledger-based inventory, each matching row produces an adjustment:
+Product-name normalization should apply Unicode NFKC normalization, trim outer whitespace, collapse internal whitespace, and compare case-insensitively.
+
+### Inventory behavior
+
+- Existing untracked product with Unit and Quantity: enable tracking and create an auditable opening movement.
+- Existing tracked product with matching Unit: reconcile to the imported quantity.
+- Existing tracked product with a different Unit: skip for manual resolution.
+- Blank Unit and Quantity: leave stock tracking and quantity unchanged.
+- Existing product name and price are not updated in the first release.
+
+### Validation behavior
+
+Fatal workbook errors reject the entire file:
+
+- Unreadable or invalid XLSX file
+- Incorrect or duplicate headers
+- Additional worksheets
+- Unsupported workbook structure
+- File-size limit exceeded
+- More than 5,000 data rows
+
+Row-level errors skip only the affected rows:
+
+- Invalid or missing values
+- Invalid price or quantity
+- Only one of Unit and Quantity populated
+- Unit mismatch
+- Unknown or cross-tenant Product ID
+- Duplicate workbook identity
+- Ambiguous normalized name
+
+Validation completes before confirmation. The user sees create, update, unchanged, and skipped counts and can download a skipped-row report. If no eligible rows remain, the import cannot be confirmed.
+
+## 7. S3 setup
+
+### Bucket separation
+
+Use separate buckets for permanent product images and temporary product-transfer files. This prevents the seven-day transfer lifecycle from deleting product images and keeps access and CORS policies independent.
+
+### Object-key layout
 
 ```text
-adjustment = imported quantity - current quantity
+tenants/{tenantId}/product-imports/{jobId}/source.xlsx
+tenants/{tenantId}/product-imports/{jobId}/errors.xlsx
+tenants/{tenantId}/product-exports/{jobId}/products.xlsx
 ```
 
-The adjustment should include:
+### Transfer-bucket CORS
 
-- Reason: `spreadsheet_import`.
-- Import job ID.
-- Spreadsheet row number.
-- User who requested the import.
+The transfer bucket is configured with the approved frontend origin. The intended policy is equivalent to:
 
-The combination of import job ID and spreadsheet row number is the idempotency key. Reprocessing a batch must not create a duplicate product or apply a stock adjustment twice.
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["GET", "HEAD", "POST"],
+    "AllowedOrigins": ["https://your-frontend-domain.example"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3000
+  }
+]
+```
 
-Quantity is reconciled at the time the row is applied. A sale committed after reconciliation changes stock normally. The product and inventory services must define transaction ordering for a sale that occurs concurrently with reconciliation.
+Production must not use `*` for `AllowedOrigins`. Add `http://localhost:5173` only when local browser testing against this bucket is intentionally allowed.
 
-## 8. Job state and progress
+### Transfer-bucket lifecycle
+
+The dedicated bucket has a lifecycle rule named:
+
+```text
+ExpireProductTransferFilesAfter7Days
+```
+
+It applies to all objects in the dedicated transfer bucket and:
+
+- Expires current objects after seven days.
+- Aborts incomplete multipart uploads after one day.
+
+S3 lifecycle expiration is asynchronous and may occur after the object becomes eligible rather than at the exact seven-day timestamp.
+
+### IAM policy
+
+The Railway IAM user has `ProductTransferBucketAccess`, equivalent to:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ProductTransferObjectAccess",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::YOUR_TRANSFER_BUCKET_NAME/*"
+    },
+    {
+      "Sid": "ProductTransferBucketLocation",
+      "Effect": "Allow",
+      "Action": "s3:GetBucketLocation",
+      "Resource": "arn:aws:s3:::YOUR_TRANSFER_BUCKET_NAME"
+    }
+  ]
+}
+```
+
+Do not place real account IDs, access keys, secret keys, or passwords in this guide.
+
+## 8. Redis Cloud and BullMQ setup
+
+### Current Redis configuration
+
+- Hosting: Redis Cloud free Essentials database
+- Intended use: private beta only
+- Eviction policy: `noeviction`
+- Railway variable: `REDIS_URL`
+- Queue data: job IDs and BullMQ operational state only
+
+The Redis URL includes a password and must remain secret. Store only the URL portion, not the `redis-cli -u` command prefix.
+
+### Queue design
+
+Use one queue:
+
+```text
+product-transfer
+```
+
+Use these BullMQ job names:
+
+```text
+validate-import
+apply-import
+generate-export
+```
+
+Every payload contains only:
+
+```ts
+{
+  transferJobId: string
+}
+```
+
+Use deterministic BullMQ job IDs:
+
+```text
+validate:{transferJobId}
+apply:{transferJobId}
+export:{transferJobId}
+```
+
+Recommended initial behavior:
+
+- Three attempts for transient infrastructure failures.
+- Exponential backoff beginning at approximately five seconds.
+- Worker concurrency of one.
+- Remove successful BullMQ records after one day, subject to a count limit.
+- Retain failed BullMQ records for up to seven days, subject to a count limit.
+- Never use Redis job completion as the only record of business completion.
+- Reconcile and re-enqueue eligible MongoDB jobs when the worker starts.
+
+The API producer should fail quickly if Redis is unavailable. Worker Redis connections should wait and reconnect; with ioredis this requires `maxRetriesPerRequest: null`.
+
+## 9. MongoDB job state
+
+MongoDB stores an authoritative transfer job similar to:
+
+```ts
+type ProductTransferJob = {
+  tenantId: string
+  requestedBy: string
+  type: 'IMPORT' | 'EXPORT'
+  status: string
+  inputKey?: string
+  outputKey?: string
+  errorKey?: string
+  totalRows: number
+  eligibleRows: number
+  skippedRows: number
+  validatedRows: number
+  appliedRows: number
+  createdCount: number
+  updatedCount: number
+  unchangedCount: number
+  failureCode?: string
+  failureMessage?: string
+  createdAt: Date
+  startedAt?: Date
+  completedAt?: Date
+  filesExpireAt?: Date
+}
+```
 
 Suggested import statuses:
 
@@ -195,149 +361,82 @@ AWAITING_CONFIRMATION
 QUEUED_FOR_IMPORT
 IMPORTING
 COMPLETED
+COMPLETED_WITH_SKIPS
 VALIDATION_FAILED
 FAILED
 CANCELLED
+EXPIRED
 ```
 
-A persisted job should include:
-
-```ts
-type ProductTransferJob = {
-  tenantId: string;
-  requestedBy: string;
-  type: "IMPORT" | "EXPORT";
-  status: string;
-  s3InputKey?: string;
-  s3OutputKey?: string;
-  s3ErrorKey?: string;
-  totalRows: number;
-  validatedRows: number;
-  appliedRows: number;
-  createdCount: number;
-  updatedCount: number;
-  errorCount: number;
-  currentBatch?: number;
-  lastCompletedRow?: number;
-  failureReason?: string;
-  createdAt: Date;
-  startedAt?: Date;
-  completedAt?: Date;
-  expiresAt: Date;
-};
-```
-
-Staged rows require a unique index on job ID and row number and a TTL cleanup policy.
-
-### Client progress
-
-The client polls job state approximately every two seconds while a job is active. Actual counts should be shown instead of a simulated percentage:
+Suggested export statuses:
 
 ```text
-Validating: 6,500 / 8,420 rows
+QUEUED
+EXPORTING
+COMPLETED
+FAILED
+EXPIRED
 ```
 
-```text
-Importing: 4,000 / 8,420 rows
-Created: 125
-Updated: 3,875
-```
+Staged rows need a unique index on transfer job ID and original worksheet row number. Temporary staged rows should have a cleanup policy independent of S3 lifecycle expiration.
 
-The operation survives navigation, reloads, and closing the browser. Returning to the catalog restores the tenant's active or most recent job from the server.
+## 10. Import workflow
 
-After completion, the client refreshes the tenant's complete IndexedDB product snapshot. TanStack query invalidation alone is insufficient because the catalog reads products from Dexie.
+### Upload and validation
 
-## 9. Export workflow
+1. The browser asks the API to create an import job.
+2. The API verifies authenticated administrator and tenant access.
+3. The API creates an `AWAITING_UPLOAD` MongoDB job and server-generated S3 key.
+4. The API returns a presigned S3 POST valid for approximately 15 minutes.
+5. The browser uploads directly to the private transfer bucket.
+6. The browser asks the API to queue validation.
+7. The API verifies the uploaded object before enqueueing.
+8. The API adds `validate-import` to BullMQ with only the transfer job ID.
+9. The worker downloads and validates the workbook.
+10. The worker stages eligible rows, records skipped rows, and persists progress in MongoDB.
+11. The worker generates an error workbook in S3 when rows are skipped.
+12. The job enters `AWAITING_CONFIRMATION` when at least one row is eligible.
 
-1. An administrator requests an export job.
-2. The API authenticates the tenant and enqueues the job.
-3. The worker reads all tenant products using stable cursor pagination.
-4. The worker streams rows into an XLSX writer.
-5. The XLSX output streams into private S3 storage.
-6. The job stores the total exported rows and moves to `COMPLETED`.
-7. The client requests a short-lived signed download URL.
+### Confirmation and application
 
-Exports must not rely on the current search filter or the potentially stale browser cache. The workbook should use the same columns and validation-compatible values as the import template.
+1. The administrator reviews the summary and confirms.
+2. The API atomically moves the job to `QUEUED_FOR_IMPORT`.
+3. The API adds `apply-import` to BullMQ.
+4. The worker applies staged rows through ProductService and StockService boundaries.
+5. Each applied row or bounded batch is transactional and idempotent.
+6. Progress and checkpoints are persisted in MongoDB.
+7. Apply-time conflicts are recorded as skipped instead of silently changing product units or identities.
+8. The job finishes as `COMPLETED` or `COMPLETED_WITH_SKIPS`.
 
-## 10. S3 configuration
+### Inventory audit and idempotency
 
-Use one private bucket initially with server-generated object keys:
+- Add an explicit spreadsheet-import movement reason/source to the stock domain.
+- Record transfer job ID, worksheet row number, requesting user, and occurrence time.
+- Use transfer job ID plus worksheet row as the idempotency identity.
+- Duplicate BullMQ delivery must not create duplicate products or stock movements.
+- Reconcile quantity using current stock at application time.
+- A concurrent sale committed after reconciliation changes stock normally.
+- Use MongoDB transactions and the existing stock revision/concurrency model.
 
-```text
-tenants/{tenantId}/product-imports/{jobId}/source.xlsx
-tenants/{tenantId}/product-imports/{jobId}/errors.xlsx
-tenants/{tenantId}/product-exports/{jobId}/products.xlsx
-```
+## 11. Export workflow
 
-Required controls:
+1. The browser asks the API to create an export.
+2. The API verifies administrator and tenant access.
+3. The API counts active tenant products and fails clearly when the count exceeds 5,000.
+4. The API creates the MongoDB export job and enqueues `generate-export`.
+5. The worker reads active tenant products in stable, bounded pages.
+6. The worker generates the validation-compatible `Products` worksheet.
+7. The worker uploads the completed workbook to private S3.
+8. The worker stores the output key and row count and marks the job completed.
+9. The browser discovers completion by polling the API.
+10. The browser asks the API for a short-lived signed GET URL.
+11. The browser downloads directly from S3.
 
-- Block Public Access enabled.
-- Default server-side encryption enabled.
-- Presigned upload lifetime of approximately 15 minutes.
-- Presigned download lifetime of approximately 5 minutes.
-- Lifecycle deletion after seven days.
-- CORS restricted to approved client origins.
-- Production access through an IAM role instead of long-lived access keys.
-- IAM permissions restricted to the configured bucket and prefixes.
-- Server-side object-size and metadata verification before queueing.
+An export is not guaranteed to be a single point-in-time snapshot while sales or product edits continue. Prevent concurrent import/export operations for the same tenant, but do not add a long-running database snapshot transaction in the first release.
 
-MinIO or LocalStack may provide an S3-compatible local development environment. Production should use workload IAM credentials and must not commit credentials to the repository.
+## 12. API surface
 
-## 11. Proposed code organization
-
-### Server
-
-```text
-app/server/src/features/product-transfer/
-  product-transfer.module.ts
-  product-transfer.resolver.ts
-  product-transfer.service.ts
-  product-transfer.types.ts
-  schemas/
-    product-transfer-job.schema.ts
-    product-import-row.schema.ts
-  processors/
-    product-import.processor.ts
-    product-export.processor.ts
-  services/
-    product-workbook.service.ts
-    product-storage.service.ts
-```
-
-Expected dependencies include:
-
-```text
-@nestjs/bullmq
-bullmq
-ioredis
-@aws-sdk/client-s3
-@aws-sdk/s3-presigned-post
-@aws-sdk/s3-request-presigner
-@aws-sdk/lib-storage
-exceljs
-```
-
-The API and worker should have separate production entry points and deployment commands.
-
-### Client
-
-```text
-app/client/src/features/product/components/
-  ProductImportSheet.tsx
-  ProductImportProgress.tsx
-  ProductExportProgress.tsx
-
-app/client/src/services/product-transfer/
-  product-transfer.api.ts
-  product-transfer.queries.ts
-  product-transfer.types.ts
-```
-
-Import and export should be secondary catalog actions. Adding one product remains the primary action.
-
-## 12. GraphQL surface
-
-The final names may follow established repository conventions, but the API needs operations equivalent to:
+The GraphQL API needs operations equivalent to:
 
 ```text
 createProductImportUpload
@@ -351,67 +450,217 @@ productExportJob
 createProductTransferDownloadUrl
 ```
 
-All operations must enforce authentication, tenant access, and administrator permissions on the server. Tenant identity must come from the authenticated request, never from workbook data or an arbitrary object key.
+All operations require authentication, tenant access, and administrator authorization. Tenant identity comes from the authenticated request, never from workbook data.
 
-## 13. Failure behavior
+## 13. Backend implementation stages
 
-- Invalid workbook: no product changes.
-- Expired or incomplete S3 upload: job expires without processing.
-- Worker crash during validation: restart validation safely.
-- Worker crash during application: resume after the last committed batch.
-- Duplicate queue delivery: idempotency prevents duplicate creates or stock adjustments.
-- Terminal transient failure: retain job details and permit an authorized resume.
-- Local cache refresh failure after server success: report import success and separately retry local refresh.
+Implement and verify one stage at a time.
 
-Error details should be actionable and must not expose another tenant's product or file information.
+### Stage 1: Configuration and dependencies
 
-## 14. Testing
+Add only the dependencies required by the implementation:
 
-Automated and manual verification should cover:
+```text
+@nestjs/bullmq
+bullmq
+ioredis
+@aws-sdk/client-s3
+@aws-sdk/s3-presigned-post
+@aws-sdk/s3-request-presigner
+exceljs
+```
 
-- Valid files containing 1, 1,000, and 10,000 rows.
-- Rejection of 10,001 rows and oversized files.
+Add runtime validation for:
+
+```text
+REDIS_URL
+AWS_REGION
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+S3_PRODUCT_TRANSFER_BUCKET
+```
+
+Do not log validated secret values.
+
+### Stage 2: Redis and queue foundation
+
+- Register BullMQ in NestJS.
+- Register the `product-transfer` queue.
+- Add API startup/health verification without exposing credentials.
+- Add producer service methods with deterministic BullMQ job IDs.
+- Verify one harmless job can be added and observed.
+
+### Stage 3: S3 storage service
+
+- Add an injected S3 client.
+- Generate tenant-scoped server object keys.
+- Create presigned POST upload authorization with file-size and key constraints.
+- Verify uploaded objects before queueing.
+- Upload generated files from the worker.
+- Create five-minute signed GET URLs only for authorized completed jobs.
+
+### Stage 4: MongoDB job and staging models
+
+- Add product-transfer job schema and indexes.
+- Add staged-row schema, unique job/row index, and cleanup policy.
+- Implement valid state transitions atomically.
+- Enforce one active transfer per tenant.
+
+### Stage 5: Workbook validation
+
+- Enforce file, worksheet, header, row, cell, and type limits.
+- Reject formulas, formula-like executable values, merged data cells, and unsupported cell types.
+- Match Product ID first and normalized name second.
+- Stage eligible rows and report skipped rows.
+- Generate an error workbook.
+
+### Stage 6: Import application
+
+- Add service-level import operations to ProductService and StockService.
+- Add spreadsheet import movement metadata.
+- Apply eligible rows in bounded work units.
+- Make retries idempotent.
+- Persist progress and resume from MongoDB state.
+
+### Stage 7: Export generation
+
+- Count before export and enforce the 5,000-row cap.
+- Read products using stable bounded pagination.
+- Generate the common workbook contract.
+- Upload to S3 and expose completion through MongoDB.
+
+### Stage 8: Worker entry point
+
+- Add a Nest application-context worker bootstrap separate from the HTTP API.
+- Register BullMQ processors only in the worker process.
+- Handle `SIGTERM` and close workers gracefully for Railway deployments.
+- Reconcile stale nonterminal MongoDB jobs during startup.
+
+### Stage 9: GraphQL and client UI
+
+- Add generated GraphQL contracts and typed client operations.
+- Add catalog import/export secondary actions.
+- Poll approximately every two seconds only while a job is active.
+- Restore active or recent jobs after navigation and reload.
+- Refresh the complete tenant IndexedDB product snapshot after successful import.
+
+## 14. Railway deployment
+
+### Existing API service
+
+The API continues using its current production start command. It needs:
+
+```text
+MONGO_URI
+REDIS_URL
+AWS_REGION
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+S3_PRODUCT_TRANSFER_BUCKET
+```
+
+It also retains API-only configuration such as JWT secrets and client origin.
+
+### Future worker service
+
+Create the worker service only after the worker entry point is implemented and tested.
+
+1. Add a second persistent Railway service.
+2. Connect it to the same repository and deployment branch.
+3. Name it clearly, such as `oputech-sales-worker`.
+4. Use the same backend build command.
+5. Use a dedicated worker start command, planned as:
+
+   ```text
+   pnpm --filter @oputech/sales-server start:worker:prod
+   ```
+
+6. Do not assign a public domain.
+7. Configure restart-on-failure.
+8. Start with one replica and concurrency one.
+9. Give it MongoDB, Redis, AWS, S3, and timezone variables, but not unnecessary JWT secrets.
+
+### Atlas network access
+
+The worker is a separate Railway service and may have different outbound addresses from the API.
+
+- If Atlas currently allows all addresses, the worker can connect with the existing database credentials, though production should tighten this.
+- If Atlas uses an IP allowlist, enable Railway static outbound IPs for the worker and add them to Atlas.
+- Use a least-privilege database user where practical.
+
+## 15. Testing and verification
+
+### Infrastructure
+
+- API can connect to Redis without logging the URL.
+- Worker can connect to Redis and consume a harmless test job.
+- API can create a constrained presigned upload.
+- Browser can upload from the approved CORS origin.
+- Worker can read the uploaded object.
+- Worker can upload a generated object.
+- API can create an authorized signed download.
+- Unauthenticated and cross-tenant download attempts fail.
+- Transfer objects become eligible for S3 lifecycle expiration.
+
+### Workbook limits
+
+- Valid imports with 1, 1,000, and 5,000 rows.
+- Rejection of 5,001 rows.
+- Rejection above 5 MiB.
 - Export followed by re-import.
+- Export rejection when active products exceed 5,000.
+
+### Validation and domain behavior
+
 - Blank, malformed, and formula-containing workbooks.
 - Missing, duplicate, and unexpected headers.
-- Negative, invalid, zero, and fractional quantities according to inventory rules.
+- Negative, invalid, zero, and fractional quantities.
 - Unicode product names and units.
-- Duplicate names in one workbook.
-- Ambiguous existing product names.
-- Existing-product quantity reconciliation.
-- New-product creation with all required fields.
-- Omitted products remaining unchanged.
-- Worker failure between batches and successful resume.
-- Duplicate queue delivery without duplicate inventory effects.
-- Concurrent sales and inventory reconciliation.
-- Tenant isolation and staff/admin authorization.
-- S3 URL expiration, private access, lifecycle cleanup, and invalid object metadata.
-- Catalog refresh after completion, including tenant isolation in IndexedDB.
+- Duplicate and ambiguous names.
+- Product ID tenant isolation.
+- Existing untracked product enables inventory.
+- Existing tracked product reconciles quantity.
+- Unit mismatch is skipped and reported.
+- Blank Unit and Quantity leave inventory unchanged.
+- Valid rows apply while invalid rows remain skipped.
 
-## 15. Acceptance criteria
+### Reliability
 
-- A 10,000-row import does not block API request handling.
-- The browser can close without cancelling server-side work.
-- Progress and results survive reloads.
-- Invalid files make no product or inventory changes.
-- Existing matches only reconcile quantity in the first release.
-- Missing products are created with valid POS fields.
-- Worker retries never duplicate stock adjustments or products.
-- Exports include every product belonging to the active tenant.
-- Generated exports can be imported using the same workbook contract.
-- Uploaded and generated files remain private and expire automatically.
-- Offline and unauthorized users cannot initiate an import or export.
+- Duplicate queue delivery does not duplicate products or movements.
+- Worker shutdown and restart resumes safely.
+- Redis loss followed by recovery re-enqueues eligible MongoDB jobs.
+- Retry after unknown completion remains idempotent.
+- Concurrent sale and inventory reconciliation preserve valid stock history.
+- Browser closure does not cancel server-side processing.
+- Progress survives reloads.
 
-## 16. Estimated implementation effort
+## 16. Monitoring and operations
 
-Assuming the unit and inventory services are complete, the expected effort is approximately **8–12 engineering days** for one engineer:
+- Log transfer job IDs, queue job IDs, phase, duration, counts, and sanitized failure codes.
+- Never log workbook contents, Redis URLs, signed S3 URLs, tokens, or AWS credentials.
+- Alert or surface jobs left nonterminal beyond an expected duration.
+- Track Redis memory, connection count, and operation limits during the beta.
+- Keep BullMQ completed/failed retention bounded to protect the 30 MB free database.
+- Provide authorized manual retry for recoverable terminal failures.
+- Show users when downloadable files have expired even if MongoDB job history remains.
 
-- S3, Redis/Valkey, BullMQ, and worker setup.
-- Job models and GraphQL lifecycle.
-- Streaming validation and staging.
-- Idempotent batched import.
-- Streaming export.
-- Progress, preview, and error-report UI.
-- Automated tests and production hardening.
+## 17. Production-readiness checklist
 
-Deployment work may add time if S3, Redis/Valkey, IAM roles, and a worker process have not yet been provisioned.
+Before promoting beyond private beta:
+
+- [ ] Replace free non-TLS Redis with TLS-enabled Redis.
+- [ ] Rotate Redis credentials and update Railway.
+- [ ] Enable appropriate Redis persistence, availability, and monitoring.
+- [ ] Verify `noeviction` after migration.
+- [ ] Restrict Atlas network access to approved Railway egress.
+- [ ] Review and rotate AWS credentials.
+- [ ] Confirm S3 IAM permissions remain least-privilege.
+- [ ] Confirm production frontend CORS origin and remove unnecessary localhost origins.
+- [ ] Run 5,000-row import and export load tests in a production-like environment.
+- [ ] Test worker restart, Redis outage, and duplicate-delivery recovery.
+- [ ] Confirm lifecycle cleanup does not affect the product-image bucket.
+- [ ] Document operator retry and incident procedures.
+
+## 18. Recommended next action
+
+Begin backend implementation with **Stage 1: Configuration and dependencies**, followed by a minimal Redis/BullMQ connectivity test. Do not create the Railway worker service until the worker entry point exists and has passed local or controlled integration tests.
