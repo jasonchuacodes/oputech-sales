@@ -1,6 +1,9 @@
 import { Types } from 'mongoose'
 import { describe, expect, it, vi } from 'vitest'
-import { StockMovementReason } from './schemas/stock-movement.schema'
+import {
+  StockMovementReason,
+  StockMovementSourceType,
+} from './schemas/stock-movement.schema'
 import { StockService } from './stock.service'
 
 vi.mock('../product/schemas/product.schema', () => ({
@@ -15,10 +18,12 @@ vi.mock('./schemas/stock-movement.schema', () => ({
     SALE: 'SALE',
     VOID: 'VOID',
     CORRECTION: 'CORRECTION',
+    SPREADSHEET_IMPORT: 'SPREADSHEET_IMPORT',
   },
   StockMovementSourceType: {
     TRANSACTION: 'TRANSACTION',
     STOCK_OPERATION: 'STOCK_OPERATION',
+    PRODUCT_IMPORT: 'PRODUCT_IMPORT',
   },
 }))
 
@@ -220,5 +225,45 @@ describe('StockService embedded inventory', () => {
 
     expect(result).toBe(existing)
     expect(connection.startSession).not.toHaveBeenCalled()
+  })
+
+  it('reconciles spreadsheet quantities and records an import movement', async () => {
+    const current = inventoryProduct('10', 3)
+    const updated = inventoryProduct('8.5', 4)
+    const movementModel = {
+      create: vi.fn().mockResolvedValue([]),
+    }
+    const productModel = {
+      findOneAndUpdate: vi.fn().mockReturnValue(queryResult(updated)),
+    }
+    const service = new StockService(
+      makeConnection() as never,
+      movementModel as never,
+      productModel as never,
+      {} as never
+    )
+
+    const result = await service.applySpreadsheetImport(
+      'tenant-1',
+      current as never,
+      'PC',
+      '8.5',
+      'user-1',
+      'job-1-row-2',
+      new Date('2026-01-01T00:00:00.000Z'),
+      {} as never
+    )
+
+    expect(result).toBe(updated)
+    expect(productModel.findOneAndUpdate.mock.calls[0][1]).toEqual({
+      $set: { 'inventory.stockCount': expect.any(Types.Decimal128) },
+      $inc: { 'inventory.revision': 1 },
+    })
+    const movement = movementModel.create.mock.calls[0][0][0]
+    expect(movement.reason).toBe(StockMovementReason.SPREADSHEET_IMPORT)
+    expect(movement.sourceType).toBe(StockMovementSourceType.PRODUCT_IMPORT)
+    expect(movement.delta.toString()).toBe('-1.5')
+    expect(movement.balanceBefore.toString()).toBe('10')
+    expect(movement.balanceAfter.toString()).toBe('8.5')
   })
 })

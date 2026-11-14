@@ -1,0 +1,88 @@
+enum ProductTransferType {
+  IMPORT
+  EXPORT
+}
+
+enum ProductTransferStatus {
+  AWAITING_UPLOAD
+  QUEUED_FOR_VALIDATION
+  VALIDATING
+  AWAITING_CONFIRMATION
+  QUEUED_FOR_IMPORT
+  IMPORTING
+  QUEUED
+  EXPORTING
+  COMPLETED
+  COMPLETED_WITH_SKIPS
+  VALIDATION_FAILED
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum ProductTransferArtifact {
+  RESULT
+  ERROR_REPORT
+}
+
+type ProductTransferJob {
+  id: ID!
+  type: ProductTransferType!
+  status: ProductTransferStatus!
+  totalRows: Int!
+  eligibleRows: Int!
+  skippedRows: Int!
+  validatedRows: Int!
+  appliedRows: Int!
+  createdCount: Int!
+  updatedCount: Int!
+  unchangedCount: Int!
+  failureCode: String
+  failureMessage: String
+  createdAt: String!
+  startedAt: String
+  completedAt: String
+  filesExpireAt: String
+}
+
+type ProductTransferUploadField {
+  name: String!
+  value: String!
+}
+
+type ProductTransferUploadAuthorization {
+  job: ProductTransferJob!
+  url: String!
+  fields: [ProductTransferUploadField!]!
+  expiresAt: String!
+}
+
+type ProductTransferDownloadAuthorization {
+  url: String!
+  expiresAt: String!
+}
+
+input CreateProductImportUploadInput {
+  fileName: String!
+  fileSize: Int!
+}
+
+extend type Query {
+  productTransferJob(id: ID!): ProductTransferJob!
+  activeProductTransferJob: ProductTransferJob
+  latestProductTransferJob: ProductTransferJob
+}
+
+extend type Mutation {
+  createProductImportUpload(
+    input: CreateProductImportUploadInput!
+  ): ProductTransferUploadAuthorization!
+  queueProductImportValidation(jobId: ID!): ProductTransferJob!
+  confirmProductImport(jobId: ID!): ProductTransferJob!
+  cancelProductImport(jobId: ID!): ProductTransferJob!
+  createProductExport: ProductTransferJob!
+  createProductTransferDownloadUrl(
+    jobId: ID!
+    artifact: ProductTransferArtifact!
+  ): ProductTransferDownloadAuthorization!
+}

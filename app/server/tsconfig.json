@@ -10,9 +10,7 @@
     "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
     "rootDir": "./src",
     "incremental": true,
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
@@ -23,9 +21,5 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false
   },
-  "exclude": [
-    "node_modules",
-    "dist",
-    "scripts"
-  ]
+  "exclude": ["node_modules", "dist", "scripts", "tests"]
 }

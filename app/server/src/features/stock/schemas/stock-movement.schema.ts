@@ -7,11 +7,13 @@ export enum StockMovementReason {
   SALE = 'SALE',
   VOID = 'VOID',
   CORRECTION = 'CORRECTION',
+  SPREADSHEET_IMPORT = 'SPREADSHEET_IMPORT',
 }
 
 export enum StockMovementSourceType {
   TRANSACTION = 'TRANSACTION',
   STOCK_OPERATION = 'STOCK_OPERATION',
+  PRODUCT_IMPORT = 'PRODUCT_IMPORT',
 }
 
 export type StockMovementDocument = HydratedDocument<StockMovement>

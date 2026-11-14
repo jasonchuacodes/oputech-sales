@@ -8,11 +8,10 @@ import { AdminGuard } from '../auth/guards/admin.guard'
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Product.name, schema: ProductSchema },
-    ]),
+    MongooseModule.forFeature([{ name: Product.name, schema: ProductSchema }]),
     TenantModule,
   ],
   providers: [ProductService, ProductResolver, AdminGuard],
+  exports: [ProductService],
 })
 export class ProductModule {}

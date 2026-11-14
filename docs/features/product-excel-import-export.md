@@ -1,6 +1,6 @@
 # Product Excel Import and Export: Setup and Implementation Guide
 
-**Status:** Infrastructure partially complete; backend and client implementation not started
+**Status:** Backend implemented and locally integration-tested; Railway deployment and client implementation pending
 **Environment:** Private beta
 **Application hosting:** Railway
 **Database:** MongoDB Atlas
@@ -35,18 +35,21 @@ The first release is intentionally bounded. It should reliably handle approximat
 - A free Redis Cloud database was created for the private beta.
 - Redis uses the `noeviction` policy required by BullMQ.
 - The Redis connection URL is stored on the existing Railway backend service as `REDIS_URL`.
+- The backend has BullMQ producer and worker modules.
+- Product-transfer MongoDB job and staging schemas are implemented.
+- Presigned S3 upload and download authorization is implemented.
+- Workbook validation, staging, import application, error-report generation, and export generation are implemented.
+- Product imports use the existing product and stock service boundaries with auditable, idempotent stock movements.
+- GraphQL product-transfer operations are implemented.
+- A separate NestJS worker entry point and production start command are implemented.
+- Backend workbook and stock-import tests are implemented.
+- Local integration tests passed against Redis Cloud, MongoDB Atlas, and the private S3 transfer bucket.
+- A controlled background export, presigned upload, validation-only import, and confirmed stock import completed successfully.
 
 ### Not yet completed
 
-- BullMQ and Redis client dependencies are not installed.
-- No BullMQ queue or queue keys exist yet.
-- The API does not connect to Redis yet.
-- Product-transfer MongoDB schemas do not exist.
-- S3 presigned upload and download URLs are not implemented.
-- Workbook parsing, validation, staging, application, and generation are not implemented.
-- A worker application entry point does not exist.
+- The new API build has not been deployed and verified inside Railway.
 - A separate Railway worker service has not been created.
-- GraphQL product-transfer operations do not exist.
 - Import/export client UI does not exist.
 
 ## 3. Final architecture
@@ -78,14 +81,14 @@ Railway worker service
 
 ### Service responsibilities
 
-| Component | Responsibility |
-| --- | --- |
-| Browser | Select files, upload directly to S3, show progress, confirm imports, and download results |
-| Railway API | Authenticate users, authorize tenant/admin access, create job records, enqueue work, and issue signed S3 authorization |
-| Redis Cloud | Hold temporary BullMQ queue state, retries, locks, and stalled-job metadata |
-| Railway worker | Validate workbooks, apply imports, generate exports, and persist progress |
-| MongoDB Atlas | Store products, inventory, authoritative transfer jobs, staged rows, checkpoints, and results |
-| Amazon S3 | Store source workbooks, skipped-row reports, and generated exports |
+| Component      | Responsibility                                                                                                         |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Browser        | Select files, upload directly to S3, show progress, confirm imports, and download results                              |
+| Railway API    | Authenticate users, authorize tenant/admin access, create job records, enqueue work, and issue signed S3 authorization |
+| Redis Cloud    | Hold temporary BullMQ queue state, retries, locks, and stalled-job metadata                                            |
+| Railway worker | Validate workbooks, apply imports, generate exports, and persist progress                                              |
+| MongoDB Atlas  | Store products, inventory, authoritative transfer jobs, staged rows, checkpoints, and results                          |
+| Amazon S3      | Store source workbooks, skipped-row reports, and generated exports                                                     |
 
 MongoDB is the source of truth for user-visible state. Redis is not the permanent job database.
 
@@ -133,7 +136,7 @@ These limits should be constants or validated configuration with a tested hard c
 The `Products` worksheet uses these columns:
 
 | Product ID | Product Name | Price | Unit | Quantity |
-| --- | --- | ---: | --- | ---: |
+| ---------- | ------------ | ----: | ---- | -------: |
 
 ### Column behavior
 
@@ -246,11 +249,7 @@ The Railway IAM user has `ProductTransferBucketAccess`, equivalent to:
     {
       "Sid": "ProductTransferObjectAccess",
       "Effect": "Allow",
-      "Action": [
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:DeleteObject"
-      ],
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
       "Resource": "arn:aws:s3:::YOUR_TRANSFER_BUCKET_NAME/*"
     },
     {
@@ -304,9 +303,9 @@ Every payload contains only:
 Use deterministic BullMQ job IDs:
 
 ```text
-validate:{transferJobId}
-apply:{transferJobId}
-export:{transferJobId}
+validate-{transferJobId}
+apply-{transferJobId}
+export-{transferJobId}
 ```
 
 Recommended initial behavior:
@@ -443,10 +442,10 @@ createProductImportUpload
 queueProductImportValidation
 confirmProductImport
 cancelProductImport
-productImportJob
-activeProductImportJob
+productTransferJob
+activeProductTransferJob
+latestProductTransferJob
 createProductExport
-productExportJob
 createProductTransferDownloadUrl
 ```
 
@@ -468,6 +467,7 @@ ioredis
 @aws-sdk/s3-presigned-post
 @aws-sdk/s3-request-presigner
 exceljs
+zod
 ```
 
 Add runtime validation for:
@@ -663,4 +663,4 @@ Before promoting beyond private beta:
 
 ## 18. Recommended next action
 
-Begin backend implementation with **Stage 1: Configuration and dependencies**, followed by a minimal Redis/BullMQ connectivity test. Do not create the Railway worker service until the worker entry point exists and has passed local or controlled integration tests.
+Deploy the updated API and verify Redis/S3/Atlas connectivity in the private-beta environment. After that succeeds, create the Railway worker service with the implemented `start:worker:prod` command, verify a controlled import/export job, and then begin the client implementation.

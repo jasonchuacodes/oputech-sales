@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
-import { Model, QueryFilter } from 'mongoose'
+import { ClientSession, Model, QueryFilter } from 'mongoose'
 import { Product, ProductDocument } from './schemas/product.schema'
 import {
   CreateProductInput,
+  CreateImportedProductInput,
   ProductPageResult,
   ProductPagination,
   UpdateProductInput,
@@ -17,17 +18,23 @@ const escapeRegExp = (value: string): string =>
 export class ProductService {
   constructor(
     @InjectModel(Product.name)
-    private product: Model<ProductDocument>,
+    private product: Model<ProductDocument>
   ) {}
 
-  list(tenantId: string, pagination?: ProductPagination): Promise<ProductPageResult> {
-    return this.paginate({ tenantId, archivedAt: { $exists: false } }, pagination)
+  list(
+    tenantId: string,
+    pagination?: ProductPagination
+  ): Promise<ProductPageResult> {
+    return this.paginate(
+      { tenantId, archivedAt: { $exists: false } },
+      pagination
+    )
   }
 
   listByName(
     tenantId: string,
     search: string,
-    pagination?: ProductPagination,
+    pagination?: ProductPagination
   ): Promise<ProductPageResult> {
     const term = search.trim()
     if (!term) {
@@ -40,20 +47,71 @@ export class ProductService {
         archivedAt: { $exists: false },
         name: { $regex: escapeRegExp(term), $options: 'i' },
       },
-      pagination,
+      pagination
     )
   }
 
-  create(tenantId: string, input: CreateProductInput): Promise<ProductDocument> {
+  create(
+    tenantId: string,
+    input: CreateProductInput
+  ): Promise<ProductDocument> {
     return this.product.create({ ...input, tenantId })
   }
 
-  update(tenantId: string, id: string, input: UpdateProductInput): Promise<ProductDocument | null> {
+  countActive(tenantId: string): Promise<number> {
+    return this.product
+      .countDocuments({ tenantId, archivedAt: { $exists: false } })
+      .exec()
+  }
+
+  listActiveForTransfer(
+    tenantId: string,
+    limit: number
+  ): Promise<ProductDocument[]> {
+    return this.product
+      .find({ tenantId, archivedAt: { $exists: false } })
+      .sort({ _id: 1 })
+      .limit(limit)
+      .exec()
+  }
+
+  findActiveForImport(
+    tenantId: string,
+    productId: string,
+    session: ClientSession
+  ): Promise<ProductDocument | null> {
+    return this.product
+      .findOne({
+        _id: productId,
+        tenantId,
+        archivedAt: { $exists: false },
+      })
+      .session(session)
+      .exec()
+  }
+
+  async createForImport(
+    tenantId: string,
+    input: CreateImportedProductInput,
+    session: ClientSession
+  ): Promise<ProductDocument> {
+    const [product] = await this.product.create(
+      [{ tenantId, name: input.name, price: input.price }],
+      { session }
+    )
+    return product
+  }
+
+  update(
+    tenantId: string,
+    id: string,
+    input: UpdateProductInput
+  ): Promise<ProductDocument | null> {
     return this.product
       .findOneAndUpdate(
         { _id: id, tenantId, archivedAt: { $exists: false } },
         { $set: input },
-        { returnDocument: 'after' },
+        { returnDocument: 'after' }
       )
       .exec()
   }
@@ -63,14 +121,14 @@ export class ProductService {
       .findOneAndUpdate(
         { _id: id, tenantId, archivedAt: { $exists: false } },
         { $set: { archivedAt: new Date() } },
-        { returnDocument: 'after' },
+        { returnDocument: 'after' }
       )
       .exec()
   }
 
   private async paginate(
     filter: QueryFilter<Product>,
-    pagination?: ProductPagination,
+    pagination?: ProductPagination
   ): Promise<ProductPageResult> {
     const requestedPage = pagination?.page ?? 1
     const pageSize = pagination?.pageSize ?? 50

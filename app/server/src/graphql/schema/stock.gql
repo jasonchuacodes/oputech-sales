@@ -6,11 +6,13 @@ enum StockMovementReason {
   SALE
   VOID
   CORRECTION
+  SPREADSHEET_IMPORT
 }
 
 enum StockMovementSourceType {
   TRANSACTION
   STOCK_OPERATION
+  PRODUCT_IMPORT
 }
 
 type StockMovement {

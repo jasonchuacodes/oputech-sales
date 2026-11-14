@@ -23,6 +23,7 @@ import {
 } from './schemas/stock-movement.schema'
 import { TenantService } from '../tenant/tenant.service'
 import { StockUnitOption } from '../tenant/tenant.types'
+import { normalizeStockUnit } from './stock-unit'
 import {
   EnableStockTrackingInput,
   ReceiveStockInput,
@@ -67,10 +68,7 @@ export class StockService {
     return this.tenantService.listStockUnits(tenantId)
   }
 
-  createUnitOption(
-    tenantId: string,
-    label: string
-  ): Promise<StockUnitOption> {
+  createUnitOption(tenantId: string, label: string): Promise<StockUnitOption> {
     return this.tenantService.addStockUnit(tenantId, label)
   }
 
@@ -114,10 +112,7 @@ export class StockService {
     actorId: string
   ): Promise<ProductDocument> {
     this.assertProductId(input.productId)
-    const unit = await this.tenantService.resolveStockUnit(
-      tenantId,
-      input.unit
-    )
+    const unit = await this.tenantService.resolveStockUnit(tenantId, input.unit)
     const opening = this.decimal(
       input.openingQuantity,
       'Opening quantity',
@@ -334,6 +329,97 @@ export class StockService {
         return updated
       }
     )
+  }
+
+  async applySpreadsheetImport(
+    tenantId: string,
+    product: ProductDocument,
+    unit: string,
+    quantity: string,
+    actorId: string,
+    sourceId: string,
+    occurredAt: Date,
+    session: ClientSession
+  ): Promise<ProductDocument> {
+    const counted = this.decimal(quantity, 'Quantity', true)
+    const existingInventory = product.inventory
+    let updated: ProductDocument | null
+    let balanceBefore = new Decimal(0)
+
+    if (!existingInventory) {
+      updated = await this.productModel
+        .findOneAndUpdate(
+          {
+            _id: product._id,
+            tenantId,
+            archivedAt: { $exists: false },
+            inventory: { $exists: false },
+          },
+          {
+            $set: {
+              inventory: {
+                stockCount: asDecimal128(counted),
+                unit,
+                revision: 1,
+              },
+            },
+          },
+          { returnDocument: 'after', session }
+        )
+        .exec()
+    } else {
+      if (
+        normalizeStockUnit(existingInventory.unit) !== normalizeStockUnit(unit)
+      ) {
+        throw new ConflictException(
+          `The product unit is ${existingInventory.unit}, not ${unit}.`
+        )
+      }
+      balanceBefore = new Decimal(existingInventory.stockCount.toString())
+      updated = await this.productModel
+        .findOneAndUpdate(
+          {
+            _id: product._id,
+            tenantId,
+            archivedAt: { $exists: false },
+            'inventory.revision': existingInventory.revision,
+          },
+          {
+            $set: { 'inventory.stockCount': asDecimal128(counted) },
+            $inc: { 'inventory.revision': 1 },
+          },
+          { returnDocument: 'after', session }
+        )
+        .exec()
+    }
+
+    if (!updated?.inventory) {
+      throw new ConflictException(
+        'The product inventory changed while the spreadsheet import was being applied.'
+      )
+    }
+
+    await this.movementModel.create(
+      [
+        {
+          tenantId,
+          productId: product._id.toString(),
+          productName: product.name,
+          unit: updated.inventory.unit,
+          delta: asDecimal128(counted.minus(balanceBefore)),
+          balanceBefore: asDecimal128(balanceBefore),
+          balanceAfter: updated.inventory.stockCount,
+          reason: StockMovementReason.SPREADSHEET_IMPORT,
+          sourceType: StockMovementSourceType.PRODUCT_IMPORT,
+          sourceId,
+          actorId,
+          occurredAt,
+          note: 'Inventory reconciled from a product spreadsheet import.',
+        },
+      ],
+      { session }
+    )
+    return updated
   }
 
   async applySale(

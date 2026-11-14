@@ -14,6 +14,7 @@ import { formatGraphQLError } from './common/exceptions'
 import { TenantModule } from './features/tenant/tenant.module'
 import { StockModule } from './features/stock/stock.module'
 import { DecimalScalar } from './common/graphql/decimal.scalar'
+import { ProductTransferApiModule } from './features/product-transfer/product-transfer-api.module'
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { DecimalScalar } from './common/graphql/decimal.scalar'
     ReportModule,
     TenantModule,
     StockModule,
+    ProductTransferApiModule,
   ],
   controllers: [AppController],
   providers: [AppService, DecimalScalar],

@@ -22,6 +22,11 @@ export interface CreateProductInput {
   printCount?: number
 }
 
+export interface CreateImportedProductInput {
+  name: string
+  price: number
+}
+
 export interface UpdateProductInput {
   name?: string
   price?: number
