@@ -10,7 +10,7 @@ import {
   TransactionItem,
 } from '../../services/transaction/transaction.types'
 import { Product } from '../../services/product/product.types'
-import { useProducts } from '../../services/product/product.queries'
+import { useLocalProductPage } from '../../services/product/product.queries'
 import { ProductCard } from './components/ProductCard'
 import { SaleCheckout } from './components/SaleCheckout'
 import { getPosDraftKey } from './constants'
@@ -33,6 +33,7 @@ const POSPage = () => {
   )
   const [paymentType, setPaymentType] = useState<PaymentType>(PaymentType.Cash)
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const [productView, setProductView] = useState<ProductView>('card')
   const draftLoaded = useRef(false)
   const { auth } = useAuthContext()
@@ -40,7 +41,8 @@ const POSPage = () => {
   const showPrintCount = currentTenant?.type === TenantType.PHOTO
   const draftKey = getPosDraftKey(auth?.currentTenantId)
 
-  const { data: products = [], isLoading } = useProducts(search)
+  const { data: productPage, isLoading } = useLocalProductPage(search, page)
+  const products = productPage?.items ?? []
   const { reachability } = useSyncContext()
 
   useEffect(() => {
@@ -150,7 +152,10 @@ const POSPage = () => {
             <Input
               placeholder="Search products"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
               className="pl-9"
             />
           </div>
@@ -173,41 +178,47 @@ const POSPage = () => {
                 label="Products"
                 className="px-1"
                 rightContent={
-                  <div
-                    role="group"
-                    aria-label="Product display"
-                    className="bg-card shadow-card flex items-center rounded-sm p-0.5"
-                  >
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Card view"
-                      aria-pressed={productView === 'card'}
-                      className={
-                        productView === 'card'
-                          ? 'bg-surface-selected text-brand hover:bg-surface-selected'
-                          : 'text-text-tertiary'
-                      }
-                      onClick={() => setProductView('card')}
+                  <div className="flex items-center gap-3">
+                    <span className="text-text-tertiary text-sm">
+                      {productPage?.totalCount ?? 0}{' '}
+                      {productPage?.totalCount === 1 ? 'item' : 'items'}
+                    </span>
+                    <div
+                      role="group"
+                      aria-label="Product display"
+                      className="bg-card shadow-card flex items-center rounded-sm p-0.5"
                     >
-                      <LayoutGrid aria-hidden="true" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Row view"
-                      aria-pressed={productView === 'row'}
-                      className={
-                        productView === 'row'
-                          ? 'bg-surface-selected text-brand hover:bg-surface-selected'
-                          : 'text-text-tertiary'
-                      }
-                      onClick={() => setProductView('row')}
-                    >
-                      <List aria-hidden="true" />
-                    </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Card view"
+                        aria-pressed={productView === 'card'}
+                        className={
+                          productView === 'card'
+                            ? 'bg-surface-selected text-brand hover:bg-surface-selected'
+                            : 'text-text-tertiary'
+                        }
+                        onClick={() => setProductView('card')}
+                      >
+                        <LayoutGrid aria-hidden="true" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Row view"
+                        aria-pressed={productView === 'row'}
+                        className={
+                          productView === 'row'
+                            ? 'bg-surface-selected text-brand hover:bg-surface-selected'
+                            : 'text-text-tertiary'
+                        }
+                        onClick={() => setProductView('row')}
+                      >
+                        <List aria-hidden="true" />
+                      </Button>
+                    </div>
                   </div>
                 }
               >
@@ -248,6 +259,49 @@ const POSPage = () => {
                       </li>
                     ))}
                   </ul>
+                )}
+                {(productPage?.totalPages ?? 0) > 1 && (
+                  <div className="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
+                    <p className="text-text-secondary text-sm">
+                      {((productPage?.page ?? 1) - 1) *
+                        (productPage?.pageSize ?? 0) +
+                        1}
+                      –
+                      {Math.min(
+                        (productPage?.page ?? 1) *
+                          (productPage?.pageSize ?? 0),
+                        productPage?.totalCount ?? 0
+                      )}{' '}
+                      of {productPage?.totalCount ?? 0} products · Page{' '}
+                      {productPage?.page} of {productPage?.totalPages}
+                    </p>
+                    <div className="flex w-full gap-2 sm:w-auto">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 sm:flex-none"
+                        disabled={!productPage?.hasPreviousPage}
+                        onClick={() =>
+                          setPage((productPage?.page ?? page) - 1)
+                        }
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 sm:flex-none"
+                        disabled={!productPage?.hasNextPage}
+                        onClick={() =>
+                          setPage((productPage?.page ?? page) + 1)
+                        }
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </ContentSection>
             )}

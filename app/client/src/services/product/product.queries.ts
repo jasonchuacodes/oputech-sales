@@ -10,10 +10,7 @@ import {
   updateProduct,
 } from './product.api'
 import { CreateProductInput, UpdateProductInput } from './product.types'
-import {
-  listLocalProducts,
-  listLocalProductsPage,
-} from '../../offline/repository'
+import { listLocalProductsPage } from '../../offline/repository'
 import { offlineDb } from '../../offline/database'
 import { useSyncContext } from '../../context/sync/useSyncContext'
 import { useTenantContext } from '../../context/tenant/useTenantContext'
@@ -33,15 +30,22 @@ export const productKeys = {
     ] as const,
 }
 
-export function useProducts(search?: string) {
+export function useLocalProductPage(search: string, page: number) {
   const { currentTenant } = useTenantContext()
   const tenantId = currentTenant?.id
   const data = useLiveQuery(
     () =>
-      tenantId ? listLocalProducts(tenantId, search) : Promise.resolve([]),
-    [tenantId, search]
+      tenantId
+        ? listLocalProductsPage(
+            tenantId,
+            page,
+            PRODUCT_PAGE_SIZE,
+            search.trim() || undefined
+          )
+        : Promise.resolve(undefined),
+    [tenantId, search, page]
   )
-  return { data, isLoading: data === undefined }
+  return { data, isLoading: !!tenantId && data === undefined }
 }
 
 export function useProductPage(search: string, page: number) {
