@@ -1,12 +1,60 @@
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import { type Control } from 'react-hook-form'
 import { Minus, Plus, X } from 'lucide-react'
 import { cn } from '../../../utils/cn'
 import { formatCurrency } from '../../../utils/number'
 import { PaymentType, TransactionItem } from '../../../services/transaction/transaction.types'
 import { toTitleCase } from '../../../utils/text'
-import { Button } from '../../../components'
+import { Button, Input } from '../../../components'
 import { NumberInput } from '../../../components/ui/number-input'
+
+const MAX_QUANTITY = 2_147_483_647
+
+const parseQuantity = (input: string) => {
+  if (!/^\d+$/.test(input)) return null
+
+  const quantity = Number(input)
+  return quantity >= 1 && quantity <= MAX_QUANTITY ? quantity : null
+}
+
+interface QuantityInputProps {
+  item: TransactionItem
+  onChange: (productId: string, quantity: number) => void
+}
+
+const QuantityInput = ({ item, onChange }: QuantityInputProps) => {
+  const [draftValue, setDraftValue] = useState<string | null>(null)
+  const value = draftValue ?? String(item.quantity)
+
+  return (
+    <Input
+      type="number"
+      inputMode="numeric"
+      min={1}
+      max={MAX_QUANTITY}
+      step={1}
+      value={value}
+      aria-label={`Quantity for ${item.name}`}
+      onChange={(event) => {
+        const nextValue = event.target.value
+        const quantity = parseQuantity(nextValue)
+
+        if (quantity === null) {
+          setDraftValue(nextValue)
+          return
+        }
+
+        setDraftValue(null)
+        if (quantity !== item.quantity) onChange(item.productId, quantity)
+      }}
+      onBlur={() => setDraftValue(null)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') event.currentTarget.blur()
+      }}
+      className="h-10 w-14 px-1 text-center font-semibold tabular-nums xl:h-10 xl:text-base [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+    />
+  )
+}
 
 export interface CashPaymentForm {
   cashAmount: number | undefined
@@ -24,6 +72,7 @@ interface CurrentSaleProps {
   onRemoveItem: (productId: string) => void
   onIncrementItem: (productId: string) => void
   onDecrementItem: (productId: string) => void
+  onQuantityChange: (productId: string, quantity: number) => void
 }
 
 export const CurrentSale = ({
@@ -38,6 +87,7 @@ export const CurrentSale = ({
   onRemoveItem,
   onIncrementItem,
   onDecrementItem,
+  onQuantityChange,
 }: CurrentSaleProps) => {
   const cashAmountId = useId()
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -89,7 +139,7 @@ export const CurrentSale = ({
                   >
                     <Minus className="size-4" />
                   </button>
-                  <span className="min-w-9 text-center text-sm font-semibold">{item.quantity}</span>
+                  <QuantityInput item={item} onChange={onQuantityChange} />
                   <button
                     type="button"
                     onClick={() => onIncrementItem(item.productId)}

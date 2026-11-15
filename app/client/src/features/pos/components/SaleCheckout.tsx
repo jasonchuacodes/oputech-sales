@@ -24,6 +24,7 @@ interface SaleCheckoutProps {
   onRemoveItem: (productId: string) => void
   onIncrementItem: (productId: string) => void
   onDecrementItem: (productId: string) => void
+  onQuantityChange: (productId: string, quantity: number) => void
 }
 
 export const SaleCheckout = ({
@@ -35,6 +36,7 @@ export const SaleCheckout = ({
   onRemoveItem,
   onIncrementItem,
   onDecrementItem,
+  onQuantityChange,
 }: SaleCheckoutProps) => {
   const { control: cashPaymentControl, setValue: setCashPaymentValue } =
     useForm<CashPaymentForm>({
@@ -132,6 +134,7 @@ export const SaleCheckout = ({
       onRemoveItem={onRemoveItem}
       onIncrementItem={onIncrementItem}
       onDecrementItem={onDecrementItem}
+      onQuantityChange={onQuantityChange}
     />
   )
 

@@ -123,6 +123,16 @@ const POSPage = () => {
     )
   }
 
+  const handleQuantityChange = (productId: string, quantity: number) => {
+    if (!Number.isInteger(quantity) || quantity < 1) return
+
+    setTransactionItems((prev) =>
+      prev.map((item) =>
+        item.productId === productId ? { ...item, quantity } : item
+      )
+    )
+  }
+
   return (
     <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-5 px-5 py-5 md:p-6">
       <PageHeader
@@ -253,6 +263,7 @@ const POSPage = () => {
           onRemoveItem={handleRemoveItem}
           onIncrementItem={handleIncrementItem}
           onDecrementItem={handleDecrementItem}
+          onQuantityChange={handleQuantityChange}
         />
       </div>
     </div>
