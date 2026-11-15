@@ -24,6 +24,10 @@ import {
   type InventoryOperationMode,
 } from './components/InventoryOperationModal'
 import { InventoryMovementHistory } from './components/InventoryMovementHistory'
+import { ImportDialog } from './transfers/ImportDialog'
+import { ExportDialog } from './transfers/ExportDialog'
+import { TransferDock } from './transfers/TransferDock'
+import { useProductTransfers } from './transfers/useProductTransfers'
 
 const formatStockCount = (value: string) =>
   Number(value).toLocaleString(undefined, { maximumFractionDigits: 6 })
@@ -43,7 +47,8 @@ const ProductPageContent = ({
 }) => {
   const { auth } = useAuthContext()
   const isAdmin = auth?.role !== UserRole.STAFF
-  const { canModifyProducts, pendingCount, blockedCount } = useSyncContext()
+  const { canModifyProducts, pendingCount, blockedCount, reachability } =
+    useSyncContext()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const addItem = useDisclosure()
@@ -56,6 +61,7 @@ const ProductPageContent = ({
   const deleteItem = useDisclosure()
   const inventoryOperation = useDisclosure()
   const movementHistory = useDisclosure()
+  const productTransfers = useProductTransfers(isAdmin)
 
   const productsQuery = useProductPage(search, page)
   const { data, isLoading, isFetching } = productsQuery
@@ -355,6 +361,14 @@ const ProductPageContent = ({
             columns={columns}
             loading={isLoading}
             emptyMessage="No items found"
+            import={isAdmin ? productTransfers.openImport : undefined}
+            export={isAdmin ? productTransfers.openExport : undefined}
+            importDisabled={
+              productTransfers.transferActive || !canModifyProducts
+            }
+            exportDisabled={
+              productTransfers.transferActive || reachability !== 'reachable'
+            }
           />
         </div>
         {!isLoading &&
@@ -446,6 +460,14 @@ const ProductPageContent = ({
             setMovementProduct(null)
           }}
         />
+      )}
+
+      {isAdmin && (
+        <>
+          <ImportDialog controller={productTransfers} />
+          <ExportDialog controller={productTransfers} />
+          <TransferDock controller={productTransfers} />
+        </>
       )}
     </div>
   )

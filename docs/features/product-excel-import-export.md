@@ -1,6 +1,6 @@
 # Product Excel Import and Export: Setup and Implementation Guide
 
-**Status:** Backend implemented and locally integration-tested; Railway deployment and client implementation pending
+**Status:** Backend and desktop client implemented; Railway deployment verification pending
 **Environment:** Private beta
 **Application hosting:** Railway
 **Database:** MongoDB Atlas
@@ -45,12 +45,16 @@ The first release is intentionally bounded. It should reliably handle approximat
 - Backend workbook and stock-import tests are implemented.
 - Local integration tests passed against Redis Cloud, MongoDB Atlas, and the private S3 transfer bucket.
 - A controlled background export, presigned upload, validation-only import, and confirmed stock import completed successfully.
+- The Products data table has administrator-only desktop import and export actions.
+- Dedicated import/export dialogs support upload, validation, confirmation, progress, results, and downloads.
+- Active transfers can be minimized into a persistent Products-page transfer dock and restored after returning to the page.
+- Completed imports refresh both remote product queries and the tenant IndexedDB snapshot.
 
 ### Not yet completed
 
 - The new API build has not been deployed and verified inside Railway.
 - A separate Railway worker service has not been created.
-- Import/export client UI does not exist.
+- The client workflow still requires visual browser verification against the deployed API and worker.
 
 ## 3. Final architecture
 

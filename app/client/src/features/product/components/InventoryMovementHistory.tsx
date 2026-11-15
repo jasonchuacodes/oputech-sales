@@ -24,6 +24,7 @@ const reasonLabels: Record<StockMovementReason, string> = {
   [StockMovementReason.Sale]: 'Sale',
   [StockMovementReason.Void]: 'Sale void',
   [StockMovementReason.Correction]: 'Count correction',
+  [StockMovementReason.SpreadsheetImport]: 'Spreadsheet import',
 }
 
 const quantity = (value: string) =>

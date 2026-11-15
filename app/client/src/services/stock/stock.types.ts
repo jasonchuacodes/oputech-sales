@@ -4,6 +4,7 @@ export enum StockMovementReason {
   Sale = 'SALE',
   Void = 'VOID',
   Correction = 'CORRECTION',
+  SpreadsheetImport = 'SPREADSHEET_IMPORT',
 }
 
 export interface StockMovement {

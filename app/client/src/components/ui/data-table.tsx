@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
-import { ChevronUp, ChevronDown } from 'lucide-react'
+import { ChevronUp, ChevronDown, Download, Upload } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { Spinner } from './spinner'
+import { Button } from './button'
 
 type SortDirection = 'asc' | 'desc'
 type SortConfig = { key: string; direction: SortDirection } | null
@@ -31,6 +32,10 @@ interface DataTableProps<T> {
   emptyMessage?: string
   footer?: React.ReactNode
   compact?: boolean
+  import?: () => void
+  export?: () => void
+  importDisabled?: boolean
+  exportDisabled?: boolean
 }
 
 const alignClass = {
@@ -57,6 +62,10 @@ function DataTableComponent<T>({
   emptyMessage = 'No data available',
   footer,
   compact = false,
+  import: handleImport,
+  export: handleExport,
+  importDisabled = false,
+  exportDisabled = false,
 }: DataTableProps<T>) {
   const [sortConfig, setSortConfig] = useState<SortConfig>(null)
 
@@ -88,6 +97,34 @@ function DataTableComponent<T>({
 
   return (
     <div className="rounded-card bg-card shadow-card ring-border/60 overflow-hidden ring-1 md:overflow-x-auto">
+      {(handleImport || handleExport) && (
+        <div className="border-border/60 flex min-h-12 items-center justify-end gap-2 border-b px-3 py-2">
+          {handleImport && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={importDisabled}
+              onClick={handleImport}
+            >
+              <Upload aria-hidden="true" />
+              Import
+            </Button>
+          )}
+          {handleExport && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={exportDisabled}
+              onClick={handleExport}
+            >
+              <Download aria-hidden="true" />
+              Export
+            </Button>
+          )}
+        </div>
+      )}
       <table id={id} className="block w-full text-sm md:table md:min-w-162.5">
         <thead className="hidden md:table-header-group">
           <tr className="border-border bg-card border-b">
