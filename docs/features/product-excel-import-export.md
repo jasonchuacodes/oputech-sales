@@ -92,7 +92,7 @@ Railway worker service
 | Redis Cloud    | Hold temporary BullMQ queue state, retries, locks, and stalled-job metadata                                            |
 | Railway worker | Validate workbooks, apply imports, generate exports, and persist progress                                              |
 | MongoDB Atlas  | Store products, inventory, authoritative transfer jobs, staged rows, checkpoints, and results                          |
-| Amazon S3      | Store source workbooks, skipped-row reports, and generated exports                                                     |
+| Amazon S3      | Store source workbooks, validation error reports, runtime skipped-row reports, and generated exports                   |
 
 MongoDB is the source of truth for user-visible state. Redis is not the permanent job database.
 
@@ -150,7 +150,8 @@ The `Products` worksheet uses these columns:
 - **Unit and Quantity:**
   - Both blank: no stock change.
   - Both populated: enable or reconcile stock.
-  - Only one populated: skip the row as invalid.
+  - Only one populated: fail workbook validation.
+  - Valid units that are not yet tenant options are created automatically only after the import is confirmed.
 - **Quantity:** Nonnegative decimal with at most six decimal places.
 
 `Category` is not included because the current product model does not have that field.
@@ -160,7 +161,7 @@ The `Products` worksheet uses these columns:
 1. Match by tenant-owned Product ID when provided.
 2. Otherwise normalize and match Product Name.
 3. If no match exists, create a product.
-4. Skip ambiguous or duplicate matches.
+4. Reject ambiguous or duplicate matches during workbook validation.
 
 Product-name normalization should apply Unicode NFKC normalization, trim outer whitespace, collapse internal whitespace, and compare case-insensitively.
 
@@ -168,7 +169,7 @@ Product-name normalization should apply Unicode NFKC normalization, trim outer w
 
 - Existing untracked product with Unit and Quantity: enable tracking and create an auditable opening movement.
 - Existing tracked product with matching Unit: reconcile to the imported quantity.
-- Existing tracked product with a different Unit: skip for manual resolution.
+- Existing tracked product with a different Unit: fail workbook validation for manual resolution.
 - Blank Unit and Quantity: leave stock tracking and quantity unchanged.
 - Existing product name and price are not updated in the first release.
 
@@ -183,7 +184,7 @@ Fatal workbook errors reject the entire file:
 - File-size limit exceeded
 - More than 5,000 data rows
 
-Row-level errors skip only the affected rows:
+Row-level errors reject the entire workbook:
 
 - Invalid or missing values
 - Invalid price or quantity
@@ -193,7 +194,11 @@ Row-level errors skip only the affected rows:
 - Duplicate workbook identity
 - Ambiguous normalized name
 
-Validation completes before confirmation. The user sees create, update, unchanged, and skipped counts and can download a skipped-row report. If no eligible rows remain, the import cannot be confirmed.
+Validation scans every row before confirmation so the error report includes all discovered problems. If any row is invalid, nothing is staged or imported, confirmation is unavailable, and the user downloads the error report to correct and re-upload the workbook. Only a workbook whose rows are all eligible can be confirmed.
+
+Unknown but valid stock units do not fail validation. They are normalized case-insensitively and created idempotently as tenant base-unit options while a confirmed row is applied. Validation failure or cancellation never creates unit options.
+
+Application remains resumable and transactional per row rather than across the entire workbook. A business failure caused by catalog changes after validation rolls back that row and records it in the runtime error report; previously committed rows remain imported. Unexpected infrastructure failures leave pending rows available for worker retry.
 
 ## 7. S3 setup
 
@@ -396,9 +401,9 @@ Staged rows need a unique index on transfer job ID and original worksheet row nu
 7. The API verifies the uploaded object before enqueueing.
 8. The API adds `validate-import` to BullMQ with only the transfer job ID.
 9. The worker downloads and validates the workbook.
-10. The worker stages eligible rows, records skipped rows, and persists progress in MongoDB.
-11. The worker generates an error workbook in S3 when rows are skipped.
-12. The job enters `AWAITING_CONFIRMATION` when at least one row is eligible.
+10. If any row is invalid, the worker generates an error workbook, stores no staged rows, and ends validation as failed.
+11. If every row is eligible, the worker stages the complete workbook and persists the validation summary in MongoDB.
+12. Only a completely eligible workbook enters `AWAITING_CONFIRMATION`.
 
 ### Confirmation and application
 
@@ -406,7 +411,7 @@ Staged rows need a unique index on transfer job ID and original worksheet row nu
 2. The API atomically moves the job to `QUEUED_FOR_IMPORT`.
 3. The API adds `apply-import` to BullMQ.
 4. The worker applies staged rows through ProductService and StockService boundaries.
-5. Each applied row or bounded batch is transactional and idempotent.
+5. Each applied row is transactional and idempotent, including automatic base-unit creation.
 6. Progress and checkpoints are persisted in MongoDB.
 7. Apply-time conflicts are recorded as skipped instead of silently changing product units or identities.
 8. The job finishes as `COMPLETED` or `COMPLETED_WITH_SKIPS`.
@@ -515,14 +520,14 @@ Do not log validated secret values.
 - Enforce file, worksheet, header, row, cell, and type limits.
 - Reject formulas, formula-like executable values, merged data cells, and unsupported cell types.
 - Match Product ID first and normalized name second.
-- Stage eligible rows and report skipped rows.
+- Reject the complete workbook when any row is invalid; otherwise stage every row.
 - Generate an error workbook.
 
 ### Stage 6: Import application
 
 - Add service-level import operations to ProductService and StockService.
 - Add spreadsheet import movement metadata.
-- Apply eligible rows in bounded work units.
+- Apply validated rows in bounded work units and create missing valid base units transactionally.
 - Make retries idempotent.
 - Persist progress and resume from MongoDB state.
 
@@ -624,9 +629,10 @@ The worker is a separate Railway service and may have different outbound address
 - Product ID tenant isolation.
 - Existing untracked product enables inventory.
 - Existing tracked product reconciles quantity.
-- Unit mismatch is skipped and reported.
+- Existing inventory unit mismatches fail workbook validation and are reported.
 - Blank Unit and Quantity leave inventory unchanged.
-- Valid rows apply while invalid rows remain skipped.
+- Any invalid row prevents the workbook from reaching confirmation.
+- Unknown valid units are created only while confirmed rows are applied.
 
 ### Reliability
 

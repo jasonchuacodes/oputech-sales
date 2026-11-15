@@ -102,6 +102,14 @@ export const canCancelImport = (job: ProductTransferJob): boolean =>
     ProductTransferStatus.QueuedForImport,
   ].includes(job.status)
 
+export const canConfirmImport = (job: ProductTransferJob): boolean =>
+  job.type === ProductTransferType.Import &&
+  job.status === ProductTransferStatus.AwaitingConfirmation &&
+  job.totalRows > 0 &&
+  job.eligibleRows === job.totalRows &&
+  job.validatedRows === job.totalRows &&
+  job.skippedRows === 0
+
 export const shouldMinimizeTransferDialog = (
   job?: ProductTransferJob | null
 ): boolean => isActiveProductTransfer(job)

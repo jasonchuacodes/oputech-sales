@@ -9,7 +9,7 @@ import {
   isActiveProductTransfer,
 } from '@/services/product-transfer/product-transfer.types'
 import { formatTime } from '@/utils/date'
-import { canCancelImport } from './product-transfer-state'
+import { canCancelImport, canConfirmImport } from './product-transfer-state'
 import type { ProductTransfersController } from './useProductTransfers'
 
 interface ImportDialogProps {
@@ -82,10 +82,7 @@ export const ImportDialog = ({ controller }: ImportDialogProps) => {
   const active = isActiveProductTransfer(currentJob)
   const DismissIcon = active ? Minus : X
   const dismissLabel = active ? 'Minimize transfer' : 'Close'
-  const showErrorReport =
-    !!currentJob &&
-    (currentJob.skippedRows > 0 ||
-      currentJob.status === ProductTransferStatus.ValidationFailed)
+  const showErrorReport = !!currentJob && currentJob.skippedRows > 0
 
   const renderBody = () => {
     if (!currentJob) {
@@ -180,8 +177,8 @@ export const ImportDialog = ({ controller }: ImportDialogProps) => {
             <div>
               <p className="font-medium">Review validation results</p>
               <p className="text-text-secondary mt-1 text-sm">
-                Only eligible rows will be imported. Existing product names and
-                prices are not changed.
+                Every row passed validation. Existing product names and prices
+                are not changed.
               </p>
             </div>
             <Summary
@@ -189,6 +186,35 @@ export const ImportDialog = ({ controller }: ImportDialogProps) => {
                 { label: 'Total rows', value: currentJob.totalRows },
                 { label: 'Eligible', value: currentJob.eligibleRows },
                 { label: 'Skipped', value: currentJob.skippedRows },
+              ]}
+            />
+            {showErrorReport && (
+              <Button
+                variant="outline"
+                disabled={downloading}
+                onClick={() => void downloadErrorReport()}
+              >
+                <Download />
+                Download error report
+              </Button>
+            )}
+          </div>
+        )
+      case ProductTransferStatus.ValidationFailed:
+        return (
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="font-medium">Workbook needs corrections</p>
+              <p className="text-text-secondary mt-1 text-sm">
+                Nothing was imported. Download the error report, fix every
+                reported row, and upload the workbook again.
+              </p>
+            </div>
+            <Summary
+              values={[
+                { label: 'Total rows', value: currentJob.totalRows },
+                { label: 'Eligible', value: currentJob.eligibleRows },
+                { label: 'Needs fixing', value: currentJob.skippedRows },
               ]}
             />
             {showErrorReport && (
@@ -314,7 +340,7 @@ export const ImportDialog = ({ controller }: ImportDialogProps) => {
             Cancel import
           </Button>
           <Button
-            disabled={confirmingImport}
+            disabled={confirmingImport || !canConfirmImport(currentJob)}
             onClick={() => void confirmImport()}
           >
             {confirmingImport && <Spinner size="xs" variant="current" />}

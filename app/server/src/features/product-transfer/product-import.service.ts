@@ -75,7 +75,6 @@ export class ProductImportService {
         parsedRows,
         products
       )
-      const stagedRows = this.stageRows(candidates)
       const errors = candidates.flatMap((candidate) => candidate.errors)
       let errorKey: string | undefined
       if (errors.length > 0) {
@@ -85,7 +84,8 @@ export class ProductImportService {
           await this.workbooks.createErrorWorkbook(errors)
         )
       }
-      const summary = this.validationSummary(stagedRows, errorKey)
+      const summary = this.validationSummary(candidates, errorKey)
+      const stagedRows = errors.length === 0 ? this.stageRows(candidates) : []
       await this.transfers.completeValidation(
         jobId,
         job.tenantId,
@@ -203,17 +203,7 @@ export class ProductImportService {
             unit = product.inventory.unit
           }
         } else {
-          unit = units.get(normalizedUnit)
-          if (!unit) {
-            errors.push(
-              this.rowError(
-                parsed,
-                'Unit',
-                parsed.unit,
-                'Unit must match one of the tenant stock-unit options.'
-              )
-            )
-          }
+          unit = units.get(normalizedUnit) ?? canonicalizeStockUnit(parsed.unit)
         }
       }
 
@@ -284,40 +274,40 @@ export class ProductImportService {
           : undefined),
       quantity: candidate.parsed.quantity,
       action: candidate.action,
-      status:
-        candidate.errors.length > 0
-          ? ProductImportRowStatus.SKIPPED
-          : ProductImportRowStatus.PENDING,
-      skipReason:
-        candidate.errors.length > 0
-          ? candidate.errors.map((error) => error.message).join(' ')
-          : undefined,
+      status: ProductImportRowStatus.PENDING,
     }))
   }
 
   private validationSummary(
-    rows: StagedProductImportRow[],
+    candidates: ValidationCandidate[],
     errorKey?: string
   ): ProductValidationSummary {
-    const eligible = rows.filter(
-      (row) => row.status === ProductImportRowStatus.PENDING
+    const eligible = candidates.filter(
+      (candidate) => candidate.errors.length === 0
     )
+    const allEligible = eligible.length === candidates.length
     return {
-      totalRows: rows.length,
+      totalRows: candidates.length,
       eligibleRows: eligible.length,
-      skippedRows: rows.length - eligible.length,
-      createdCount: eligible.filter(
-        (row) => row.action === ProductImportRowAction.CREATE
-      ).length,
-      updatedCount: eligible.filter((row) =>
-        [
-          ProductImportRowAction.ENABLE_STOCK,
-          ProductImportRowAction.RECONCILE,
-        ].includes(row.action)
-      ).length,
-      unchangedCount: eligible.filter(
-        (row) => row.action === ProductImportRowAction.UNCHANGED
-      ).length,
+      skippedRows: candidates.length - eligible.length,
+      createdCount: allEligible
+        ? eligible.filter(
+            (candidate) => candidate.action === ProductImportRowAction.CREATE
+          ).length
+        : 0,
+      updatedCount: allEligible
+        ? eligible.filter((candidate) =>
+            [
+              ProductImportRowAction.ENABLE_STOCK,
+              ProductImportRowAction.RECONCILE,
+            ].includes(candidate.action)
+          ).length
+        : 0,
+      unchangedCount: allEligible
+        ? eligible.filter(
+            (candidate) => candidate.action === ProductImportRowAction.UNCHANGED
+          ).length
+        : 0,
       errorKey,
     }
   }
@@ -365,13 +355,13 @@ export class ProductImportService {
   ): Promise<void> {
     const session = await this.connection.startSession()
     try {
-      await session.withTransaction(async () => {
-        const row = await this.transfers.findRowForUpdate(
-          inputRow._id.toString(),
-          session
-        )
-        if (!row || row.status !== ProductImportRowStatus.PENDING) return
-        try {
+      try {
+        await session.withTransaction(async () => {
+          const row = await this.transfers.findRowForUpdate(
+            inputRow._id.toString(),
+            session
+          )
+          if (!row || row.status !== ProductImportRowStatus.PENDING) return
           let product: ProductDocument | null
           if (row.action === ProductImportRowAction.CREATE) {
             if (row.price === undefined) {
@@ -416,24 +406,26 @@ export class ProductImportService {
             job._id.toString(),
             session
           )
-        } catch (error) {
-          if (
-            error instanceof ConflictException ||
-            error instanceof InvalidInputException ||
-            error instanceof NotFoundException
-          ) {
+        })
+      } catch (error) {
+        if (
+          error instanceof ConflictException ||
+          error instanceof InvalidInputException ||
+          error instanceof NotFoundException
+        ) {
+          await session.withTransaction(async () => {
             await this.transfers.markRowSkipped(
-              row._id.toString(),
+              inputRow._id.toString(),
               job._id.toString(),
-              row.action,
+              inputRow.action,
               error.message,
               session
             )
-            return
-          }
-          throw error
+          })
+          return
         }
-      })
+        throw error
+      }
     } finally {
       await session.endSession()
     }

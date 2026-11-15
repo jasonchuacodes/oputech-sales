@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common'
 import Decimal from 'decimal.js'
 import ExcelJS from 'exceljs'
 import { InvalidInputException } from '../../common/exceptions'
-import { STOCK_UNIT_MAX_LENGTH } from '../stock/stock-unit'
+import {
+  canonicalizeStockUnit,
+  isValidStockUnit,
+  STOCK_UNIT_MAX_LENGTH,
+} from '../stock/stock-unit'
 import {
   MAX_PRODUCT_TRANSFER_ROWS,
   PRODUCT_TRANSFER_HEADERS,
@@ -151,7 +155,7 @@ export class ProductWorkbookService {
     }
 
     const price = this.readDecimalNumber(row, 3, 'Price', errors, 2)
-    const unit = this.readText(row, 4, 'Unit', errors, STOCK_UNIT_MAX_LENGTH)
+    const unit = this.readUnit(row, errors)
     const quantity = this.readQuantity(row, 5, errors)
     if (Boolean(unit) !== Boolean(quantity)) {
       errors.push(
@@ -227,6 +231,40 @@ export class ProductWorkbookService {
       return undefined
     }
     return value
+  }
+
+  private readUnit(
+    row: ExcelJS.Row,
+    errors: ProductTransferRowError[]
+  ): string | undefined {
+    const cell = row.getCell(4)
+    const scalar = this.scalarValue(cell, true)
+    const source = scalar === undefined ? '' : String(scalar)
+    const raw = source.trim()
+    if (!raw) return undefined
+    if (FORMULA_PREFIX.test(raw)) {
+      errors.push(
+        this.error(
+          row.number,
+          'Unit',
+          raw,
+          'Unit cannot begin with a formula character.'
+        )
+      )
+      return undefined
+    }
+    if (!isValidStockUnit(source)) {
+      errors.push(
+        this.error(
+          row.number,
+          'Unit',
+          raw,
+          `Unit must contain between 1 and ${STOCK_UNIT_MAX_LENGTH} characters and cannot contain control characters.`
+        )
+      )
+      return undefined
+    }
+    return canonicalizeStockUnit(source)
   }
 
   private readDecimalNumber(

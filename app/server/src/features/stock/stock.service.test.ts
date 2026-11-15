@@ -47,6 +47,9 @@ const makeConnection = () => ({
 
 const makeTenantService = () => ({
   resolveStockUnit: vi.fn().mockResolvedValue('Box'),
+  addStockUnit: vi
+    .fn()
+    .mockImplementation(async (_tenantId, label) => ({ label })),
 })
 
 const inventoryProduct = (stockCount: string, revision: number) => ({
@@ -236,11 +239,13 @@ describe('StockService embedded inventory', () => {
     const productModel = {
       findOneAndUpdate: vi.fn().mockReturnValue(queryResult(updated)),
     }
+    const tenantService = makeTenantService()
+    const session = {} as never
     const service = new StockService(
       makeConnection() as never,
       movementModel as never,
       productModel as never,
-      {} as never
+      tenantService as never
     )
 
     const result = await service.applySpreadsheetImport(
@@ -251,10 +256,15 @@ describe('StockService embedded inventory', () => {
       'user-1',
       'job-1-row-2',
       new Date('2026-01-01T00:00:00.000Z'),
-      {} as never
+      session
     )
 
     expect(result).toBe(updated)
+    expect(tenantService.addStockUnit).toHaveBeenCalledWith(
+      'tenant-1',
+      'pc',
+      session
+    )
     expect(productModel.findOneAndUpdate.mock.calls[0][1]).toEqual({
       $set: { 'inventory.stockCount': expect.any(Types.Decimal128) },
       $inc: { 'inventory.revision': 1 },
@@ -265,5 +275,60 @@ describe('StockService embedded inventory', () => {
     expect(movement.delta.toString()).toBe('-1.5')
     expect(movement.balanceBefore.toString()).toBe('10')
     expect(movement.balanceAfter.toString()).toBe('8.5')
+  })
+
+  it('creates and uses a missing tenant unit for imported inventory', async () => {
+    const current = {
+      _id: { toString: () => PRODUCT_ID },
+      tenantId: 'tenant-1',
+      name: 'Imported Product',
+    }
+    const updated = {
+      ...current,
+      inventory: {
+        stockCount: Types.Decimal128.fromString('0'),
+        unit: 'Case',
+        revision: 1,
+      },
+    }
+    const movementModel = { create: vi.fn().mockResolvedValue([]) }
+    const productModel = {
+      findOneAndUpdate: vi.fn().mockReturnValue(queryResult(updated)),
+    }
+    const tenantService = makeTenantService()
+    tenantService.addStockUnit.mockResolvedValue({ label: 'Case' })
+    const session = {} as never
+    const service = new StockService(
+      makeConnection() as never,
+      movementModel as never,
+      productModel as never,
+      tenantService as never
+    )
+
+    await service.applySpreadsheetImport(
+      'tenant-1',
+      current as never,
+      'case',
+      '0',
+      'user-1',
+      'job-1-row-3',
+      new Date('2026-01-01T00:00:00.000Z'),
+      session
+    )
+
+    expect(tenantService.addStockUnit).toHaveBeenCalledWith(
+      'tenant-1',
+      'case',
+      session
+    )
+    expect(productModel.findOneAndUpdate.mock.calls[0][1]).toEqual({
+      $set: {
+        inventory: {
+          stockCount: expect.any(Types.Decimal128),
+          unit: 'Case',
+          revision: 1,
+        },
+      },
+    })
   })
 })

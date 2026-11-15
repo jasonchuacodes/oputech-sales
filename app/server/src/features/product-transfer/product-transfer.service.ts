@@ -150,6 +150,13 @@ export class ProductTransferService {
           type: ProductTransferType.IMPORT,
           status: ProductTransferStatus.AWAITING_CONFIRMATION,
           eligibleRows: { $gt: 0 },
+          skippedRows: 0,
+          $expr: {
+            $and: [
+              { $eq: ['$eligibleRows', '$totalRows'] },
+              { $eq: ['$validatedRows', '$totalRows'] },
+            ],
+          },
           active: true,
         },
         { $set: { status: ProductTransferStatus.QUEUED_FOR_IMPORT } },
@@ -236,16 +243,21 @@ export class ProductTransferService {
     rows: StagedProductImportRow[],
     summary: ProductValidationSummary
   ): Promise<ProductTransferJobDocument> {
-    const expiresAt = new Date(
-      Date.now() + PRODUCT_TRANSFER_STAGING_TTL_DAYS * 24 * 60 * 60 * 1000
-    )
-    if (rows.length > 0) {
+    const allRowsEligible =
+      summary.totalRows > 0 &&
+      summary.eligibleRows === summary.totalRows &&
+      summary.skippedRows === 0 &&
+      rows.length === summary.totalRows &&
+      rows.every((row) => row.status === ProductImportRowStatus.PENDING)
+    if (allRowsEligible) {
+      const expiresAt = new Date(
+        Date.now() + PRODUCT_TRANSFER_STAGING_TTL_DAYS * 24 * 60 * 60 * 1000
+      )
       await this.rowModel.insertMany(
         rows.map((row) => ({ ...row, jobId, tenantId, expiresAt })),
         { ordered: true }
       )
     }
-    const hasEligibleRows = summary.eligibleRows > 0
     const job = await this.jobModel
       .findOneAndUpdate(
         { _id: jobId, status: ProductTransferStatus.VALIDATING, active: true },
@@ -253,18 +265,18 @@ export class ProductTransferService {
           $set: {
             ...summary,
             validatedRows: summary.totalRows,
-            status: hasEligibleRows
+            status: allRowsEligible
               ? ProductTransferStatus.AWAITING_CONFIRMATION
               : ProductTransferStatus.VALIDATION_FAILED,
-            active: hasEligibleRows,
-            completedAt: hasEligibleRows ? null : new Date(),
+            active: allRowsEligible,
+            completedAt: allRowsEligible ? null : new Date(),
             filesExpireAt: new Date(
               Date.now() + PRODUCT_TRANSFER_FILE_TTL_DAYS * 24 * 60 * 60 * 1000
             ),
-            failureCode: hasEligibleRows ? null : 'NO_ELIGIBLE_ROWS',
-            failureMessage: hasEligibleRows
+            failureCode: allRowsEligible ? null : 'INVALID_WORKBOOK',
+            failureMessage: allRowsEligible
               ? null
-              : 'The workbook does not contain any eligible product rows.',
+              : 'Every product row must pass validation. Fix the reported errors and upload the workbook again. Nothing was imported.',
           },
         },
         { returnDocument: 'after' }
@@ -343,13 +355,14 @@ export class ProductTransferService {
     jobId: string,
     session: ClientSession
   ): Promise<void> {
-    await this.rowModel
+    const result = await this.rowModel
       .updateOne(
         { _id: rowId, status: ProductImportRowStatus.PENDING },
         { $set: { status: ProductImportRowStatus.APPLIED } },
         { session }
       )
       .exec()
+    if (result.modifiedCount === 0) return
     await this.jobModel
       .updateOne({ _id: jobId }, { $inc: { appliedRows: 1 } }, { session })
       .exec()
@@ -362,7 +375,7 @@ export class ProductTransferService {
     reason: string,
     session: ClientSession
   ): Promise<void> {
-    await this.rowModel
+    const result = await this.rowModel
       .updateOne(
         { _id: rowId, status: ProductImportRowStatus.PENDING },
         {
@@ -371,6 +384,7 @@ export class ProductTransferService {
         { session }
       )
       .exec()
+    if (result.modifiedCount === 0) return
     const countField =
       action === ProductImportRowAction.CREATE
         ? 'createdCount'

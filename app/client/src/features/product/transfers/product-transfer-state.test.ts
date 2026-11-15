@@ -6,6 +6,7 @@ import {
 } from '@/services/product-transfer/product-transfer.types'
 import {
   canCancelImport,
+  canConfirmImport,
   transferProgress,
   transferProgressDetail,
   transferStatusLabel,
@@ -58,6 +59,36 @@ describe('product transfer UI state', () => {
         job({
           type: ProductTransferType.Export,
           status: ProductTransferStatus.Exporting,
+        })
+      )
+    ).toBe(false)
+  })
+
+  it('only confirms imports when every validated row is eligible', () => {
+    expect(
+      canConfirmImport(
+        job({
+          status: ProductTransferStatus.AwaitingConfirmation,
+          totalRows: 100,
+          eligibleRows: 100,
+          skippedRows: 0,
+          validatedRows: 100,
+        })
+      )
+    ).toBe(true)
+    expect(
+      canConfirmImport(
+        job({ status: ProductTransferStatus.AwaitingConfirmation })
+      )
+    ).toBe(false)
+    expect(
+      canConfirmImport(
+        job({
+          status: ProductTransferStatus.AwaitingConfirmation,
+          totalRows: 0,
+          eligibleRows: 0,
+          skippedRows: 0,
+          validatedRows: 0,
         })
       )
     ).toBe(false)

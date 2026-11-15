@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
-import { isValidObjectId, Model } from 'mongoose'
+import { ClientSession, isValidObjectId, Model } from 'mongoose'
 import {
   ConflictException,
   ForbiddenException,
@@ -91,14 +91,15 @@ export class TenantService {
 
   async addStockUnit(
     tenantId: string,
-    inputLabel: string
+    inputLabel: string,
+    session?: ClientSession
   ): Promise<StockUnitOption> {
-    const label = canonicalizeStockUnit(inputLabel ?? '')
-    if (!isValidStockUnit(label)) {
+    if (!isValidStockUnit(inputLabel ?? '')) {
       throw new InvalidInputException(
         `Unit names must contain between 1 and ${STOCK_UNIT_MAX_LENGTH} characters and cannot contain control characters.`
       )
     }
+    const label = canonicalizeStockUnit(inputLabel)
     const normalizedLabel = normalizeStockUnit(label)
     const updated = await this.tenantModel
       .findOneAndUpdate(
@@ -111,7 +112,7 @@ export class TenantService {
             stockUnits: { label, normalizedLabel, createdAt: new Date() },
           },
         },
-        { returnDocument: 'after' }
+        { returnDocument: 'after', session }
       )
       .select('stockUnits')
       .exec()
@@ -120,6 +121,7 @@ export class TenantService {
     const tenant = await this.tenantModel
       .findById(tenantId)
       .select('stockUnits')
+      .session(session ?? null)
       .exec()
     if (!tenant) {
       throw new NotFoundException('The requested tenant was not found.')

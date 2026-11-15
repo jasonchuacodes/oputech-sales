@@ -54,6 +54,29 @@ describe('ProductWorkbookService', () => {
     ])
   })
 
+  it('accepts unconfigured stock units after canonicalizing whitespace', async () => {
+    const [row] = await service.parseImport(
+      await workbookBuffer([['', 'Imported Feed', 10, '  custom   sack  ', 0]])
+    )
+
+    expect(row).toMatchObject({
+      unit: 'custom sack',
+      quantity: '0',
+      errors: [],
+    })
+  })
+
+  it('reports invalid stock-unit characters as a row error', async () => {
+    const [row] = await service.parseImport(
+      await workbookBuffer([['', 'Invalid Unit', 10, 'case\nsize', 1]])
+    )
+
+    expect(row.errors.map((error) => error.message)).toEqual([
+      'Unit must contain between 1 and 24 characters and cannot contain control characters.',
+      'Unit and Quantity must either both be provided or both be blank.',
+    ])
+  })
+
   it('rejects formulas as a fatal workbook error', async () => {
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('Products')

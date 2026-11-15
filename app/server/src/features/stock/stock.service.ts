@@ -343,6 +343,23 @@ export class StockService {
   ): Promise<ProductDocument> {
     const counted = this.decimal(quantity, 'Quantity', true)
     const existingInventory = product.inventory
+    if (
+      existingInventory &&
+      normalizeStockUnit(existingInventory.unit) !== normalizeStockUnit(unit)
+    ) {
+      throw new ConflictException(
+        `The product unit is ${existingInventory.unit}, not ${unit}.`
+      )
+    }
+    const resolvedUnit = existingInventory
+      ? (
+          await this.tenantService.addStockUnit(
+            tenantId,
+            existingInventory.unit,
+            session
+          )
+        ).label
+      : (await this.tenantService.addStockUnit(tenantId, unit, session)).label
     let updated: ProductDocument | null
     let balanceBefore = new Decimal(0)
 
@@ -359,7 +376,7 @@ export class StockService {
             $set: {
               inventory: {
                 stockCount: asDecimal128(counted),
-                unit,
+                unit: resolvedUnit,
                 revision: 1,
               },
             },
@@ -368,13 +385,6 @@ export class StockService {
         )
         .exec()
     } else {
-      if (
-        normalizeStockUnit(existingInventory.unit) !== normalizeStockUnit(unit)
-      ) {
-        throw new ConflictException(
-          `The product unit is ${existingInventory.unit}, not ${unit}.`
-        )
-      }
       balanceBefore = new Decimal(existingInventory.stockCount.toString())
       updated = await this.productModel
         .findOneAndUpdate(

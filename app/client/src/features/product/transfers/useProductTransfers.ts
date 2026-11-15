@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import { useSyncContext } from '@/context/sync/useSyncContext'
 import { useTenantContext } from '@/context/tenant/useTenantContext'
 import { productKeys } from '@/services/product/product.queries'
+import { stockKeys } from '@/services/stock/stock.queries'
 import { uploadProductImport } from '@/services/product-transfer/product-transfer.api'
 import {
   productTransferKeys,
@@ -26,6 +27,7 @@ import {
   type ProductTransferUploadAuthorization,
 } from '@/services/product-transfer/product-transfer.types'
 import { validateProductImportFile } from '../schemas/product-import.schema'
+import { canConfirmImport } from './product-transfer-state'
 
 type DialogKind = ProductTransferType | null
 type DialogView = 'new' | 'job'
@@ -92,6 +94,7 @@ export const useProductTransfers = (enabled: boolean) => {
     refreshedImports.current.add(job.id)
     void Promise.allSettled([
       queryClient.invalidateQueries({ queryKey: productKeys.tenant(tenantId) }),
+      queryClient.invalidateQueries({ queryKey: stockKeys.tenant(tenantId) }),
       refreshInBackground(),
     ])
   }, [job, queryClient, refreshInBackground, tenantId])
@@ -227,8 +230,7 @@ export const useProductTransfers = (enabled: boolean) => {
   }, [cancelImportMutation, job, resetImportSetup])
 
   const confirmImport = useCallback(async () => {
-    if (!job || job.status !== ProductTransferStatus.AwaitingConfirmation)
-      return
+    if (!job || !canConfirmImport(job)) return
     setOperationError(undefined)
     try {
       await confirmImportMutation.mutateAsync(job.id)
