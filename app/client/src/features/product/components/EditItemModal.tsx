@@ -18,6 +18,15 @@ interface Props {
   onClose: () => void
 }
 
+export const getEditProductDefaultValues = (
+  item: Product
+): EditProductInput => ({
+  name: item.name,
+  price: item.price,
+  imageUrl: item.imageUrl,
+  printCount: item.printCount ?? 0,
+})
+
 export const EditItemModal = ({
   item,
   open,
@@ -35,14 +44,7 @@ export const EditItemModal = ({
     formState: { errors, isValid },
   } = useForm<EditProductInput>({
     resolver: zodResolver(EditProductSchema),
-    defaultValues: item
-      ? {
-          name: item.name,
-          price: item.price,
-          imageUrl: item.imageUrl,
-          printCount: item.printCount,
-        }
-      : undefined,
+    defaultValues: item ? getEditProductDefaultValues(item) : undefined,
   })
 
   const handleClose = () => {
