@@ -11,6 +11,12 @@ export enum UserRole {
 
 @Schema({ timestamps: true })
 export class User {
+  @Prop({ trim: true })
+  firstName?: string
+
+  @Prop({ trim: true })
+  lastName?: string
+
   @Prop({ required: true, unique: true, trim: true })
   username: string
 
@@ -37,6 +43,9 @@ export class User {
 
   @Prop({ required: true, default: 0 })
   tenantSelectionVersion: number
+
+  @Prop({ required: true, default: 0 })
+  credentialVersion: number
 }
 
 export const UserSchema = SchemaFactory.createForClass(User)

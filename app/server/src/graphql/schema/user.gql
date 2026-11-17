@@ -6,6 +6,8 @@ enum UserRole {
 
 type User {
   id: ID!
+  firstName: String
+  lastName: String
   username: String!
   fullName: String
   email: String
@@ -17,6 +19,7 @@ type User {
 
 extend type Query {
   users: [User!]!
+  myProfile: User!
 }
 
 input CreateUserInput {
@@ -34,9 +37,15 @@ input UpdateUserInput {
   role: UserRole
 }
 
+input UpdateMyProfileInput {
+  firstName: String
+  lastName: String
+}
+
 extend type Mutation {
   createUser(input: CreateUserInput!): User!
   updateUser(id: ID!, input: UpdateUserInput!): User!
   deleteUser(id: ID!): Boolean!
   resetPassword(id: ID!, password: String!): User!
+  updateMyProfile(input: UpdateMyProfileInput!): User!
 }

@@ -9,6 +9,7 @@ import {
   ConflictException,
   UnauthorizedException,
 } from '../../common/exceptions'
+import { ChangePasswordDto } from './dto/change-password.dto'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -28,22 +29,23 @@ export class AuthService {
   async login(input: LoginInput, res: Response) {
     const user = await this.users.findByUsername(input.username)
     if (!user) {
-      throw new UnauthorizedException(
-        'The username or password is incorrect.',
-      )
+      throw new UnauthorizedException('The username or password is incorrect.')
     }
 
     const match = await bcrypt.compare(input.password, user.password)
     if (!match) {
-      throw new UnauthorizedException(
-        'The username or password is incorrect.',
-      )
+      throw new UnauthorizedException('The username or password is incorrect.')
     }
 
-    const accessToken = this.jwt.sign({ sub: user._id, role: user.role })
+    const credentialVersion = user.credentialVersion ?? 0
+    const accessToken = this.jwt.sign({
+      sub: user._id,
+      role: user.role,
+      credentialVersion,
+    })
 
     const refreshToken = this.jwt.sign(
-      { sub: user._id },
+      { sub: user._id, credentialVersion },
       {
         secret: process.env.JWT_REFRESH_SECRET,
         expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? '7d') as any,
@@ -63,6 +65,9 @@ export class AuthService {
     return {
       user: {
         id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        fullName: user.fullName,
         username: user.username,
         email: user.email,
         role: user.role,
@@ -76,29 +81,39 @@ export class AuthService {
     const token = req.cookies?.refresh_token
     if (!token) {
       throw new UnauthorizedException(
-        'Your session has expired. Please sign in again.',
+        'Your session has expired. Please sign in again.'
       )
     }
 
-    let payload: { sub: string }
+    let payload: { sub: string; credentialVersion?: number }
     try {
       payload = this.jwt.verify(token, {
         secret: process.env.JWT_REFRESH_SECRET,
       })
     } catch {
       throw new UnauthorizedException(
-        'Your session has expired. Please sign in again.',
+        'Your session has expired. Please sign in again.'
       )
     }
 
     const user = await this.users.findById(payload.sub)
     if (!user) {
       throw new UnauthorizedException(
-        'This user account is no longer available.',
+        'This user account is no longer available.'
       )
     }
 
-    const accessToken = this.jwt.sign({ sub: user._id, role: user.role })
+    if ((payload.credentialVersion ?? 0) !== (user.credentialVersion ?? 0)) {
+      throw new UnauthorizedException(
+        'Your session has expired. Please sign in again.'
+      )
+    }
+
+    const accessToken = this.jwt.sign({
+      sub: user._id,
+      role: user.role,
+      credentialVersion: user.credentialVersion ?? 0,
+    })
 
     res.cookie('access_token', accessToken, {
       ...cookieOptions,
@@ -111,6 +126,9 @@ export class AuthService {
     if (!user) return null
     return {
       id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      fullName: user.fullName,
       username: user.username,
       email: user.email,
       role: user.role,
@@ -120,16 +138,32 @@ export class AuthService {
   }
 
   async logout(req: Request, res: Response) {
-    res.clearCookie('access_token', cookieOptions)
-    res.clearCookie('refresh_token', cookieOptions)
+    this.clearCookies(res)
+  }
+
+  async changePassword(
+    payload: { userId: string },
+    input: ChangePasswordDto,
+    res: Response
+  ) {
+    const user = await this.users.findByIdWithPassword(payload.userId)
+    if (
+      !user ||
+      !(await bcrypt.compare(input.currentPassword, user.password))
+    ) {
+      throw new UnauthorizedException('The current password is incorrect.')
+    }
+
+    const password = await bcrypt.hash(input.newPassword, 10)
+    await this.users.updatePassword(payload.userId, password)
+    this.clearCookies(res)
+    return { success: true }
   }
 
   async register(input: RegisterInput) {
     const existing = await this.users.findByUsername(input.username)
     if (existing) {
-      throw new ConflictException(
-        'This username is already in use.',
-      )
+      throw new ConflictException('This username is already in use.')
     }
 
     const password = await bcrypt.hash(input.password, 10)
@@ -141,9 +175,17 @@ export class AuthService {
 
     return {
       id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      fullName: user.fullName,
       username: user.username,
       email: user.email,
       role: user.role,
     }
+  }
+
+  private clearCookies(res: Response) {
+    res.clearCookie('access_token', cookieOptions)
+    res.clearCookie('refresh_token', cookieOptions)
   }
 }

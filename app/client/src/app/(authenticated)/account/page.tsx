@@ -1,5 +1,5 @@
-import { AccountPage } from '@/features/account/AccountPage'
+import { AccountSettingsPage } from '@/features/account/AccountSettingsPage'
 
 export default function AccountRoute() {
-  return <AccountPage />
+  return <AccountSettingsPage />
 }

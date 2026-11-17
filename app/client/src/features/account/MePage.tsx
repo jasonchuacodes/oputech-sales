@@ -31,11 +31,12 @@ const ManagementLink = ({
   </Link>
 )
 
-export const AccountPage = () => {
+export const MePage = () => {
   const { auth, logout } = useAuthContext()
   const sync = useSyncContext()
   const isSuperAdmin = auth?.role === UserRole.SUPERADMIN
   const isAdmin = auth?.role === UserRole.ADMIN || isSuperAdmin
+  const displayName = auth?.fullName || auth?.username || 'Account'
 
   const syncBusy = sync.isSyncing
   const syncTitle =
@@ -53,25 +54,42 @@ export const AccountPage = () => {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-5 py-5 md:p-6">
-      <section className="rounded-card bg-card shadow-card flex items-center gap-3 p-3">
-        <AccountAvatar
-          username={auth?.username}
-          className="size-12 text-base"
-          iconClassName="size-6"
-        />
-        <div className="min-w-0">
-          <h2 className="text-text-heading text-card-title truncate font-medium">
-            {auth?.username || 'Account'}
-          </h2>
-          <p className="text-text-tertiary text-sm">
-            {isSuperAdmin
-              ? 'Super administrator'
-              : isAdmin
-                ? 'Administrator'
-                : 'Staff'}
-          </p>
-        </div>
-      </section>
+      {isAdmin ? (
+        <Link
+          href="/account"
+          aria-label="Open account settings"
+          className="rounded-card bg-card shadow-card hover:bg-surface-hover focus-visible:ring-ring/30 flex items-center gap-4 p-4 transition-colors outline-none focus-visible:ring-3"
+        >
+          <AccountAvatar
+            username={displayName}
+            className="size-14 text-lg"
+            iconClassName="size-6"
+          />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-text-heading text-card-title truncate font-medium">
+              {displayName}
+            </h2>
+            <p className="text-text-tertiary text-sm">
+              {isSuperAdmin ? 'Super administrator' : 'Administrator'}
+            </p>
+          </div>
+          <ChevronRight className="text-text-tertiary size-5 shrink-0" />
+        </Link>
+      ) : (
+        <section className="rounded-card bg-card shadow-card flex items-center gap-4 p-4">
+          <AccountAvatar
+            username={displayName}
+            className="size-14 text-lg"
+            iconClassName="size-6"
+          />
+          <div className="min-w-0">
+            <h2 className="text-text-heading text-card-title truncate font-medium">
+              {displayName}
+            </h2>
+            <p className="text-text-tertiary text-sm">Staff</p>
+          </div>
+        </section>
+      )}
 
       <ContentSection label="Tenant">
         <TenantSelector />

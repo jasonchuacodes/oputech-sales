@@ -1,14 +1,27 @@
 'use client'
 
-import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { isAxiosError } from 'axios'
 
-import { type AuthUser } from '../../services/auth/auth.types'
+import {
+  type AuthUser,
+  type ChangePasswordInput,
+} from '../../services/auth/auth.types'
 import { PublicRoutes } from '../../routes/paths'
 import { useGetMe, useLogoutMutation } from '../../services/auth/auth.queries'
-import { refresh } from '../../services/auth/auth.api'
+import {
+  changePassword as changePasswordRequest,
+  refresh,
+} from '../../services/auth/auth.api'
 import {
   clearCachedAuth,
   getCachedAuth,
@@ -26,6 +39,7 @@ type AuthContextType = {
   loading: boolean
   offlineSession: boolean
   refetch: () => Promise<unknown>
+  changePassword: (input: ChangePasswordInput) => Promise<void>
   logout: () => void
 }
 
@@ -34,6 +48,7 @@ const initialState: AuthContextType = {
   loading: true,
   offlineSession: false,
   refetch: async () => undefined,
+  changePassword: async () => undefined,
   logout: () => null,
 }
 
@@ -44,12 +59,7 @@ const isRejectedSession = (error: unknown) =>
   (error.response?.status === 401 || error.response?.status === 403)
 
 function AuthProvider({ children }: { children?: ReactNode }) {
-  const {
-    data: serverAuth,
-    error,
-    isLoading,
-    refetch,
-  } = useGetMe()
+  const { data: serverAuth, error, isLoading, refetch } = useGetMe()
   const [cached, setCached] = useState<CachedAuth | null | undefined>(undefined)
   const [startedAt] = useState(() => Date.now())
 
@@ -70,6 +80,14 @@ function AuthProvider({ children }: { children?: ReactNode }) {
   const logout = useCallback(() => {
     mutate(undefined, { onSettled: () => void endSession() })
   }, [mutate, endSession])
+
+  const changePassword = useCallback(
+    async (input: ChangePasswordInput) => {
+      await changePasswordRequest(input)
+      await endSession()
+    },
+    [endSession]
+  )
 
   useEffect(() => {
     void getCachedAuth()
@@ -92,7 +110,9 @@ function AuthProvider({ children }: { children?: ReactNode }) {
     !!cached &&
     startedAt - new Date(cached.validatedAt).getTime() <=
       OFFLINE_SESSION_MAX_AGE_MS
-  const auth = serverAuth ?? (cachedIsValid && !isRejectedSession(error) ? cached.user : null)
+  const auth =
+    serverAuth ??
+    (cachedIsValid && !isRejectedSession(error) ? cached.user : null)
   const offlineSession = !!auth && !serverAuth
 
   useEffect(() => {
@@ -110,15 +130,11 @@ function AuthProvider({ children }: { children?: ReactNode }) {
   const loading = (isLoading && cached === undefined) || isLoggingOut
 
   const value = useMemo(
-    () => ({ auth, loading, offlineSession, refetch, logout }),
-    [auth, loading, offlineSession, refetch, logout]
+    () => ({ auth, loading, offlineSession, refetch, changePassword, logout }),
+    [auth, loading, offlineSession, refetch, changePassword, logout]
   )
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export { AuthContext, AuthProvider }

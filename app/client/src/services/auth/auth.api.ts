@@ -1,6 +1,7 @@
 import axios from '../../lib/axios'
 import {
   AuthUser,
+  ChangePasswordInput,
   LoginInput,
   LoginResponse,
   RegisterInput,
@@ -27,4 +28,10 @@ export async function refresh(): Promise<void> {
 export async function getMe(): Promise<AuthUser> {
   const res = await axios.get<AuthUser>('/auth/me', { timeout: 5_000 })
   return res.data
+}
+
+export async function changePassword(
+  input: ChangePasswordInput
+): Promise<void> {
+  await axios.post('/auth/change-password', input)
 }

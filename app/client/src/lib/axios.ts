@@ -7,7 +7,7 @@ const axiosInstance = axios.create({
   timeout: 15_000,
 })
 
-const NO_RETRY_PATHS = ['/auth/login', '/auth/refresh']
+const NO_RETRY_PATHS = ['/auth/login', '/auth/refresh', '/auth/change-password']
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & { _retry?: boolean }
 

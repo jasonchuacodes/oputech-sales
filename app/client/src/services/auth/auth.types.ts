@@ -12,6 +12,9 @@ export interface RegisterInput {
 
 export interface AuthUser {
   id: string
+  firstName?: string
+  lastName?: string
+  fullName?: string
   username: string
   email: string
   role: AppUserRole
@@ -21,4 +24,9 @@ export interface AuthUser {
 
 export interface LoginResponse {
   user: AuthUser
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string
+  newPassword: string
 }

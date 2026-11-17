@@ -40,6 +40,7 @@ type NavItem = {
   href: string
   icon: LucideIcon
   adminOnly?: boolean
+  activePaths?: string[]
 }
 
 const primaryNavigation: NavItem[] = [
@@ -57,8 +58,9 @@ const adminNavigation: NavItem[] = [
 
 const accountNavigation: NavItem = {
   label: 'Me',
-  href: '/account',
+  href: '/me',
   icon: UserRound,
+  activePaths: ['/account'],
 }
 
 const PULL_TO_REFRESH_THRESHOLD = 56
@@ -147,7 +149,9 @@ const NavigationLink = ({
   collapsed?: boolean
 }) => {
   const pathname = usePathname()
-  const active = isRouteActive(pathname, item.href)
+  const active = [item.href, ...(item.activePaths ?? [])].some((href) =>
+    isRouteActive(pathname, href)
+  )
   const Icon = item.icon
   const eagerPrefetch =
     item.href === UserRoutes.POS || item.href === UserRoutes.Transactions
@@ -159,7 +163,7 @@ const NavigationLink = ({
       aria-current={active ? 'page' : undefined}
       title={collapsed && !bottom ? item.label : undefined}
       className={cn(
-        'focus-visible:ring-ring/30 flex items-center rounded-sm text-sm font-medium transition-[color,background-color,transform] outline-none active:scale-[0.98] focus-visible:ring-3 motion-reduce:transform-none',
+        'focus-visible:ring-ring/30 flex items-center rounded-sm text-sm font-medium transition-[color,background-color,transform] outline-none focus-visible:ring-3 active:scale-[0.98] motion-reduce:transform-none',
         bottom
           ? 'min-h-16 flex-col justify-center gap-1 rounded-none px-1 py-2 text-xs'
           : 'min-h-10 gap-2 px-2.5 py-1',
@@ -194,18 +198,23 @@ const NavigationLink = ({
 }
 
 const AccountProfileLink = ({
+  displayName,
   username,
   email,
   isAdmin,
   collapsed = false,
 }: {
+  displayName?: string
   username: string
   email: string
   isAdmin: boolean
   collapsed?: boolean
 }) => {
   const pathname = usePathname()
-  const active = isRouteActive(pathname, accountNavigation.href)
+  const active = [
+    accountNavigation.href,
+    ...(accountNavigation.activePaths ?? []),
+  ].some((href) => isRouteActive(pathname, href))
 
   return (
     <Link
@@ -224,7 +233,7 @@ const AccountProfileLink = ({
       )}
     >
       <AccountAvatar
-        username={username}
+        username={displayName || username}
         className={cn(
           'size-8 text-xs',
           !active && 'bg-muted text-text-secondary'
@@ -233,7 +242,7 @@ const AccountProfileLink = ({
       />
       <span className={cn('min-w-0 flex-1', collapsed && 'sr-only')}>
         <span className="block truncate text-sm font-medium">
-          {username || 'Account'}
+          {displayName || username || 'Account'}
         </span>
         <span className="text-text-tertiary block truncate text-xs">
           {email || (isAdmin ? 'Administrator' : 'Staff')}
@@ -275,6 +284,9 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
       )
     ) {
       router.replace('/sell')
+    }
+    if (!isAdmin && pathname.startsWith('/account')) {
+      router.replace('/me')
     }
     if (!isSuperAdmin && pathname.startsWith('/users')) {
       router.replace('/sell')
@@ -406,6 +418,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             )}
           </div>
           <AccountProfileLink
+            displayName={auth.fullName}
             username={auth.username}
             email={auth.email}
             isAdmin={isAdmin}

@@ -13,6 +13,7 @@ export const UserRoutes = {
   Transactions: '/activity',
   Reports: '/reports',
   ReportDetail: '/reports/:reportId',
+  Me: '/me',
   Account: '/account',
 }
 

@@ -16,6 +16,8 @@ import { LoginDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
 import { JwtAuthGuard } from './guards/jwt-auth.guard'
 import { ForbiddenException } from '../../common/exceptions'
+import { ChangePasswordDto } from './dto/change-password.dto'
+import { AdminGuard } from './guards/admin.guard'
 
 @Controller('auth')
 export class AuthController {
@@ -30,7 +32,7 @@ export class AuthController {
       process.env.SUPERADMIN_SCRIPT_SECRET ?? process.env.ADMIN_SCRIPT_SECRET
     if (!secret || secret !== configuredSecret) {
       throw new ForbiddenException(
-        'The super admin registration secret is invalid or missing.',
+        'The super admin registration secret is invalid or missing.'
       )
     }
     return this.auth.register(input)
@@ -58,5 +60,16 @@ export class AuthController {
   @Get('me')
   me(@Req() req: Request) {
     return this.auth.me(req.user as { userId: string })
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  changePassword(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Body() input: ChangePasswordDto
+  ) {
+    return this.auth.changePassword(req.user as { userId: string }, input, res)
   }
 }

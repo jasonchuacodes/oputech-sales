@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-jwt';
-import { Request } from 'express';
-import { UsersService } from '../../users/users.service';
-import { UnauthorizedException } from '../../../common/exceptions';
+import { Injectable } from '@nestjs/common'
+import { PassportStrategy } from '@nestjs/passport'
+import { Strategy } from 'passport-jwt'
+import { Request } from 'express'
+import { UsersService } from '../../users/users.service'
+import { UnauthorizedException } from '../../../common/exceptions'
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -12,16 +12,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: (req: Request) => req?.cookies?.access_token ?? null,
       ignoreExpiration: false,
       secretOrKey: process.env.JWT_ACCESS_SECRET,
-    });
+    })
   }
 
-  async validate(payload: { sub: string; role: string }) {
+  async validate(payload: {
+    sub: string
+    role: string
+    credentialVersion?: number
+  }) {
     const user = await this.users.findById(payload.sub)
-    if (!user) {
+    if (
+      !user ||
+      (payload.credentialVersion ?? 0) !== (user.credentialVersion ?? 0)
+    ) {
       throw new UnauthorizedException(
-        'This user account is no longer available.',
+        'This user account is no longer available.'
       )
     }
-    return { userId: String(user._id), role: user.role };
+    return { userId: String(user._id), role: user.role }
   }
 }
