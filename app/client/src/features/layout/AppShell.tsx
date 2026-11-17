@@ -8,7 +8,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react'
-import Link from 'next/link'
+import Link, { useLinkStatus } from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -115,6 +115,28 @@ const setSidebarCollapsedPreference = (collapsed: boolean) => {
 const isRouteActive = (pathname: string, href: string) =>
   pathname === href || pathname.startsWith(`${href}/`)
 
+const NavigationPendingIndicator = ({ label }: { label: string }) => {
+  const { pending } = useLinkStatus()
+
+  return (
+    <>
+      <span
+        aria-hidden="true"
+        className={cn(
+          'pointer-events-none absolute -top-0.5 -right-0.5 size-3 rounded-full border-2 border-current border-t-transparent opacity-0 transition-opacity duration-150 motion-reduce:transition-none',
+          pending &&
+            'animate-spin opacity-70 delay-100 motion-reduce:animate-none'
+        )}
+      />
+      {pending && (
+        <span className="sr-only" role="status">
+          Loading {label}
+        </span>
+      )}
+    </>
+  )
+}
+
 const NavigationLink = ({
   item,
   bottom = false,
@@ -127,14 +149,17 @@ const NavigationLink = ({
   const pathname = usePathname()
   const active = isRouteActive(pathname, item.href)
   const Icon = item.icon
+  const eagerPrefetch =
+    item.href === UserRoutes.POS || item.href === UserRoutes.Transactions
 
   return (
     <Link
       href={item.href}
+      prefetch={eagerPrefetch ? true : undefined}
       aria-current={active ? 'page' : undefined}
       title={collapsed && !bottom ? item.label : undefined}
       className={cn(
-        'focus-visible:ring-ring/30 flex items-center rounded-sm text-sm font-medium transition-colors outline-none focus-visible:ring-3',
+        'focus-visible:ring-ring/30 flex items-center rounded-sm text-sm font-medium transition-[color,background-color,transform] outline-none active:scale-[0.98] focus-visible:ring-3 motion-reduce:transform-none',
         bottom
           ? 'min-h-16 flex-col justify-center gap-1 rounded-none px-1 py-2 text-xs'
           : 'min-h-10 gap-2 px-2.5 py-1',
@@ -150,7 +175,7 @@ const NavigationLink = ({
     >
       <span
         className={cn(
-          'flex shrink-0 items-center justify-center',
+          'relative flex shrink-0 items-center justify-center',
           bottom ? 'size-6' : 'size-8'
         )}
       >
@@ -159,6 +184,7 @@ const NavigationLink = ({
           strokeWidth={bottom ? (active ? 2 : 1.75) : 2}
           className={bottom ? 'size-6' : 'size-4'}
         />
+        <NavigationPendingIndicator label={item.label} />
       </span>
       <span className={cn(collapsed && !bottom && 'sr-only')}>
         {item.label}
